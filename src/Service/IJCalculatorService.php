@@ -301,6 +301,16 @@ class IJCalculatorService
             $lessDate = 0;
             $currentData = &$arrets[$increment];
 
+            // Si valid_med_controleur != 1, pas de date d'effet
+            if (isset($currentData['valid_med_controleur']) && $currentData['valid_med_controleur'] != 1) {
+                $currentData['date-effet'] = null;
+                $increment++;
+                if (count($arrets) === $increment) {
+                    break;
+                }
+                continue;
+            }
+
             $startDate = new DateTime($currentData['arret-from-line']);
             $endDate = new DateTime($currentData['arret-to-line']);
             $arret_diff = $startDate->diff($endDate)->days + 1;
@@ -404,6 +414,22 @@ class IJCalculatorService
         $paymentDetails = [];
 
         foreach ($arrets as $index => $arret) {
+            // Vérifier valid_med_controleur - pas de paiement si != 1
+            if (isset($arret['valid_med_controleur']) && $arret['valid_med_controleur'] != 1) {
+                $paymentDetails[$index] = [
+                    'arret_index' => $index,
+                    'arret_from' => $arret['arret-from-line'],
+                    'arret_to' => $arret['arret-to-line'],
+                    'date_effet' => $arret['date-effet'] ?? null,
+                    'attestation_date' => null,
+                    'payment_start' => null,
+                    'payment_end' => null,
+                    'payable_days' => 0,
+                    'reason' => 'Not validated by medical controller (valid_med_controleur != 1)'
+                ];
+                continue;
+            }
+
             if (!isset($arret['date-effet'])) {
                 $paymentDetails[$index] = [
                     'arret_index' => $index,
