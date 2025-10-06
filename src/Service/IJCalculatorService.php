@@ -289,92 +289,107 @@ class IJCalculatorService
     public function calculateDateEffet($arrets, $birthDate = null, $previousCumulDays = 0) {
         $arrets = $this->mergeProlongations($arrets);
 
-        $cumulDays = $previousCumulDays;
-        $dateEffetArret = null;
+        static $dateDT;
+        static $dateCotis;
 
-        foreach ($arrets as $index => &$arret) {
-            $startDate = new DateTime($arret['arret-from-line']);
-            $endDate = new DateTime($arret['arret-to-line']);
-            $duration = $startDate->diff($endDate)->days + 1;
-            $cumulDays += $duration;
+        $nbJours = $previousCumulDays;
+        $arretDroits = 0;
+        $increment = 0;
 
-            // Si la date est forcée, ignorer le calcul
-            if (isset($arret['date-effet-forced'])) {
-                $arret['date-effet'] = $arret['date-effet-forced'];
+        while (true) {
+            $dates = '';
+            $lessDate = 0;
+            $currentData = &$arrets[$increment];
+
+            $startDate = new DateTime($currentData['arret-from-line']);
+            $endDate = new DateTime($currentData['arret-to-line']);
+            $arret_diff = $startDate->diff($endDate)->days + 1;
+            $currentData['arret_diff'] = $arret_diff;
+
+            $newNbJours = $nbJours + $arret_diff;
+
+            // Si date_deb_droit existe et n'est pas 0000-00-00, l'utiliser comme date-effet
+            if (isset($currentData['date_deb_droit']) && !empty($currentData['date_deb_droit']) && $currentData['date_deb_droit'] !== '0000-00-00') {
+                $currentData['date-effet'] = $currentData['date_deb_droit'];
+                $nbJours = $newNbJours;
+                $increment++;
+                if (count($arrets) === $increment) {
+                    break;
+                }
                 continue;
             }
 
-            // Premier passage de 90 jours - calculer la date d'effet pour le sinistre
-            if ($cumulDays > 90 && $dateEffetArret === null) {
-                $daysIntoThreshold = 90 - ($cumulDays - $duration);
-                $dateEffet = clone $startDate;
-                $dateEffet->modify("+$daysIntoThreshold days");
-
-                // Gérer les DT non excusées (dt-line = 'N' signifie non excusée)
-                $maxDate = clone $dateEffet;
-                if (isset($arret['dt-line']) && strtoupper($arret['dt-line']) == 'N' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
-                    $dtDate = new DateTime($arret['declaration-date-line']);
-                    $dtDate->modify('+31 days');
-                    if ($dtDate > $maxDate) {
-                        $maxDate = $dtDate;
-                    }
+            // Si la date est forcée, ignorer le calcul
+            if (isset($currentData['date-effet-forced'])) {
+                $currentData['date-effet'] = $currentData['date-effet-forced'];
+                $nbJours = $newNbJours;
+                $increment++;
+                if (count($arrets) === $increment) {
+                    break;
                 }
-
-                // Gérer la mise à jour du membre GPM (gpm-member-line = 'O' signifie oui)
-                if (isset($arret['gpm-member-line']) && strtoupper($arret['gpm-member-line']) == 'O' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
-                    $gpmDate = new DateTime($arret['declaration-date-line']);
-                    $gpmDate->modify('+31 days');
-                    if ($gpmDate > $maxDate) {
-                        $maxDate = $gpmDate;
-                    }
-                }
-
-                $arret['date-effet'] = $maxDate->format('Y-m-d');
-                $dateEffetArret = $index;
+                continue;
             }
-            // Arrêt consécutif ou rechute non consécutive après 90 jours
-            elseif ($cumulDays > 90 && $dateEffetArret !== null && $index > 0) {
-                $prevEndDate = new DateTime($arrets[$index - 1]['arret-to-line']);
-                $prevEndDate->modify('+1 day');
 
-                // Arrêt consécutif
-                if ($prevEndDate->format('Y-m-d') == $startDate->format('Y-m-d')) {
-                    $maxDate = clone $startDate;
+            // Premier arrêt - calcul de la date d'ouverture des droits (90 jours)
+            if ($arretDroits === 0) {
+                $lessDate = 90 - ($newNbJours - $arret_diff);
+                $dateDeb = clone $startDate;
+                $dateDeb->modify("+$lessDate days");
 
-                    // Gérer les DT non excusées
-                    if (isset($arret['dt-line']) && $arret['dt-line'] == '1' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
-                        $dtDate = new DateTime($arret['declaration-date-line']);
-                        $dtDate->modify('+31 days');
-                        if ($dtDate > $maxDate) {
-                            $maxDate = $dtDate;
-                        }
+                // Gérer les DT non excusées (dt-line = 0)
+                if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
+                    if ($increment > 0) {
+                        $choice = $arrets[0];
                     }
-
-                    // Gérer la mise à jour du membre GPM
-                    if (isset($arret['gpm-member-line']) && $arret['gpm-member-line'] == '1' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
-                        $gpmDate = new DateTime($arret['declaration-date-line']);
-                        $gpmDate->modify('+31 days');
-                        if ($gpmDate > $maxDate) {
-                            $maxDate = $gpmDate;
-                        }
-                    }
-
-                    if ($maxDate <= $endDate) {
-                        $arret['date-effet'] = $maxDate->format('Y-m-d');
-                    }
+                    $slect = $choice ?? $currentData;
+                    $dtDate = new DateTime($slect['declaration-date-line']);
+                    $dtDate->modify('+30 days');
+                    $dateDT = $dtDate->format('Y-m-d');
                 }
-                // Rechute avec droits au 1er jour
-                elseif (isset($arret['rechute-line']) && $arret['rechute-line'] == '1') {
-                    $arret['date-effet'] = $startDate->format('Y-m-d');
+
+                // Gérer la mise à jour du compte (dt-line = 1 et date_maj_compte présente)
+                if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+                    $cotisDate = new DateTime($currentData['date_maj_compte']);
+                    $cotisDate->modify('+30 days');
+                    $dateCotis = $cotisDate->format('Y-m-d');
                 }
-                // Rechute non consécutive avec droits au 15ème jour
+
+                // Si on dépasse 90 jours, on définit la date d'effet comme le max des 3 dates
+                if ($newNbJours > 90) {
+                    $dates = date('Y-m-d', max([
+                        strtotime($dateDeb->format('Y-m-d')),
+                        strtotime($dateDT ?? '1970-01-01'),
+                        strtotime($dateCotis ?? '1970-01-01'),
+                    ]));
+                    $arretDroits++;
+                }
+            }
+            // Arrêts suivants - rechute ou prolongation
+            elseif ($increment > 0) {
+                $siRechute = ($currentData['rechute-line'] ?? 0) > 0 ? 1 : 0;
+
+                // Rechute immédiate (rechute-line = 1) - droits au 1er jour
+                if ($siRechute === 1 && $currentData['rechute-line'] === 1) {
+                    $dates = $startDate->format('Y-m-d');
+                }
+                // Arrêt >= 15 jours mais pas rechute immédiate - droits au 15ème jour
+                elseif ($arret_diff >= 15 && $currentData['rechute-line'] !== 1) {
+                    $dateEffet = clone $startDate;
+                    $dateEffet->modify('+14 days');
+                    $dates = $dateEffet->format('Y-m-d');
+                }
+                // Sinon arrêt consécutif - droits au 1er jour
                 else {
-                    if ($duration >= 15) {
-                        $dateEffet = clone $startDate;
-                        $dateEffet->modify('+14 days');
-                        $arret['date-effet'] = $dateEffet->format('Y-m-d');
-                    }
+                    $dates = $startDate->format('Y-m-d');
                 }
+            }
+
+            $currentData['date-effet'] = $dates;
+            $nbJours = $newNbJours;
+            $increment++;
+
+            if (count($arrets) === $increment) {
+                break;
             }
         }
 
