@@ -75,7 +75,7 @@ $testCases = [
         'option' => 25,
         'pass_value' => 47000,
         'birth_date' => '1984-01-08',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -107,7 +107,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1959-10-07',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -123,7 +123,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1950-10-07',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -139,7 +139,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1953-01-22',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -155,7 +155,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1961-10-14',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -171,7 +171,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1967-09-15',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -187,10 +187,26 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1953-12-31',
-        'current_date' => '2024-09-30',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
         'affiliation_date' => null,
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
+    'mock14.json' => [
+        'expected' => 19215.36,
+        'statut' => 'M',
+        'classe' => 'C',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1985-07-27',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
         'nb_trimestres' => 60,
         'previous_cumul_days' => 0,
         'prorata' => 1,
@@ -206,7 +222,7 @@ foreach ($testCases as $mockFile => $params) {
     echo str_repeat("=", 80) . "\n";
 
     // Charger les données du mock
-    $mockData = json_decode(file_get_contents("/home/mista/work/ij/$mockFile"), true);
+    $mockData = json_decode(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR ."$mockFile"), true);
 
     if (!$mockData) {
         echo "ERREUR: Impossible de charger $mockFile\n\n";
@@ -214,7 +230,7 @@ foreach ($testCases as $mockFile => $params) {
     }
 
     // Créer le calculateur
-    $calculator = new IJCalculator('/home/mista/work/ij/taux.csv');
+    $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR .'taux.csv');
 
     // Afficher les paramètres
     echo "\nParamètres:\n";
