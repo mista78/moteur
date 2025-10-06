@@ -1,0 +1,11 @@
+{
+    "require": {
+        "cakephp/cakephp": "^5.0",
+        "cakephp/migrations": "^4.0"
+    },
+    "require-dev": {
+        "cakephp/bake": "^3.0",
+        "cakephp/debug_kit": "^5.0",
+        "phpunit/phpunit": "^10.0"
+    }
+}
