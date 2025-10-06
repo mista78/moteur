@@ -111,6 +111,9 @@ class IndemniteJournaliereController extends AppController
      */
     public function index(): void
     {
+        // Set the custom layout
+        $this->viewBuilder()->setLayout('ij');
+
         // Liste des statuts disponibles
         $statuts = [
             'M' => 'Médecin',
