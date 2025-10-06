@@ -384,7 +384,12 @@ class IJCalculator {
 
             $arretDays = 0;
             if ($paymentStart <= $paymentEnd) {
-                $arretDays = $paymentStart->diff($paymentEnd)->days + 1;
+                // Si date de début == date de fin, payer 0 jours (règle exclusive VBA)
+                if ($paymentStart->format('Y-m-d') === $paymentEnd->format('Y-m-d')) {
+                    $arretDays = 0;
+                } else {
+                    $arretDays = $paymentStart->diff($paymentEnd)->days + 1;
+                }
             }
 
             $totalDays += $arretDays;
