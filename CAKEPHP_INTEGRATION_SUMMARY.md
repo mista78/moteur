@@ -19,19 +19,32 @@
    - 275 lignes de CSS
 
 4. **webroot/js/ij-calculator.js**
-   - Copie de app.js dans webroot
+   - JavaScript avec endpoints CakePHP
    - Toutes les fonctionnalités JavaScript préservées
+   - Utilise routing CakePHP au lieu de api.php
 
-5. **CAKEPHP_VIEW_INTEGRATION.md**
+5. **webroot/mocks/**
+   - Dossier contenant tous les fichiers mock JSON
+   - Accessible directement via HTTP
+
+6. **CAKEPHP_VIEW_INTEGRATION.md**
    - Documentation complète de l'intégration
    - Guide de migration
    - Conseils de production
 
+7. **CAKEPHP_ENDPOINTS_UPDATE.md**
+   - Documentation des endpoints API
+   - Guide de migration depuis api.php
+   - Référence complète des endpoints
+
 ### Fichiers modifiés
 
 1. **src/Controller/IndemniteJournaliereController.php**
-   - Méthode `index()` mise à jour
-   - Ajout de `$this->viewBuilder()->setLayout('ij')`
+   - Méthode `index()` mise à jour avec layout `ij`
+   - Ajout de `apiDateEffet()` - Calcul dates d'effet
+   - Ajout de `apiEndPayment()` - Calcul dates fin de paiement
+   - Ajout de `apiListMocks()` - Liste des fichiers mock
+   - Mise à jour de `apiCalculate()` avec chemins corrects
 
 ## Structure finale
 
@@ -43,13 +56,16 @@
 │   └── IndemniteJournaliere/
 │       └── index.php                  ← Vue principale
 ├── webroot/
+│   ├── mocks/                         ← Fichiers mock JSON
+│   │   ├── mock.json
+│   │   └── mock2.json ... mock13.json
 │   ├── css/
 │   │   └── ij-calculator.css          ← Styles
 │   └── js/
-│       └── ij-calculator.js           ← JavaScript
+│       └── ij-calculator.js           ← JavaScript (endpoints CakePHP)
 └── src/
     └── Controller/
-        └── IndemniteJournaliereController.php  ← Controller mis à jour
+        └── IndemniteJournaliereController.php  ← Controller avec API endpoints
 ```
 
 ## Utilisation
@@ -64,6 +80,14 @@ bin/cake server
 ```
 http://localhost:8765/indemnite-journaliere
 ```
+
+### API Endpoints
+L'application utilise les endpoints CakePHP suivants:
+- `POST /indemnite-journaliere/api-calculate.json` - Calcul complet
+- `POST /indemnite-journaliere/api-date-effet.json` - Calcul dates d'effet
+- `POST /indemnite-journaliere/api-end-payment.json` - Calcul dates fin de paiement
+- `GET /indemnite-journaliere/api-list-mocks.json` - Liste des mocks disponibles
+- `GET /mocks/{filename}.json` - Accès direct aux fichiers mock
 
 ## Configuration des routes
 

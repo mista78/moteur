@@ -1,4 +1,7 @@
-const API_URL = 'api.php';
+// Base URL for CakePHP API endpoints
+// Uses relative path to work with CakePHP routing
+const BASE_URL = '/indemnite-journaliere';
+const MOCKS_URL = '/mocks';
 
 let arretCount = 0;
 
@@ -176,7 +179,7 @@ function formatMoney(value, showDecimals = false) {
 
 async function loadMockList() {
     try {
-        const response = await fetch(`${API_URL}?endpoint=list-mocks`);
+        const response = await fetch(`${BASE_URL}/api-list-mocks.json`);
         const result = await response.json();
 
         if (result.success && result.data.length > 0) {
@@ -342,7 +345,7 @@ async function calculateDateEffet() {
     showLoading(true);
 
     try {
-        const response = await fetch(`${API_URL}?endpoint=date-effet`, {
+        const response = await fetch(`${BASE_URL}/api-date-effet.json`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -384,7 +387,7 @@ async function calculateEndPayment() {
     showLoading(true);
 
     try {
-        const response = await fetch(`${API_URL}?endpoint=end-payment`, {
+        const response = await fetch(`${BASE_URL}/api-end-payment.json`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -427,7 +430,7 @@ async function calculateAll() {
     showLoading(true);
 
     try {
-        const response = await fetch(`${API_URL}?endpoint=calculate`, {
+        const response = await fetch(`${BASE_URL}/api-calculate.json`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -451,16 +454,17 @@ async function calculateAll() {
 
 async function loadMockData(mockFile = 'mock.json') {
     try {
-        const response = await fetch(`${API_URL}?endpoint=load-mock&file=${mockFile}`);
-        const result = await response.json();
+        // Load mock directly from /mocks/ folder
+        const response = await fetch(`${MOCKS_URL}/${mockFile}`);
+        const data = await response.json();
 
-        if (result.success) {
+        if (data && Array.isArray(data)) {
             // Clear existing arrets
             document.getElementById('arrets-container').innerHTML = '';
             arretCount = 0;
 
             // Load mock arrets
-            result.data.forEach(arret => {
+            data.forEach(arret => {
                 arretCount++;
                 const container = document.getElementById('arrets-container');
 
@@ -528,7 +532,7 @@ async function loadMockData(mockFile = 'mock.json') {
 
             showSuccess(`Données ${mockFile} chargées avec succès`);
         } else {
-            showError(result.error);
+            showError('Format de données invalide');
         }
     } catch (error) {
         showError('Erreur lors du chargement des données de test: ' + error.message);

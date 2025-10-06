@@ -83,7 +83,7 @@ class IndemniteJournaliereController extends AppController
         $this->viewBuilder()->setClassName('Json');
 
         try {
-            $csvPath = CONFIG . 'taux.csv';
+            $csvPath = ROOT . DS . 'config' . DS . 'taux.csv';
             $calculator = new IJCalculatorService($csvPath);
 
             $data = $this->request->getData();
@@ -92,6 +92,127 @@ class IndemniteJournaliereController extends AppController
             $this->set([
                 'success' => true,
                 'data' => $result,
+                '_serialize' => ['success', 'data'],
+            ]);
+        } catch (\Exception $e) {
+            $this->response = $this->response->withStatus(400);
+            $this->set([
+                'success' => false,
+                'error' => $e->getMessage(),
+                '_serialize' => ['success', 'error'],
+            ]);
+        }
+    }
+
+    /**
+     * API endpoint to calculate date d'effet for arrêts
+     *
+     * Endpoint: POST /indemnite-journaliere/api-date-effet.json
+     *
+     * @return void
+     */
+    public function apiDateEffet(): void
+    {
+        $this->request->allowMethod(['post']);
+        $this->viewBuilder()->setClassName('Json');
+
+        try {
+            $csvPath = ROOT . DS . 'config' . DS . 'taux.csv';
+            $calculator = new IJCalculatorService($csvPath);
+
+            $data = $this->request->getData();
+
+            // Calculate dates effet
+            $arrets = $data['arrets'] ?? [];
+            $birthDate = $data['birth_date'] ?? null;
+            $previousCumulDays = $data['previous_cumul_days'] ?? 0;
+
+            $result = $calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
+
+            $this->set([
+                'success' => true,
+                'data' => $result,
+                '_serialize' => ['success', 'data'],
+            ]);
+        } catch (\Exception $e) {
+            $this->response = $this->response->withStatus(400);
+            $this->set([
+                'success' => false,
+                'error' => $e->getMessage(),
+                '_serialize' => ['success', 'error'],
+            ]);
+        }
+    }
+
+    /**
+     * API endpoint to calculate end payment dates
+     *
+     * Endpoint: POST /indemnite-journaliere/api-end-payment.json
+     *
+     * @return void
+     */
+    public function apiEndPayment(): void
+    {
+        $this->request->allowMethod(['post']);
+        $this->viewBuilder()->setClassName('Json');
+
+        try {
+            $csvPath = ROOT . DS . 'config' . DS . 'taux.csv';
+            $calculator = new IJCalculatorService($csvPath);
+
+            $data = $this->request->getData();
+
+            // Calculate end payment dates
+            $arrets = $data['arrets'] ?? [];
+            $birthDate = $data['birth_date'] ?? null;
+            $previousCumulDays = $data['previous_cumul_days'] ?? 0;
+            $currentDate = $data['current_date'] ?? date('Y-m-d');
+
+            $result = $calculator->calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate);
+
+            $this->set([
+                'success' => true,
+                'data' => $result,
+                '_serialize' => ['success', 'data'],
+            ]);
+        } catch (\Exception $e) {
+            $this->response = $this->response->withStatus(400);
+            $this->set([
+                'success' => false,
+                'error' => $e->getMessage(),
+                '_serialize' => ['success', 'error'],
+            ]);
+        }
+    }
+
+    /**
+     * API endpoint to list available mock files
+     *
+     * Endpoint: GET /indemnite-journaliere/api-list-mocks.json
+     *
+     * @return void
+     */
+    public function apiListMocks(): void
+    {
+        $this->request->allowMethod(['get']);
+        $this->viewBuilder()->setClassName('Json');
+
+        try {
+            $mocksDir = ROOT . DS . 'webroot' . DS . 'mocks';
+            $mockFiles = [];
+
+            if (is_dir($mocksDir)) {
+                $files = scandir($mocksDir);
+                foreach ($files as $file) {
+                    if (pathinfo($file, PATHINFO_EXTENSION) === 'json') {
+                        $mockFiles[] = $file;
+                    }
+                }
+            }
+
+            $this->set([
+                'success' => true,
+                'data' => $mockFiles,
                 '_serialize' => ['success', 'data'],
             ]);
         } catch (\Exception $e) {
