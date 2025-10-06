@@ -212,6 +212,22 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 0
     ],
+    'mock15.json' => [
+        'expected' => 12497.49,
+        'statut' => 'M',
+        'classe' => 'B',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1990-04-15',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
 ];
 
 echo "=== TEST DES MOCKS ===\n\n";
