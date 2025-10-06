@@ -259,18 +259,18 @@ class IJCalculator {
 
                 // Gérer les DT non excusées (dt-line = 'N' signifie non excusée)
                 $maxDate = clone $dateEffet;
-                if (isset($arret['dt-line']) && strtoupper($arret['dt-line']) == 'N' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
+                if (isset($arret['dt-line']) && $arret['dt-line'] == 0 && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
                     $dtDate = new DateTime($arret['declaration-date-line']);
-                    $dtDate->modify('+31 days');
+                    $dtDate->modify('+30 days');
                     if ($dtDate > $maxDate) {
                         $maxDate = $dtDate;
                     }
                 }
 
                 // Gérer la mise à jour du membre GPM (gpm-member-line = 'O' signifie oui)
-                if (isset($arret['gpm-member-line']) && strtoupper($arret['gpm-member-line']) == 'O' && isset($arret['declaration-date-line']) && !empty($arret['declaration-date-line'])) {
-                    $gpmDate = new DateTime($arret['declaration-date-line']);
-                    $gpmDate->modify('+31 days');
+                if (isset($arret['dt-line']) && strtoupper($arret['dt-line']) == 1 && isset($arret['date_maj_compte']) && !empty($arret['date_maj_compte'])) {
+                    $gpmDate = new DateTime($arret['date_maj_compte']);
+                    $gpmDate->modify('+30 days');
                     if ($gpmDate > $maxDate) {
                         $maxDate = $gpmDate;
                     }
