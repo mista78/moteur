@@ -1,5 +1,6 @@
 <?php
 
+require_once 'jest-php.php';
 require_once 'IJCalculator.php';
 
 // Test cases avec résultats attendus
@@ -8,6 +9,7 @@ $testCases = [
         'expected' => 750.6, // Pas de résultat attendu donné
         'statut' => 'M',
         'classe' => 'A',
+        "payment_start" => ["2024-01-22", ""],
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1989-09-26',
@@ -22,6 +24,7 @@ $testCases = [
     ],
     'mock2.json' => [
         'expected' => 17318.92,
+        "payment_start" => ["","","", "", "","2023-12-07"],
         'statut' => 'M',
         'classe' => 'c',
         'option' => 100,
@@ -294,109 +297,59 @@ $testCases = [
     ],
 ];
 
-echo "=== TEST DES MOCKS ===\n\n";
-$reussi = 0;
-$rate = 0;
+// Tests avec JestPHP
+describe('IJCalculator - Mock Tests', function() use ($testCases) {
 
-foreach ($testCases as $mockFile => $params) {
-    echo str_repeat("=", 80) . "\n";
-    echo "TEST: $mockFile\n";
-    echo str_repeat("=", 80) . "\n";
+    foreach ($testCases as $mockFile => $params) {
+        $mockData = json_decode(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . $mockFile), true);
+        $adherent = $mockData[0]["adherent_number"];
+        test("should calculate correct amount for $adherent", function() use ($mockData,$mockFile, $params) {
+            // Charger les données du mock
+            
 
-    // Charger les données du mock
-    $mockData = json_decode(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR ."$mockFile"), true);
+            if (!$mockData) {
+                throw new Exception("Impossible de charger $mockFile");
+            }
 
-    if (!$mockData) {
-        echo "ERREUR: Impossible de charger $mockFile\n\n";
-        continue;
-    }
+            // Créer le calculateur
+            $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR . 'taux.csv');
 
-    // Créer le calculateur
-    $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR .'taux.csv');
+            // Préparer les données au format attendu
+            $requestData = [
+                'arrets' => $mockData,
+                'statut' => $params['statut'],
+                'classe' => $params['classe'],
+                'option' => $params['option'],
+                'pass_value' => $params['pass_value'],
+                'payment_start' => $params['payment_start'] ?? null,
+                'birth_date' => $params['birth_date'],
+                'current_date' => $params['current_date'],
+                'attestation_date' => $params['attestation_date'],
+                'last_payment_date' => $params['last_payment_date'],
+                'affiliation_date' => $params['affiliation_date'],
+                'nb_trimestres' => $params['nb_trimestres'],
+                'previous_cumul_days' => $params['previous_cumul_days'],
+                'prorata' => $params['prorata'],
+                'patho_anterior' => $params['patho_anterior']
+            ];
 
-    // Afficher les paramètres
-    echo "\nParamètres:\n";
-    echo "  Statut: {$params['statut']}\n";
-    echo "  Classe: {$params['classe']}\n";
-    echo "  Option: {$params['option']}%\n";
-    echo "  Date naissance: {$params['birth_date']}\n";
-    echo "  Date actuelle: {$params['current_date']}\n";
-    echo "  Nb trimestres: {$params['nb_trimestres']}\n";
+            $result = $calculator->calculateAmount($requestData);
 
-    // Calculer
-    try {
-        // Préparer les données au format attendu
-        $requestData = [
-            'arrets' => $mockData,
-            'statut' => $params['statut'],
-            'classe' => $params['classe'],
-            'option' => $params['option'],
-            'pass_value' => $params['pass_value'],
-            'birth_date' => $params['birth_date'],
-            'current_date' => $params['current_date'],
-            'attestation_date' => $params['attestation_date'],
-            'last_payment_date' => $params['last_payment_date'],
-            'affiliation_date' => $params['affiliation_date'],
-            'nb_trimestres' => $params['nb_trimestres'],
-            'previous_cumul_days' => $params['previous_cumul_days'],
-            'prorata' => $params['prorata'],
-            'patho_anterior' => $params['patho_anterior']
-        ];
+            // Assertions
+            expect($result['montant'])->toBeCloseTo($params['expected'], 0.01);
 
-        $result = $calculator->calculateAmount($requestData);
-
-        // Debug: afficher le résultat complet
-        // echo "DEBUG result: " . print_r($result, true) . "\n";
-
-        $calculated = $result['montant'] ?? 0;
-        $expected = $params['expected'];
-
-        echo "\nRésultat:\n";
-        echo "  Calculé: " . number_format($calculated, 2, '.', '') . " €\n";
-
-        if ($expected !== null) {
-            echo "  Attendu: " . number_format($expected, 2, '.', '') . " €\n";
-            $diff = $calculated - $expected;
-            echo "  Différence: " . number_format($diff, 2, '.', '') . " €\n";
-
-            if (abs($diff) < 0.01) {
-                echo "  ✓ TEST RÉUSSI\n";
-                $reussi++;
-            } else {
-                echo "  ✗ TEST ÉCHOUÉ\n";
-
-                // Afficher les détails du calcul
-                echo "\nDétails du calcul:\n";
-                echo "  Total jours: " . ($result['nb_jours'] ?? 0) . "\n";
-                echo "  Jours cumulés: " . ($result['total_cumul_days'] ?? 0) . "\n";
-                echo "  Age: " . ($result['age'] ?? 'N/A') . "\n";
-
-                if (isset($result['payment_details']) && is_array($result['payment_details'])) {
-                    echo "\nDétails de paiement:\n";
-                    foreach ($result['payment_details'] as $pd) {
-                        if (isset($pd['payable_days']) && $pd['payable_days'] > 0) {
-                            $arret_id = $pd['arret_id'] ?? $pd['arret_index'] ?? 'N/A';
-                            echo "    - Arrêt #{$arret_id}: ";
-                            echo "{$pd['payable_days']} jours payables";
-                            if (isset($pd['rate'])) {
-                                echo ", Taux: {$pd['taux']}, Rate: {$pd['rate']}€";
-                            }
-                            echo "\n";
-                        }
+            // Test payment_start si défini dans les paramètres
+            if (isset($params['payment_start'])) {
+                foreach ($params['payment_start'] as $key => $expectedDate) {
+                    if (isset($result['payment_details'][$key])) {
+                        $actualDate = $result['payment_details'][$key]['payment_start'] ?? '';
+                        expect($actualDate)->toBe($expectedDate);
                     }
                 }
             }
-        } else {
-            echo "  (Pas de résultat attendu)\n";
-        }
-
-    } catch (Exception $e) {
-        echo "ERREUR: " . $e->getMessage() . "\n";
+        });
     }
+});
 
-    echo "\n";
-}
-$nb = count($testCases);
-echo str_repeat("=", 80) . "\n";
-echo "FIN DES TESTS $reussi sur $nb \n";
-echo str_repeat("=", 80) . "\n";
+// Lancer les tests
+JestPHP::run();

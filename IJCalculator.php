@@ -476,8 +476,8 @@ class IJCalculator
                 'date_effet' => $arret['date-effet'],
                 'attestation_date' => $arretAttestationDate,
                 'attestation_date_extended' => $attestation->format('Y-m-d'),
-                'payment_start' => $paymentStart->format('Y-m-d'),
-                'payment_end' => $paymentEnd->format('Y-m-d'),
+                'payment_start' => $arretDays > 0 ? $paymentStart->format('Y-m-d') : '',
+                'payment_end' => $arretDays > 0 ? $paymentEnd->format('Y-m-d') : '',
                 'payable_days' => $arretDays,
                 'reason' => $arretDays > 0 ? ($arretAttestationDate ? 'Paid' : 'Paid (no attestation - calculated to end date)') : 'Outside payment period'
             ];
@@ -817,7 +817,7 @@ class IJCalculator
                     // Age < 62 : taux unique selon trimestres
                     // Note : ne PAS incrémenter $joursDansArret ici, car ce compteur est uniquement pour 62-69 ans
                     $taux = $this->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
-                    $dailyRate = $this->getRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
+                    $dailyRate = $this->getRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null);
                     $arretMontant += $yearData['days'] * $dailyRate;
                     $trimester = $this->getTrimesterFromDate($yearData['start']);
 
@@ -891,7 +891,8 @@ class IJCalculator
                         }
                         // dd($this->rates);
 
-                        $dailyRate = $this->getRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
+                        // Pour taux 4-6 (période 3), passer $usePeriode2 pour déterminer le tier
+                        $dailyRate = $this->getRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, $usePeriode2);
                         $arretMontant += $joursP * $dailyRate;
                         $trimester = $this->getTrimesterFromDate($yearData['start']);
 
@@ -1052,7 +1053,7 @@ class IJCalculator
         return $segments;
     }
 
-    private function getRate($statut, $classe, $option, $taux, $year, $date = null, $age = null)
+    private function getRate($statut, $classe, $option, $taux, $year, $date = null, $age = null, $usePeriode2 = null)
     {
         // Utiliser la date si fournie, sinon utiliser l'année
         if ($date) {
@@ -1069,26 +1070,33 @@ class IJCalculator
 
         // Mapper le taux vers la COLONNE CSV
         // Les colonnes CSV représentent :
-        // - taux_X1 : Taux plein (< 62 ans, OU périodes 1+2 pour 62-69 ans)
-        // - taux_X2 : Taux réduit senior (≥ 70 ans uniquement)
-        // - taux_X3 : Taux intermédiaire (période 3 pour 62-69 ans, jours 731-1095)
+        // - taux_X1 : Taux plein (< 62 ans, période 1 pour tous)
+        // - taux_X2 : Taux réduit (période 3 APRÈS période 2, jours 731-1095)
+        // - taux_X3 : Taux intermédiaire (période 2 OU période 3 SANS période 2, jours 366-730)
         //
         // Mapping des taux (1-9) vers les colonnes CSV :
-        // - Taux 1-3 (< 62 ans, période 1 pour 62-69) → colonne 1 (taux plein)
-        // - Taux 7-9 (période 2 pour 62-69 ans, 366-730j) → colonne 3 (taux intermédiaire)
-        // - Taux 4-6 (période 3 pour 62-69, OU ≥ 70 ans) → colonne 3 pour 62-69, colonne 2 pour 70+
+        // - Taux 1-3 (période 1) → colonne 1 (taux plein)
+        // - Taux 7-9 (période 2, jours 366-730) → colonne 3 (taux intermédiaire)
+        // - Taux 4-6 période 3:
+        //   * Si vient APRÈS période 2 (jours 731+, $usePeriode2=true) → colonne 2 (taux réduit)
+        //   * Si commence à 366j (pas de période 2, arrêt < 730j) → colonne 3 (taux intermédiaire)
         if ($taux >= 1 && $taux <= 3) {
             $tier = 1; // Taux plein
         } elseif ($taux >= 7 && $taux <= 9) {
             $tier = 3; // Taux intermédiaire pour période 2 des 62-69 ans
         } elseif ($taux >= 4 && $taux <= 6) {
-            // Pour période 3 : taux_a3 pour 62-69 ans, taux_a2 pour 70+ ans
-            // Par défaut on utilise tier=3, mais si age >= 70 on utilisera tier=2
+            // Pour période 3 : le tier dépend si on est passé par la période 2
             if ($age !== null && $age >= 70) {
-                $tier = 2; // Taux réduit senior pour 70+
+                $tier = 2; // Taux réduit pour 70+ ans
             } else {
-                // dump($statut, $classe, $option, $taux, $year, $date);
-                $tier = 3; // Taux intermédiaire pour période 3 des 62-69 ans
+                // Pour 62-69 ans : tier dépend de usePeriode2
+                // Si usePeriode2=true → arrêt >= 730j, période 3 commence à 731j → tier 2
+                // Si usePeriode2=false → arrêt < 730j, période 3 commence à 366j → tier 3
+                if ($usePeriode2 === true) {
+                    $tier = 2; // Période 3 après période 2 (jours 731+)
+                } else {
+                    $tier = 3; // Période 3 sans période 2 (jours 366+)
+                }
             }
         } else {
             $tier = 1; // par défaut
