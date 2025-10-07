@@ -42,19 +42,23 @@
  * - affiliation_date : Date d'affiliation au régime d'invalidité
  * - nb_trimestres : Nombre de trimestres (calculé automatiquement si affiliation_date fournie)
  */
-class IJCalculator {
+class IJCalculator
+{
     private $rates = [];
     private $passValue = 47000; // Valeur par défaut du PASS CPAM
 
-    public function __construct($csvPath = 'taux.csv') {
+    public function __construct($csvPath = 'taux.csv')
+    {
         $this->loadRates($csvPath);
     }
 
-    public function setPassValue($value) {
+    public function setPassValue($value)
+    {
         $this->passValue = $value;
     }
 
-    private function loadRates($csvPath) {
+    private function loadRates($csvPath)
+    {
         if (!file_exists($csvPath)) {
             throw new Exception("CSV file not found: $csvPath");
         }
@@ -72,7 +76,8 @@ class IJCalculator {
         fclose($file);
     }
 
-    public function getRateForYear($year) {
+    public function getRateForYear($year)
+    {
         foreach ($this->rates as $rate) {
             $startDate = new DateTime($rate['date_start']);
             $endDate = new DateTime($rate['date_end']);
@@ -89,9 +94,10 @@ class IJCalculator {
      * Obtenir le numéro de trimestre à partir d'une date
      * T1 (01/01-31/03) = 1, T2 (01/04-30/06) = 2, T3 (01/07-30/09) = 3, T4 (01/10-31/12) = 4
      */
-    private function getTrimesterFromDate($date) {
+    private function getTrimesterFromDate($date)
+    {
         $dateObj = new DateTime($date);
-        $month = (int)$dateObj->format('m');
+        $month = (int) $dateObj->format('m');
 
         if ($month <= 3) {
             return 1;
@@ -109,7 +115,8 @@ class IJCalculator {
      * Trimestres: T1 (01/01-31/03), T2 (01/04-30/06), T3 (01/07-30/09), T4 (01/10-31/12)
      * Si la date d'affiliation tombe dans un trimestre, ce trimestre est compté comme complet
      */
-    public function calculateTrimesters($affiliationDate, $currentDate) {
+    public function calculateTrimesters($affiliationDate, $currentDate)
+    {
         if (empty($affiliationDate) || $affiliationDate === '0000-00-00') {
             return 0;
         }
@@ -122,8 +129,8 @@ class IJCalculator {
         }
 
         // Déterminer le trimestre de départ
-        $affYear = (int)$affDate->format('Y');
-        $affMonth = (int)$affDate->format('m');
+        $affYear = (int) $affDate->format('Y');
+        $affMonth = (int) $affDate->format('m');
 
         // Déterminer dans quel trimestre tombe la date d'affiliation
         if ($affMonth <= 3) {
@@ -141,8 +148,8 @@ class IJCalculator {
         }
 
         // Déterminer le trimestre de fin
-        $curYear = (int)$curDate->format('Y');
-        $curMonth = (int)$curDate->format('m');
+        $curYear = (int) $curDate->format('Y');
+        $curMonth = (int) $curDate->format('m');
 
         if ($curMonth <= 3) {
             $endQuarter = 1;
@@ -174,39 +181,66 @@ class IJCalculator {
 
         return $totalQuarters;
     }
+    public function sortByDateStartDesc(array $data): array
+    {
+        // Clonez le tableau pour éviter de modifier le tableau original (bonne pratique).
+        $sorted_data = $data;
 
-    public function getRateForDate($date) {
+        usort($sorted_data, function ($a, $b) {
+            // Convertir les chaînes de date en timestamps UNIX pour une comparaison fiable.
+            $time_a = strtotime($a['date_start']);
+            $time_b = strtotime($b['date_start']);
+
+            // Retourne un entier :
+            // > 0 si $b est "plus petit" (plus ancien) que $a (pour le tri décroissant)
+            // < 0 si $b est "plus grand" (plus récent) que $a
+            // 0 si les deux sont égaux
+
+            // Pour un tri décroissant (DESC), si $a est plus récent ($time_a > $time_b), 
+            // nous voulons que $a vienne avant $b, donc le résultat doit être négatif.
+            // C'est l'inverse d'un tri croissant.
+            return $time_b - $time_a;
+            // Alternative plus idiomatique pour PHP 7+ :
+            // return $time_b <=> $time_a; 
+        });
+
+        return $sorted_data;
+    }
+    public function getRateForDate($date)
+    {
         $checkDate = new DateTime($date);
-        foreach ($this->rates as $rate) {
+        foreach ($this->sortByDateStartDesc($this->rates) as $rate) {
             $startDate = new DateTime($rate['date_start']);
             $endDate = new DateTime($rate['date_end']);
 
-            if ($checkDate >= $startDate && $checkDate <= $endDate) {
+            if ($startDate <= $checkDate) {
                 return $rate;
             }
         }
         return null;
     }
 
-    public function calculateAge($currentDate, $birthDate) {
+    public function calculateAge($currentDate, $birthDate)
+    {
         $current = new DateTime($currentDate);
         $birth = new DateTime($birthDate);
 
         if ($birth->format('m') < $current->format('m')) {
-            return (int)$current->format('Y') - (int)$birth->format('Y');
+            return (int) $current->format('Y') - (int) $birth->format('Y');
         } elseif ($birth->format('m') == $current->format('m')) {
             if ($birth->format('d') <= $current->format('d')) {
-                return (int)$current->format('Y') - (int)$birth->format('Y');
+                return (int) $current->format('Y') - (int) $birth->format('Y');
             } else {
-                return (int)$current->format('Y') - (int)$birth->format('Y') - 1;
+                return (int) $current->format('Y') - (int) $birth->format('Y') - 1;
             }
         } else {
-            return (int)$current->format('Y') - (int)$birth->format('Y') - 1;
+            return (int) $current->format('Y') - (int) $birth->format('Y') - 1;
         }
     }
 
-    public function mergeProlongations($arrets) {
-        usort($arrets, function($a, $b) {
+    public function mergeProlongations($arrets)
+    {
+        usort($arrets, function ($a, $b) {
             return strtotime($a['arret-from-line']) - strtotime($b['arret-from-line']);
         });
 
@@ -233,8 +267,10 @@ class IJCalculator {
         return $merged;
     }
 
-    public function calculateDateEffet($arrets, $birthDate = null, $previousCumulDays = 0) {
+    public function calculateDateEffet($arrets, $birthDate = null, $previousCumulDays = 0)
+    {
         $arrets = $this->mergeProlongations($arrets);
+        // dump($arrets);
 
         static $dateDT;
         static $dateCotis;
@@ -335,10 +371,6 @@ class IJCalculator {
                     $dateEffet->modify('+14 days');
                     $dates = $dateEffet->format('Y-m-d');
                 }
-                // Sinon arrêt consécutif - droits au 1er jour
-                else {
-                    $dates = $startDate->format('Y-m-d');
-                }
             }
 
             $currentData['date-effet'] = $dates;
@@ -353,7 +385,8 @@ class IJCalculator {
         return $arrets;
     }
 
-    public function calculatePayableDays($arrets, $attestationDate = null, $lastPaymentDate = null, $currentDate = null) {
+    public function calculatePayableDays($arrets, $attestationDate = null, $lastPaymentDate = null, $currentDate = null)
+    {
         $lastPayment = $lastPaymentDate ? new DateTime($lastPaymentDate) : null;
         $current = $currentDate ? new DateTime($currentDate) : new DateTime();
 
@@ -407,7 +440,7 @@ class IJCalculator {
                 $attestation = new DateTime($arretAttestationDate);
 
                 // Si l'attestation est après le 27, prolonger jusqu'à la fin du mois
-                if ((int)$attestation->format('d') >= 27) {
+                if ((int) $attestation->format('d') >= 27) {
                     $attestation->modify('last day of this month');
                 }
             }
@@ -456,7 +489,8 @@ class IJCalculator {
         ];
     }
 
-    public function calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate) {
+    public function calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate)
+    {
         $age = $this->calculateAge($currentDate, $birthDate);
         $firstDateEffet = null;
 
@@ -500,7 +534,8 @@ class IJCalculator {
         return $result;
     }
 
-    public function calculateAmount($data) {
+    public function calculateAmount($data)
+    {
         $arrets = $data['arrets'];
         $classe = strtoupper($data['classe']);
         $statut = strtoupper($data['statut']);
@@ -551,7 +586,8 @@ class IJCalculator {
         if ($age >= 70) {
             if ($nbJours + $previousCumulDays > 365) {
                 $nbJours = 365 - $previousCumulDays;
-                if ($nbJours < 0) $nbJours = 0;
+                if ($nbJours < 0)
+                    $nbJours = 0;
             }
         }
 
@@ -563,7 +599,7 @@ class IJCalculator {
                 break;
             }
         }
-        $year = $firstDateEffet ? (int)date('Y', strtotime($firstDateEffet)) : (int)date('Y');
+        $year = $firstDateEffet ? (int) date('Y', strtotime($firstDateEffet)) : (int) date('Y');
 
         // Calculer le montant en fonction de l'âge et des jours cumulés avec les détails des taux
         $calculationResult = $this->calculateMontantByAgeWithDetails($nbJours, $previousCumulDays, $age, $classe, $statut, $option, $year, $nbTrimestres, $pathoAnterior, $paymentDetails, $affiliationDate, $currentDate, $birthDate, $historicalReducedRate);
@@ -593,7 +629,8 @@ class IJCalculator {
         ];
     }
 
-    private function calculateMontantByAge($nbJours, $cumulJoursAnciens, $age, $classe, $statut, $option, $year, $nbTrimestres, $pathoAnterior) {
+    private function calculateMontantByAge($nbJours, $cumulJoursAnciens, $age, $classe, $statut, $option, $year, $nbTrimestres, $pathoAnterior)
+    {
         $montant = 0;
         $tauxBase = 1;
 
@@ -695,7 +732,8 @@ class IJCalculator {
      * @param int|null $historicalReducedRate Taux historique si déjà appliqué pour cette pathologie
      * @return int Numéro de taux (1-9)
      */
-    private function determineTauxNumber($age, $nbTrimestres, $pathoAnterior, $historicalReducedRate = null) {
+    private function determineTauxNumber($age, $nbTrimestres, $pathoAnterior, $historicalReducedRate = null)
+    {
         // Si taux historique déjà appliqué pour cette pathologie, le conserver
         if ($historicalReducedRate !== null) {
             return $historicalReducedRate;
@@ -739,7 +777,8 @@ class IJCalculator {
         return 1;
     }
 
-    private function calculateMontantByAgeWithDetails($nbJours, $cumulJoursAnciens, $age, $classe, $statut, $option, $year, $nbTrimestres, $pathoAnterior, $paymentDetails, $affiliationDate = null, $currentDate = null, $birthDate = null, $historicalReducedRate = null) {
+    private function calculateMontantByAgeWithDetails($nbJours, $cumulJoursAnciens, $age, $classe, $statut, $option, $year, $nbTrimestres, $pathoAnterior, $paymentDetails, $affiliationDate = null, $currentDate = null, $birthDate = null, $historicalReducedRate = null)
+    {
         $montant = 0;
 
         // Ajouter les informations de taux à chaque détail de paiement
@@ -850,6 +889,7 @@ class IJCalculator {
                             // Au-delà de 1095 jours dans cet arrêt
                             break;
                         }
+                        // dd($this->rates);
 
                         $dailyRate = $this->getRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
                         $arretMontant += $joursP * $dailyRate;
@@ -916,7 +956,8 @@ class IJCalculator {
      * @param array $rateInfo Rate breakdown information
      * @return array Day-by-day payment details
      */
-    private function generateDailyBreakdown($rateInfo) {
+    private function generateDailyBreakdown($rateInfo)
+    {
         $dailyBreakdown = [];
 
         foreach ($rateInfo as $segment) {
@@ -948,14 +989,15 @@ class IJCalculator {
         return $dailyBreakdown;
     }
 
-    private function splitPaymentByYear($startDate, $endDate, $birthDate = null) {
+    private function splitPaymentByYear($startDate, $endDate, $birthDate = null)
+    {
         $segments = [];
         $current = clone $startDate;
 
         while ($current <= $endDate) {
             // Obtenir la fin du mois ou la fin de la période de taux, selon ce qui vient en premier
-            $year = (int)$current->format('Y');
-            $month = (int)$current->format('m');
+            $year = (int) $current->format('Y');
+            $month = (int) $current->format('m');
 
             // Obtenir la fin du mois en cours
             $monthEnd = new DateTime($current->format('Y-m-t'));
@@ -973,8 +1015,8 @@ class IJCalculator {
             $birthdayEnd = null;
             if ($birthDate && !empty($birthDate) && $birthDate !== '0000-00-00') {
                 $birth = new DateTime($birthDate);
-                $birthMonth = (int)$birth->format('m');
-                $birthDay = (int)$birth->format('d');
+                $birthMonth = (int) $birth->format('m');
+                $birthDay = (int) $birth->format('d');
 
                 // Créer la date d'anniversaire pour l'année en cours
                 $birthdayThisYear = new DateTime(sprintf('%d-%02d-%02d', $year, $birthMonth, $birthDay));
@@ -1010,7 +1052,8 @@ class IJCalculator {
         return $segments;
     }
 
-    private function getRate($statut, $classe, $option, $taux, $year, $date = null, $age = null) {
+    private function getRate($statut, $classe, $option, $taux, $year, $date = null, $age = null)
+    {
         // Utiliser la date si fournie, sinon utiliser l'année
         if ($date) {
             $rateData = $this->getRateForDate($date);
@@ -1044,19 +1087,20 @@ class IJCalculator {
             if ($age !== null && $age >= 70) {
                 $tier = 2; // Taux réduit senior pour 70+
             } else {
+                // dump($statut, $classe, $option, $taux, $year, $date);
                 $tier = 3; // Taux intermédiaire pour période 3 des 62-69 ans
             }
         } else {
             $tier = 1; // par défaut
         }
-
+        // dump($rateData);
         $columnKey = "taux_{$classeKey}{$tier}";
-        $baseRate = isset($rateData[$columnKey]) ? (float)$rateData[$columnKey] : 0;
+        $baseRate = isset($rateData[$columnKey]) ? (float) $rateData[$columnKey] : 0;
 
         // Appliquer le multiplicateur d'option pour CCPL et RSPM
         if (in_array(strtoupper($statut), ['CCPL', 'RSPM'])) {
             // Convertir l'option du format chaîne (ex: "0,25" ou "0.25") en float
-            $optionValue = (float)str_replace(',', '.', $option);
+            $optionValue = (float) str_replace(',', '.', $option);
 
             // Gérer les deux formats : 0.25 (déjà décimal) ou 25 (pourcentage à convertir)
             if ($optionValue > 1) {
@@ -1087,7 +1131,8 @@ class IJCalculator {
      * @param bool $taxeOffice Si true, applique la classe A d'office (revenus non communiqués)
      * @return string Classe déterminée (A, B ou C)
      */
-    public function determineClasse($revenuNMoins2 = null, $dateOuvertureDroits = null, $taxeOffice = false) {
+    public function determineClasse($revenuNMoins2 = null, $dateOuvertureDroits = null, $taxeOffice = false)
+    {
         // Si taxé d'office (revenus non communiqués), retourner classe A
         if ($taxeOffice || $revenuNMoins2 === null) {
             return 'A';
@@ -1098,7 +1143,7 @@ class IJCalculator {
 
         // Si une date d'ouverture des droits est fournie, utiliser le PASS de cette année
         if ($dateOuvertureDroits) {
-            $year = (int)date('Y', strtotime($dateOuvertureDroits));
+            $year = (int) date('Y', strtotime($dateOuvertureDroits));
             $rateData = $this->getRateForYear($year);
             // Note: Le PASS peut varier par année, mais pour simplifier on utilise la valeur configurée
             // Dans une implémentation complète, on pourrait avoir un tableau de PASS par année
@@ -1120,12 +1165,14 @@ class IJCalculator {
      * @param string $dateOuvertureDroits Date d'ouverture des droits
      * @return int Année N-2
      */
-    public function getAnneeNMoins2($dateOuvertureDroits) {
-        $anneeN = (int)date('Y', strtotime($dateOuvertureDroits));
+    public function getAnneeNMoins2($dateOuvertureDroits)
+    {
+        $anneeN = (int) date('Y', strtotime($dateOuvertureDroits));
         return $anneeN - 2;
     }
 
-    public function calculateRevenuAnnuel($classe, $revenu = null) {
+    public function calculateRevenuAnnuel($classe, $revenu = null)
+    {
         // For doctors, revenue per day calculation:
         // Class A: montant_1_pass / 730
         // Class B: revenu / 730 (requires actual revenue parameter)

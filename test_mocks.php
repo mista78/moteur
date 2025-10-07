@@ -196,6 +196,22 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 0
     ],
+    'mock13.json' => [
+        'expected' => 4096.96,
+        'statut' => 'rspm',
+        'classe' => 'A',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1953-12-31',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => null,
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
     'mock14.json' => [
         'expected' => 19215.36,
         'statut' => 'M',
@@ -228,9 +244,59 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 0
     ],
+    'mock16.json' => [
+        'expected' => 57099.15,
+        'statut' => 'M',
+        'classe' => 'A',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1960-01-29',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
+    'mock17.json' => [
+        'expected' => 47296.39,
+        'statut' => 'M',
+        'classe' => 'C',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1960-01-05',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
+    'mock18.json' => [
+        'expected' => 0,
+        'statut' => 'M',
+        'classe' => 'A',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1940-05-15',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
 ];
 
 echo "=== TEST DES MOCKS ===\n\n";
+$reussi = 0;
+$rate = 0;
 
 foreach ($testCases as $mockFile => $params) {
     echo str_repeat("=", 80) . "\n";
@@ -295,6 +361,7 @@ foreach ($testCases as $mockFile => $params) {
 
             if (abs($diff) < 0.01) {
                 echo "  ✓ TEST RÉUSSI\n";
+                $reussi++;
             } else {
                 echo "  ✗ TEST ÉCHOUÉ\n";
 
@@ -329,7 +396,7 @@ foreach ($testCases as $mockFile => $params) {
 
     echo "\n";
 }
-
+$nb = count($testCases);
 echo str_repeat("=", 80) . "\n";
-echo "FIN DES TESTS\n";
+echo "FIN DES TESTS $reussi sur $nb \n";
 echo str_repeat("=", 80) . "\n";

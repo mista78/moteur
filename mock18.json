@@ -1,0 +1,24 @@
+[
+    {
+        "arret-from-line": "2022-11-08",
+        "arret-to-line": "2023-04-01",
+        "id": 53,
+        "arret_diff": 145,
+        "attestation-date-line": "2023-04-01",
+        "etat_anterieur": 0,
+        "dt-line": 1,
+        "date_maj_compte": null,
+        "declaration-date-line": "2022-11-23",
+        "rechute-line": 0,
+        "option": 100,
+        "valid_med_controleur": 1,
+        "date_deb_droit": "0000-00-00",
+        "cco_a_jour": 1,
+        "code_pathologie": "A",
+        "num_sinistre": 57,
+        "adherent_number": "126265T",
+        "date_deb_dr_force": null,
+        "date_fin_paiem_force": null,
+        "date_naissance": "1940-05-15"
+    }
+]
