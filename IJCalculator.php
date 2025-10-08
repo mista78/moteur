@@ -524,7 +524,7 @@ class IJCalculator
                 }
                 break;
 
-            case 'CCPL': case 'RSPM':
+            case 'CCPL':
                 // Only 25% and 50% allowed (no 100%)
                 if ($optionDecimal == 1) {
                     // 100% not allowed for CCPL, default to 25%
@@ -534,6 +534,19 @@ class IJCalculator
                     // Invalid option, default to 25%
                     $correctedOption = ($option > 1) ? 25 : 0.25;
                     error_log("IJCalculator: Option auto-corrected for CCPL from {$option} to {$correctedOption}");
+                }
+                break;
+
+            case 'RSPM':
+                // Only 25% and 100% allowed (no 50%)
+                if ($optionDecimal == 0.5) {
+                    // 50% not allowed for RSPM, default to 25%
+                    $correctedOption = ($option > 1) ? 25 : 0.25;
+                    error_log("IJCalculator: Option auto-corrected for RSPM from {$option} to {$correctedOption}");
+                } elseif ($optionDecimal != 0.25 && $optionDecimal != 1) {
+                    // Invalid option, default to 25%
+                    $correctedOption = ($option > 1) ? 25 : 0.25;
+                    error_log("IJCalculator: Option auto-corrected for RSPM from {$option} to {$correctedOption}");
                 }
                 break;
         }

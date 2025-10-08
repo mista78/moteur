@@ -357,10 +357,10 @@ $testCases = [
         "forced_rate" => 25.02  // Taux journalier forcé
     ],
     'mock22.json' => [
-        'expected' => 37.54, 
+        'expected' => 37.54,
         'statut' => 'RSPM',
         'classe' => 'A',
-        'option' => 100,
+        'option' => 25,  // 25% option (not 100%)
         'pass_value' => 47000,
         'birth_date' => '1984-07-24',
         'current_date' => date("Y-m-d"),
