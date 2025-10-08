@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup auto-determination of class based on revenue
     setupClassAutoDetermination();
+
+    // Setup automatic option validation based on statut
+    setupOptionValidation();
 });
 
 /**
@@ -86,6 +89,84 @@ function setupClassAutoDetermination() {
             showRevenuCalculation(classe, passValue, revenu);
         }
     });
+}
+
+/**
+ * Setup automatic option validation based on statut
+ * - Médecin (M): option 100% only
+ * - CCPL: options 25%, 50% (no 100%)
+ * - RSPM: options 25%, 100% (no 50%)
+ */
+function setupOptionValidation() {
+    const statutSelect = document.getElementById('statut');
+    const optionSelect = document.getElementById('option');
+
+    function updateOptionsByStatut() {
+        const statut = statutSelect.value;
+        const currentOption = optionSelect.value;
+
+        // Clear current options
+        optionSelect.innerHTML = '';
+
+        let validOptions = [];
+        let defaultOption = '1'; // Default to 100%
+
+        switch (statut) {
+            case 'M': // Médecin
+                // Only 100%
+                validOptions = [
+                    { value: '1', label: '100%' }
+                ];
+                defaultOption = '1';
+                break;
+
+            case 'CCPL':
+                // 25% and 50% only (no 100%)
+                validOptions = [
+                    { value: '0,25', label: '25%' },
+                    { value: '0,5', label: '50%' }
+                ];
+                defaultOption = '0,25';
+                break;
+
+            case 'RSPM':
+                // 25% and 100% only (no 50%)
+                validOptions = [
+                    { value: '0,25', label: '25%' },
+                    { value: '1', label: '100%' }
+                ];
+                defaultOption = '0,25';
+                break;
+
+            default:
+                // If no statut selected, show all options
+                validOptions = [
+                    { value: '0,25', label: '25%' },
+                    { value: '0,5', label: '50%' },
+                    { value: '1', label: '100%' }
+                ];
+                defaultOption = '1';
+        }
+
+        // Add options to select
+        validOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            optionSelect.appendChild(option);
+        });
+
+        // Try to preserve current selection if valid, otherwise use default
+        const isCurrentValid = validOptions.some(opt => opt.value === currentOption);
+        optionSelect.value = isCurrentValid ? currentOption : defaultOption;
+    }
+
+    // Update options when statut changes
+    if (statutSelect) {
+        statutSelect.addEventListener('change', updateOptionsByStatut);
+        // Initialize on page load
+        updateOptionsByStatut();
+    }
 }
 
 /**
@@ -485,7 +566,8 @@ async function calculateAll() {
  */
 function clearAllFormFields() {
     // Clear main form fields
-    document.getElementById('statut').value = '';
+    document.getElementById('statut').value = 'M'; // Reset to Médecin
+    document.getElementById('statut').dispatchEvent(new Event('change')); // Trigger option update
     document.getElementById('classe').value = '';
     document.getElementById('option').value = '1';
     document.getElementById('pass_value').value = '47000';
@@ -535,10 +617,15 @@ async function loadMockData(mockFile = 'mock.json') {
                 const config = result.config;
 
                 // Populate form fields with configuration
-                if (config.statut) document.getElementById('statut').value = config.statut;
+                if (config.statut) {
+                    document.getElementById('statut').value = config.statut;
+                    // Trigger change event to update option validation
+                    document.getElementById('statut').dispatchEvent(new Event('change'));
+                }
                 if (config.classe) document.getElementById('classe').value = config.classe;
                 if (config.option !== undefined) {
-                    const optionValue = config.option / 100; // Convert 100 to 1, 25 to 0.25, etc.
+                    // Convert 100 to "1", 25 to "0,25", 50 to "0,5" (French format with comma)
+                    const optionValue = (config.option / 100).toString().replace('.', ',');
                     document.getElementById('option').value = optionValue;
                 }
                 if (config.pass_value) document.getElementById('pass_value').value = config.pass_value;
