@@ -20,7 +20,8 @@ $testCases = [
         'nb_trimestres' => 8,
         'previous_cumul_days' => 0,
         'prorata' => 1,
-        'patho_anterior' => 0
+        'patho_anterior' => 0,
+        'nbe_jours' => 10
     ],
     'mock2.json' => [
         'expected' => 17318.92,
@@ -37,6 +38,7 @@ $testCases = [
         'nb_trimestres' => 8,
         'previous_cumul_days' => 0,
         'prorata' => 1,
+        'nbe_jours' => 116,
         'patho_anterior' => 0
     ],
     'mock3.json' => [
@@ -53,10 +55,12 @@ $testCases = [
         'nb_trimestres' => 8,
         'previous_cumul_days' => 0,
         'prorata' => 1,
+        'nbe_jours' => 374,
         'patho_anterior' => 0
     ],
     'mock4.json' => [
         'expected' => 37875.88,
+        'nbe_jours' => 254,
         'statut' => 'M',
         'classe' => 'C',
         'option' => 100,
@@ -76,6 +80,7 @@ $testCases = [
         'statut' => 'CCPL',
         'classe' => 'C',
         'option' => 25,
+        'nbe_jours' => 941,
         'pass_value' => 47000,
         'birth_date' => '1984-01-08',
         'current_date' => date("Y-m-d"),
@@ -89,6 +94,7 @@ $testCases = [
     ],
     'mock6.json' => [
         'expected' => 31412.61,
+        'nbe_jours' => 279,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,
@@ -106,6 +112,7 @@ $testCases = [
     'mock7.json' => [
         'expected' => 74331.79,
         'statut' => 'M',
+        'nbe_jours' => 1095,
         'classe' => 'A',
         'option' => 100,
         'pass_value' => 47000,
@@ -121,6 +128,7 @@ $testCases = [
     ],
     'mock8.json' => [
         'expected' => 19291.28,
+        'nbe_jours' => 365,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,
@@ -137,6 +145,7 @@ $testCases = [
     ],
     'mock9.json' => [
         'expected' => 53467.98,
+        'nbe_jours' => 365,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,
@@ -153,6 +162,7 @@ $testCases = [
     ],
     'mock10.json' => [
         'expected' => 51744.25,
+        'nbe_jours' => 725,
         'statut' => 'M',
         'classe' => 'A',
         'option' => 100,
@@ -169,6 +179,7 @@ $testCases = [
     ],
     'mock11.json' => [
         'expected' => 10245.69,
+        'nbe_jours' => 91,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,
@@ -185,6 +196,7 @@ $testCases = [
     ],
     'mock12.json' => [
         'expected' => 8330.25,
+        'nbe_jours' => 145,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,
@@ -381,11 +393,17 @@ describe('IJCalculator - Mock Tests', function () use ($testCases) {
         ];
 
         $result = $calculator->calculateAmount($requestData);
-
+        // if($mockFile == "mock5.json") {
+            // dd($result);
+        // }
         test("should calculate correct amount for $adherent: $mockFile", function () use ($result, $params) {
             // Assertions
             // Test payment_start si défini dans les paramètres
             expect($result['montant'])->toBeCloseTo($params['expected'], 0.01);
+            if (isset($params['nbe_jours'])) {
+                expect($result['nb_jours'])->toBeCloseTo($params['nbe_jours'], 0.01);
+            }
+
         });
 
         test("should calculate correct payement_start for $adherent: $mockFile", function () use ($result, $params) {
