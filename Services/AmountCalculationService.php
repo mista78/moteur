@@ -45,7 +45,6 @@ class AmountCalculationService implements AmountCalculationInterface
         $prorata = $data['prorata'] ?? 1;
         $firstPathologyStopDate = $data['first_pathology_stop_date'] ?? null;
         $historicalReducedRate = $data['historical_reduced_rate'] ?? null;
-
         // Auto-calculate trimesters if affiliation date is provided
         if ($affiliationDate && !empty($affiliationDate) && $affiliationDate !== '0000-00-00') {
             $endDateForTrimestres = $currentDate;
@@ -357,7 +356,16 @@ class AmountCalculationService implements AmountCalculationInterface
                 }
             }
 
-            $detail['montant'] = round($arretMontant, 2);
+            $optin = 1;
+
+
+            if ($pathoAnterior && $periodNbTrimestres > 7 && $periodNbTrimestres <= 15) {
+                $optin = 1/3;
+            } elseif ($pathoAnterior && $periodNbTrimestres > 15 && $periodNbTrimestres <= 23) {
+                $optin = 2/3;
+            }
+
+            $detail['montant'] = round($arretMontant * $optin, 2, PHP_ROUND_HALF_UP);
             $detail['rate_breakdown'] = $rateInfo;
 
             // Generate day-by-day breakdown

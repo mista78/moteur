@@ -123,9 +123,12 @@ class RateService implements RateServiceInterface
      */
     private function determineTier(int $taux, ?int $age, ?bool $usePeriode2): int
     {
-        // Taux 1-3: Period 1 → tier 1 (full rate)
+        //  Taux 1-3: Period 1 → tier 1 (full rate)
+
         if ($taux >= 1 && $taux <= 3) {
+
             return 1;
+            
         }
 
         // Taux 7-9: Period 2 (366-730 days) → tier 3 (intermediate rate)
@@ -146,6 +149,7 @@ class RateService implements RateServiceInterface
             if ($usePeriode2 === true) {
                 return 2;
             }
+
 
             return 3;
         }

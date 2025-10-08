@@ -24,7 +24,7 @@ $testCases = [
     ],
     'mock2.json' => [
         'expected' => 17318.92,
-        "payment_start" => ["","","", "", "","2023-12-07"],
+        "payment_start" => ["", "", "", "", "", "2023-12-07"],
         'statut' => 'M',
         'classe' => 'c',
         'option' => 100,
@@ -295,49 +295,100 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 0
     ],
+    'mock19.json' => [
+        'expected' => 3377.7,
+        'statut' => 'M',
+        'classe' => 'B',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1989-06-16',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2017-07-01',
+        'nb_trimestres' => 60,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 0
+    ],
+    'mock20.json' => [
+        'expected' => 8757,
+        'statut' => 'M',
+        'classe' => 'A',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1981-03-15',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2019-01-01',
+        'nb_trimestres' => 23,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 1
+    ],
+    'mock21.json' => [
+        'expected' => 725.58,
+        'statut' => 'M',
+        'classe' => 'A',
+        'option' => 100,
+        'pass_value' => 47000,
+        'birth_date' => '1972-06-04',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '	2002-10-01',
+        'nb_trimestres' => 23,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 1,
+        "forced_rate" => 725.58
+    ],
 ];
 
 // Tests avec JestPHP
-describe('IJCalculator - Mock Tests', function() use ($testCases) {
+describe('IJCalculator - Mock Tests', function () use ($testCases) {
 
     foreach ($testCases as $mockFile => $params) {
         $mockData = json_decode(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . $mockFile), true);
         $adherent = $mockData[0]["adherent_number"];
-        test("should calculate correct amount for $adherent", function() use ($mockData,$mockFile, $params) {
-            // Charger les données du mock
-            
 
-            if (!$mockData) {
-                throw new Exception("Impossible de charger $mockFile");
-            }
+        if (!$mockData) {
+            throw new Exception("Impossible de charger $mockFile");
+        }
 
-            // Créer le calculateur
-            $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR . 'taux.csv');
+        // Créer le calculateur
+        $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR . 'taux.csv');
 
-            // Préparer les données au format attendu
-            $requestData = [
-                'arrets' => $mockData,
-                'statut' => $params['statut'],
-                'classe' => $params['classe'],
-                'option' => $params['option'],
-                'pass_value' => $params['pass_value'],
-                'payment_start' => $params['payment_start'] ?? null,
-                'birth_date' => $params['birth_date'],
-                'current_date' => $params['current_date'],
-                'attestation_date' => $params['attestation_date'],
-                'last_payment_date' => $params['last_payment_date'],
-                'affiliation_date' => $params['affiliation_date'],
-                'nb_trimestres' => $params['nb_trimestres'],
-                'previous_cumul_days' => $params['previous_cumul_days'],
-                'prorata' => $params['prorata'],
-                'patho_anterior' => $params['patho_anterior']
-            ];
+        // Préparer les données au format attendu
+        $requestData = [
+            'arrets' => $mockData,
+            'statut' => $params['statut'],
+            'classe' => $params['classe'],
+            'option' => $params['option'],
+            'pass_value' => $params['pass_value'],
+            'payment_start' => $params['payment_start'] ?? null,
+            'birth_date' => $params['birth_date'],
+            'current_date' => $params['current_date'],
+            'attestation_date' => $params['attestation_date'],
+            'last_payment_date' => $params['last_payment_date'],
+            'affiliation_date' => $params['affiliation_date'],
+            'nb_trimestres' => $params['nb_trimestres'],
+            'previous_cumul_days' => $params['previous_cumul_days'],
+            'prorata' => $params['prorata'],
+            'patho_anterior' => $params['patho_anterior'],
+            "forced_rate" => $params["forced_rate"] ?? null
+        ];
 
-            $result = $calculator->calculateAmount($requestData);
+        $result = $calculator->calculateAmount($requestData);
 
+        test("should calculate correct amount for $adherent: $mockFile", function () use ($result, $params) {
             // Assertions
+            // Test payment_start si défini dans les paramètres
             expect($result['montant'])->toBeCloseTo($params['expected'], 0.01);
+        });
 
+        test("should calculate correct payement_start for $adherent: $mockFile", function () use ($result, $params) {
             // Test payment_start si défini dans les paramètres
             if (isset($params['payment_start'])) {
                 foreach ($params['payment_start'] as $key => $expectedDate) {
