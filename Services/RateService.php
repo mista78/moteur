@@ -3,8 +3,8 @@
 namespace IJCalculator\Services;
 
 /**
- * Rate Service Implementation
- * Handles all rate lookups and calculations
+ * Implémentation du Service de Taux
+ * Gère toutes les recherches et calculs de taux
  */
 class RateService implements RateServiceInterface
 {
@@ -78,7 +78,7 @@ class RateService implements RateServiceInterface
         ?int $age = null,
         ?bool $usePeriode2 = null
     ): float {
-        // Get rate data
+        // Obtenir les données de taux
         if ($date) {
             $rateData = $this->getRateForDate($date);
         } else {
@@ -91,13 +91,13 @@ class RateService implements RateServiceInterface
 
         $classeKey = strtolower($classe);
 
-        // Determine tier based on taux number
+        // Déterminer le palier basé sur le numéro de taux
         $tier = $this->determineTier($taux, $age, $usePeriode2);
 
         $columnKey = "taux_{$classeKey}{$tier}";
         $baseRate = isset($rateData[$columnKey]) ? (float) $rateData[$columnKey] : 0.0;
 
-        // Apply option multiplier for CCPL and RSPM
+        // Appliquer le multiplicateur d'option pour CCPL et RSPM
         if (in_array(strtoupper($statut), ['CCPL', 'RSPM'])) {
             $optionValue = (float) str_replace(',', '.', (string) $option);
 
@@ -114,38 +114,35 @@ class RateService implements RateServiceInterface
     }
 
     /**
-     * Determine CSV tier based on taux number
+     * Déterminer le palier CSV basé sur le numéro de taux
      *
-     * @param int $taux Taux number (1-9)
-     * @param int|null $age Age for special handling
-     * @param bool|null $usePeriode2 Whether period 2 exists
-     * @return int Tier number (1, 2, or 3)
+     * @param int $taux Numéro de taux (1-9)
+     * @param int|null $age Âge pour traitement spécial
+     * @param bool|null $usePeriode2 Si la période 2 existe
+     * @return int Numéro de palier (1, 2, ou 3)
      */
     private function determineTier(int $taux, ?int $age, ?bool $usePeriode2): int
     {
-        //  Taux 1-3: Period 1 → tier 1 (full rate)
+        //  Taux 1-3 : Période 1 → palier 1 (taux plein)
 
         if ($taux >= 1 && $taux <= 3) {
-
             return 1;
-            
         }
 
-        // Taux 7-9: Period 2 (366-730 days) → tier 3 (intermediate rate)
+        // Taux 7-9 : Période 2 (366-730 jours) → palier 3 (taux intermédiaire)
         if ($taux >= 7 && $taux <= 9) {
             return 3;
         }
 
-        // Taux 4-6: Period 3
+        // Taux 4-6 : Période 3
         if ($taux >= 4 && $taux <= 6) {
-            // For 70+ years old: always tier 2 (reduced rate)
+            // Pour 70 ans et plus : toujours palier 2 (taux réduit)
             if ($age !== null && $age >= 70) {
                 return 2;
             }
-
-            // For 62-69 years old: depends on usePeriode2
-            // - If usePeriode2=true (arrêt >= 730j): period 3 starts at 731j → tier 2
-            // - If usePeriode2=false (arrêt < 730j): period 3 starts at 366j → tier 3
+            // Pour 62-69 ans : dépend de usePeriode2
+            // - Si usePeriode2=true (arrêt >= 730j) : période 3 commence à 731j → palier 2
+            // - Si usePeriode2=false (arrêt < 730j) : période 3 commence à 366j → palier 3
             if ($usePeriode2 === true) {
                 return 2;
             }
@@ -154,6 +151,6 @@ class RateService implements RateServiceInterface
             return 3;
         }
 
-        return 1; // default
+        return 1; // par défaut
     }
 }

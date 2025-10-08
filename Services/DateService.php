@@ -41,10 +41,46 @@ class DateService implements DateCalculationInterface
             return 0;
         }
 
-        $interval = $affiliation->diff($current);
-        $months = ($interval->y * 12) + $interval->m;
+        // Obtenir le trimestre pour chaque date
+        // Q1 (01/01-31/03), Q2 (01/04-30/06), Q3 (01/07-30/09), Q4 (01/10-31/12)
+        $affiliationYear = (int) $affiliation->format('Y');
+        $currentYear = (int) $current->format('Y');
 
-        return (int) floor($months / 3);
+        $affiliationQuarter = $this->getTrimesterFromDate($affiliationDate);
+        $currentQuarter = $this->getTrimesterFromDate($currentDate);
+
+        // Calculer le nombre total de trimestres
+        // Règle : Si la date d'affiliation tombe dans un trimestre, ce trimestre compte comme complet
+        $yearsDiff = $currentYear - $affiliationYear;
+        $totalQuarters = ($yearsDiff * 4) + ($currentQuarter - $affiliationQuarter) + 1;
+
+        // Règle supplémentaire : Si la date actuelle n'est PAS à la FIN de son trimestre,
+        // arrondir AU DESSUS pour inclure le prochain trimestre complet
+        // Cela garantit que les trimestres partiels comptent comme complets pour les calculs de pathologie antérieure
+        $isEndOfQuarter = $this->isLastDayOfQuarter($currentDate);
+        if (!$isEndOfQuarter) {
+            $totalQuarters += 1;
+        }
+
+        return max(0, $totalQuarters);
+    }
+
+    private function isLastDayOfQuarter(string $date): bool
+    {
+        $dateTime = new DateTime($date);
+        $month = (int) $dateTime->format('n');
+        $day = (int) $dateTime->format('j');
+
+        // Q1 se termine le 31 mars
+        if ($month === 3 && $day === 31) return true;
+        // Q2 se termine le 30 juin
+        if ($month === 6 && $day === 30) return true;
+        // Q3 se termine le 30 septembre
+        if ($month === 9 && $day === 30) return true;
+        // Q4 se termine le 31 décembre
+        if ($month === 12 && $day === 31) return true;
+
+        return false;
     }
 
     public function getTrimesterFromDate(string $date): int

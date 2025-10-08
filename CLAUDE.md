@@ -95,3 +95,20 @@ The VBA code interacts with Excel cells at specific locations:
 
 ### Utility Functions
 - `viderRes()` (code.vba:1): Clears result cells for fresh calculation
+
+## Trimester Calculation
+
+**Business Rule**: Trimesters are counted by quarter periods (Q1-Q4). If the affiliation date falls within a quarter, that quarter counts as **complete**.
+
+**Quarter Definitions**:
+- Q1: January 1 - March 31
+- Q2: April 1 - June 30
+- Q3: July 1 - September 30
+- Q4: October 1 - December 31
+
+**Example**: Affiliation on 2019-01-15 (mid-Q1) to 2024-04-11 (Q2) = 22 complete quarters
+- Calculation: (5 years × 4) + (Q2 - Q1) + 1 = 20 + 1 + 1 = 22 ✓
+
+This rule is critical for pathology anterior rate determinations (8-15 trimesters = -1/3, 16-23 = -2/3, 24+ = full rate).
+
+**Implementation**: `DateService::calculateTrimesters()` (Services/DateService.php:31)

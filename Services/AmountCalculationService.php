@@ -5,8 +5,8 @@ namespace IJCalculator\Services;
 use DateTime;
 
 /**
- * Amount Calculation Service
- * Single Responsibility: Calculate IJ amounts based on payment periods, age, and rates
+ * Service de Calcul de Montants
+ * Responsabilité Unique : Calculer les montants IJ basés sur les périodes de paiement, l'âge et les taux
  */
 class AmountCalculationService implements AmountCalculationInterface
 {
@@ -25,7 +25,7 @@ class AmountCalculationService implements AmountCalculationInterface
     }
 
     /**
-     * Calculate IJ amount for given parameters
+     * Calculer le montant IJ pour les paramètres donnés
      */
     public function calculateAmount(array $data): array
     {
@@ -45,7 +45,7 @@ class AmountCalculationService implements AmountCalculationInterface
         $prorata = $data['prorata'] ?? 1;
         $firstPathologyStopDate = $data['first_pathology_stop_date'] ?? null;
         $historicalReducedRate = $data['historical_reduced_rate'] ?? null;
-        // Auto-calculate trimesters if affiliation date is provided
+        // Auto-calculer les trimestres si la date d'affiliation est fournie
         if ($affiliationDate && !empty($affiliationDate) && $affiliationDate !== '0000-00-00') {
             $endDateForTrimestres = $currentDate;
             if ($pathoAnterior && $firstPathologyStopDate && !empty($firstPathologyStopDate)) {
@@ -54,25 +54,25 @@ class AmountCalculationService implements AmountCalculationInterface
             $nbTrimestres = $this->dateService->calculateTrimesters($affiliationDate, $endDateForTrimestres);
         }
 
-        // Calculate date effet
+        // Calculer la date d'effet
         $arrets = $this->dateService->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
 
-        // Calculate payable days
+        // Calculer les jours payables
         $paymentResult = $this->dateService->calculatePayableDays($arrets, $attestationDate, $lastPaymentDate, $currentDate);
         $nbJours = $paymentResult['total_days'];
         $paymentDetails = $paymentResult['payment_details'];
 
-        // Check minimum affiliation
+        // Vérifier l'affiliation minimale
         if ($nbTrimestres < 8) {
             $nbJours = 0;
         }
 
-        // Check 3-year maximum
+        // Vérifier le maximum de 3 ans
         if ($previousCumulDays >= 1095) {
             $nbJours = 0;
         }
 
-        // Check 70+ limit
+        // Vérifier la limite 70+
         $age = $this->dateService->calculateAge($currentDate, $birthDate);
         if ($age >= 70) {
             if ($nbJours + $previousCumulDays > 365) {
@@ -82,12 +82,12 @@ class AmountCalculationService implements AmountCalculationInterface
             }
         }
 
-        // Initialize amount
+        // Initialiser le montant
         $amount = 0;
 
-        // Only calculate amount if there are payable days
+        // Calculer le montant uniquement s'il y a des jours payables
         if ($nbJours > 0) {
-            // Get year for rate table
+            // Obtenir l'année pour la table des taux
             $firstDateEffet = null;
             foreach ($arrets as $arret) {
                 if (isset($arret['date-effet'])) {
@@ -97,7 +97,7 @@ class AmountCalculationService implements AmountCalculationInterface
             }
             $year = $firstDateEffet ? (int) date('Y', strtotime($firstDateEffet)) : (int) date('Y');
 
-            // Calculate amount with details
+            // Calculer le montant avec les détails
             $calculationResult = $this->calculateMontantByAgeWithDetails(
                 $nbJours,
                 $previousCumulDays,
@@ -117,16 +117,16 @@ class AmountCalculationService implements AmountCalculationInterface
             $amount = $calculationResult['montant'];
             $paymentDetails = $calculationResult['payment_details'];
 
-            // Apply prorata
+            // Appliquer le prorata
             $amount *= $prorata;
         }
 
-        // Apply forced rate if provided (overrides all calculations)
+        // Appliquer le taux forcé si fourni (remplace tous les calculs)
         if ($forcedRate !== null) {
             $amount = $forcedRate;
         }
 
-        // Calculate end payment dates
+        // Calculer les dates de fin de paiement
         $endDates = $this->calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate);
 
         return [
@@ -142,7 +142,7 @@ class AmountCalculationService implements AmountCalculationInterface
     }
 
     /**
-     * Calculate end payment dates based on age and cumulative days
+     * Calculer les dates de fin de paiement basées sur l'âge et les jours cumulés
      */
     public function calculateEndPaymentDates(
         array $arrets,
@@ -167,13 +167,13 @@ class AmountCalculationService implements AmountCalculationInterface
         $result = [];
 
         if ($age >= 70) {
-            // Single period of 365 days for 70+
+            // Période unique de 365 jours pour 70+
             $endDate = clone $firstDateEffet;
             $endDate->modify('+' . (365 - $previousCumulDays) . ' days');
             $endDate->modify('-1 day');
             $result['end_period_1'] = $endDate->format('Y-m-d');
         } elseif ($age >= 62) {
-            // Three periods for 62-69
+            // Trois périodes pour 62-69
             $endDate1 = clone $firstDateEffet;
             $endDate1->modify('+' . (365 - $previousCumulDays) . ' days');
             $endDate1->modify('-1 day');
@@ -214,7 +214,7 @@ class AmountCalculationService implements AmountCalculationInterface
     ): array {
         $montant = 0;
 
-        // Add rate information to each payment detail
+        // Ajouter les informations de taux à chaque détail de paiement
         foreach ($paymentDetails as $index => &$detail) {
             if ($detail['payable_days'] <= 0) {
                 $detail['daily_rate'] = 0;
@@ -222,32 +222,36 @@ class AmountCalculationService implements AmountCalculationInterface
                 continue;
             }
 
-            // Split payment by calendar year if period covers multiple years
+            // Diviser le paiement par année civile si la période couvre plusieurs années
             $paymentStart = new DateTime($detail['payment_start']);
             $paymentEnd = new DateTime($detail['payment_end']);
             $yearlyBreakdown = $this->splitPaymentByYear($paymentStart, $paymentEnd, $birthDate);
 
-            // Calculate amounts treating each segment according to age at that time
+            // Calculer les montants en traitant chaque segment selon l'âge à ce moment
             $arretMontant = 0;
             $rateInfo = [];
-            $joursDansArret = 0; // Counter for periods 1/2/3 (for ages 62-69)
+            $joursDansArret = 0; // Compteur pour les périodes 1/2/3 (pour les âges 62-69)
 
-            // Determine if arrêt has duration >= 730 days (for period 2 logic for 62-69 years)
+            // Déterminer si l'arrêt a une durée >= 730 jours (pour la logique de période 2 pour 62-69 ans)
             $arretDiff = $detail['arret_diff'] ?? 0;
             $usePeriode2 = ($arretDiff >= 730);
 
             foreach ($yearlyBreakdown as $yearData) {
-                // Calculate age at start of this segment
+                // Calculer l'âge au début de ce segment
                 $segmentAge = $this->dateService->calculateAge($yearData['start'], $birthDate);
 
-                // Calculate nb_trimestres for this specific period
+                // Calculer nb_trimestres pour cette période spécifique
+                // Pour la pathologie antérieure, nb_trimestres doit être calculé jusqu'à la date du PREMIER arrêt,
+                // pas jusqu'à chaque date de début de segment de paiement
                 $periodNbTrimestres = $nbTrimestres;
                 if ($affiliationDate && !empty($affiliationDate) && $affiliationDate !== '0000-00-00') {
-                    $periodNbTrimestres = $this->dateService->calculateTrimesters($affiliationDate, $yearData['start']);
+                    // Utiliser la date de début de l'arrêt (date de première pathologie) au lieu de la date de début du segment de paiement
+                    $firstArretDate = $detail['arret_from'];
+                    $periodNbTrimestres = $this->dateService->calculateTrimesters($affiliationDate, $firstArretDate);
                 }
 
                 if ($segmentAge < 62) {
-                    // Age < 62: single rate based on trimesters
+                    // Âge < 62 : taux unique basé sur les trimestres
                     $taux = $this->tauxService->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
                     $dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null);
                     $arretMontant += $yearData['days'] * $dailyRate;
@@ -266,14 +270,14 @@ class AmountCalculationService implements AmountCalculationInterface
                         'taux' => $taux
                     ];
                 } elseif ($segmentAge >= 62 && $segmentAge <= 69) {
-                    // For 62-69, calculate periods per INDIVIDUAL arrêt
+                    // Pour 62-69, calculer les périodes par arrêt INDIVIDUEL
                     $nbJoursRestants = $yearData['days'];
 
-                    // Process days of this segment according to their position in THE ARRÊT
+                    // Traiter les jours de ce segment selon leur position dans L'ARRÊT
                     while ($nbJoursRestants > 0) {
-                        // Determine which period of the arrêt we're in
+                        // Déterminer dans quelle période de l'arrêt nous sommes
                         if ($joursDansArret < 365) {
-                            // Period 1 of this arrêt: days 1-365 → taux 1-3 (full rate)
+                            // Période 1 de cet arrêt : jours 1-365 → taux 1-3 (taux plein)
                             $joursP = min($nbJoursRestants, 365 - $joursDansArret);
                             $periodNumber = 1;
 

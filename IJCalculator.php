@@ -25,10 +25,10 @@ use IJCalculator\Services\AmountCalculationInterface;
  *
  * ARCHITECTURE
  * ============
- * This class now uses dependency injection with three focused services:
- * - RateService: Handles all rate lookups and calculations
- * - DateService: Manages date-related operations
- * - TauxDeterminationService: Determines taux numbers and contribution classes
+ * Cette classe utilise maintenant l'injection de dépendances avec trois services spécialisés :
+ * - RateService : Gère toutes les recherches et calculs de taux
+ * - DateService : Gère les opérations liées aux dates
+ * - TauxDeterminationService : Détermine les numéros de taux et les classes de cotisation
  *
  * RÈGLES MÉTIER - SYSTÈME 27 TAUX
  * ================================
@@ -72,20 +72,20 @@ class IJCalculator
     private $rates = [];
     private $passValue = 47000; // Valeur par défaut du PASS CPAM
 
-    // Injected services
+    // Services injectés
     private RateServiceInterface $rateService;
     private DateCalculationInterface $dateService;
     private TauxDeterminationInterface $tauxService;
     private AmountCalculationInterface $amountService;
 
     /**
-     * Constructor with Dependency Injection
+     * Constructeur avec injection de dépendances
      *
-     * @param string $csvPath Path to rates CSV file
-     * @param RateServiceInterface|null $rateService Optional rate service (for testing/mocking)
-     * @param DateCalculationInterface|null $dateService Optional date service (for testing/mocking)
-     * @param TauxDeterminationInterface|null $tauxService Optional taux service (for testing/mocking)
-     * @param AmountCalculationInterface|null $amountService Optional amount service (for testing/mocking)
+     * @param string $csvPath Chemin vers le fichier CSV des taux
+     * @param RateServiceInterface|null $rateService Service de taux optionnel (pour les tests/mocks)
+     * @param DateCalculationInterface|null $dateService Service de dates optionnel (pour les tests/mocks)
+     * @param TauxDeterminationInterface|null $tauxService Service de taux optionnel (pour les tests/mocks)
+     * @param AmountCalculationInterface|null $amountService Service de calcul de montants optionnel (pour les tests/mocks)
      */
     public function __construct(
         $csvPath = 'taux.csv',
@@ -94,22 +94,22 @@ class IJCalculator
         ?TauxDeterminationInterface $tauxService = null,
         ?AmountCalculationInterface $amountService = null
     ) {
-        // Backward compatibility: keep loading rates internally
+        // Rétrocompatibilité : conserver le chargement interne des taux
         $this->loadRates($csvPath);
 
-        // Use injected services or create default ones
+        // Utiliser les services injectés ou créer les services par défaut
         $this->rateService = $rateService ?? new RateService($csvPath);
         $this->dateService = $dateService ?? new DateService();
         $this->tauxService = $tauxService ?? new TauxDeterminationService();
 
-        // Create amount service with dependencies
+        // Créer le service de calcul de montants avec les dépendances
         $this->amountService = $amountService ?? new AmountCalculationService(
             $this->dateService,
             $this->rateService,
             $this->tauxService
         );
 
-        // Sync passValue
+        // Synchroniser la valeur du PASS
         $this->tauxService->setPassValue($this->passValue);
     }
 
@@ -180,22 +180,22 @@ class IJCalculator
      */
     public function calculateTrimesters($affiliationDate, $currentDate)
     {
-        // Delegate to DateService
+        // Déléguer au DateService
         return $this->dateService->calculateTrimesters($affiliationDate, $currentDate);
     }
     public function sortByDateStartDesc(array $data): array
     {
-        // Clonez le tableau pour éviter de modifier le tableau original (bonne pratique).
+        // Cloner le tableau pour éviter de modifier le tableau original (bonne pratique)
         $sorted_data = $data;
 
         usort($sorted_data, function ($a, $b) {
-            // Convertir les chaînes de date en timestamps UNIX pour une comparaison fiable.
+            // Convertir les chaînes de date en timestamps UNIX pour une comparaison fiable
             $time_a = strtotime($a['date_start']);
             $time_b = strtotime($b['date_start']);
 
             // Retourne un entier :
-            // > 0 si $b est "plus petit" (plus ancien) que $a (pour le tri décroissant)
-            // < 0 si $b est "plus grand" (plus récent) que $a
+            // > 0 si $b est "plus ancien" que $a (pour le tri décroissant)
+            // < 0 si $b est "plus récent" que $a
             // 0 si les deux sont égaux
 
             // Pour un tri décroissant (DESC), si $a est plus récent ($time_a > $time_b), 
@@ -224,23 +224,23 @@ class IJCalculator
 
     public function calculateAge($currentDate, $birthDate)
     {
-        // Delegate to DateService
+        // Déléguer au DateService
         return $this->dateService->calculateAge($currentDate, $birthDate);
     }
 
     public function mergeProlongations($arrets)
     {
-        // Delegate to DateService
+        // Déléguer au DateService
         return $this->dateService->mergeProlongations($arrets);
     }
 
     public function calculateDateEffet($arrets, $birthDate = null, $previousCumulDays = 0)
     {
-        // Delegate to DateService
+        // Déléguer au DateService
         return $this->dateService->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
     }
 
-    // Keeping old implementation as private for reference (can be removed later)
+    // Conserver l'ancienne implémentation en privé pour référence (peut être supprimé plus tard)
     private function calculateDateEffetOld($arrets, $birthDate = null, $previousCumulDays = 0)
     {
         $arrets = $this->mergeProlongations($arrets);

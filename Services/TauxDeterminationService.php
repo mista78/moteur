@@ -3,8 +3,8 @@
 namespace IJCalculator\Services;
 
 /**
- * Taux Determination Service
- * Determines which taux number to use based on conditions
+ * Service de Détermination de Taux
+ * Détermine quel numéro de taux utiliser selon les conditions
  */
 class TauxDeterminationService implements TauxDeterminationInterface
 {
@@ -83,7 +83,7 @@ class TauxDeterminationService implements TauxDeterminationInterface
         if ($dateOuvertureDroits) {
             $anneeNMoins2 = $this->getAnneeNMoins2($dateOuvertureDroits);
             // Utiliser le PASS configuré ou une valeur par défaut
-            $pass = $this->passValue ?? 47000; // Valeur par défaut si non configurée
+            $pass = $this->passValue ?? 47000; // Valeur par défaut si non configuré
         } else {
             $pass = $this->passValue ?? 47000;
         }
