@@ -161,9 +161,66 @@ try {
 
             $mockData = json_decode(file_get_contents($mockFile), true);
 
+            // Load test configuration if available
+            $testConfig = null;
+            if (file_exists('test_mocks.php')) {
+                // Read test_mocks.php and extract configuration
+                $testMocksContent = file_get_contents('test_mocks.php');
+
+                // Find the start of this mock's configuration
+                $mockKey = preg_quote($mockFile, '/');
+                $startPos = strpos($testMocksContent, "'$mockFile'");
+
+                if ($startPos !== false) {
+                    // Find the matching closing bracket for this mock's array
+                    $bracketCount = 0;
+                    $inArray = false;
+                    $configStart = strpos($testMocksContent, '[', $startPos);
+                    $configEnd = $configStart;
+
+                    for ($i = $configStart; $i < strlen($testMocksContent); $i++) {
+                        $char = $testMocksContent[$i];
+                        if ($char === '[') {
+                            $bracketCount++;
+                            $inArray = true;
+                        } elseif ($char === ']') {
+                            $bracketCount--;
+                            if ($bracketCount === 0 && $inArray) {
+                                $configEnd = $i;
+                                break;
+                            }
+                        }
+                    }
+
+                    $configStr = substr($testMocksContent, $configStart + 1, $configEnd - $configStart - 1);
+
+                    // Extract configuration values using regex
+                    $config = [];
+
+                    // Extract simple values
+                    if (preg_match("/'statut'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['statut'] = $m[1];
+                    if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['classe'] = $m[1];
+                    if (preg_match("/'option'\s*=>\s*(\d+)/", $configStr, $m)) $config['option'] = (float)$m[1];
+                    if (preg_match("/'pass_value'\s*=>\s*(\d+)/", $configStr, $m)) $config['pass_value'] = (int)$m[1];
+                    if (preg_match("/'birth_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['birth_date'] = $m[1];
+                    if (preg_match("/'attestation_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['attestation_date'] = $m[1];
+                    if (preg_match("/'affiliation_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['affiliation_date'] = $m[1];
+                    if (preg_match("/'nb_trimestres'\s*=>\s*(\d+)/", $configStr, $m)) $config['nb_trimestres'] = (int)$m[1];
+                    if (preg_match("/'previous_cumul_days'\s*=>\s*(\d+)/", $configStr, $m)) $config['previous_cumul_days'] = (int)$m[1];
+                    if (preg_match("/'prorata'\s*=>\s*([\d.]+)/", $configStr, $m)) $config['prorata'] = (float)$m[1];
+                    if (preg_match("/'patho_anterior'\s*=>\s*(\d+)/", $configStr, $m)) $config['patho_anterior'] = (int)$m[1];
+                    if (preg_match("/'expected'\s*=>\s*([\d.]+)/", $configStr, $m)) $config['expected'] = (float)$m[1];
+                    if (preg_match("/'nbe_jours'\s*=>\s*(\d+)/", $configStr, $m)) $config['nbe_jours'] = (int)$m[1];
+                    if (preg_match("/['\"]forced_rate['\"]\s*=>\s*([\d.]+)/", $configStr, $m)) $config['forced_rate'] = (float)$m[1];
+
+                    $testConfig = $config;
+                }
+            }
+
             echo json_encode([
                 'success' => true,
-                'data' => $mockData
+                'data' => $mockData,
+                'config' => $testConfig
             ]);
             break;
 

@@ -228,35 +228,31 @@ describe('AmountCalculationService', function() {
     test('should handle forced rate override', function() {
         $service = createService();
 
+        // Use mock21 data as base
+        $mockData = json_decode(file_get_contents(__DIR__ . '/../mock21.json'), true);
+
         $data = [
-            'arrets' => [
-                [
-                    'arret-from-line' => '2024-01-01',
-                    'arret-to-line' => '2024-01-31',
-                    'arret_diff' => 31,
-                    'rechute-line' => 0,
-                    'valid_med_controleur' => 1,
-                    'date-effet' => '2024-01-01'
-                ]
-            ],
+            'arrets' => $mockData,
             'statut' => 'M',
             'classe' => 'A',
             'option' => 100,
-            'birth_date' => '1950-01-01',
-            'current_date' => '2024-02-01',
-            'previous_cumul_days' => 0,
-            'nb_trimestres' => 60,
-            'patho_anterior' => false,
-            'attestation_date' => '2024-01-31',
+            'pass_value' => 47000,
+            'birth_date' => '1972-06-04',
+            'current_date' => date('Y-m-d'),
+            'attestation_date' => null,
             'last_payment_date' => null,
-            'affiliation_date' => null,
+            'affiliation_date' => '2002-10-01',
+            'nb_trimestres' => 23,
+            'previous_cumul_days' => 0,
             'prorata' => 1,
-            'forced_rate' => 5000
+            'patho_anterior' => 1,
+            'forced_rate' => 25.02  // Taux journalier forcé (daily rate)
         ];
 
         $result = $service->calculateAmount($data);
 
-        expect($result['montant'])->toBeCloseTo(5000, 0.01);
+        // Expected: 29 jours × 25.02€ = 725.58€
+        expect($result['montant'])->toBeCloseTo(725.58, 0.01);
     });
 
     test('should respect 3-year maximum (1095 days)', function() {

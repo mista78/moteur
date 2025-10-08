@@ -240,12 +240,19 @@ function addArret() {
                 <div class="checkbox-group">
                     <input type="checkbox" id="dt_${arretCount}">
                     <label>DT non excusée</label>
+                    <input type="hidden" id="dt_original_${arretCount}" value="0">
                 </div>
             </div>
             <div class="form-group">
                 <div class="checkbox-group">
                     <input type="checkbox" id="gpm_${arretCount}">
                     <label>Membre GPM mis à jour</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="cco_a_jour_${arretCount}" checked>
+                    <label>Compte cotisant à jour</label>
                 </div>
             </div>
         </div>
@@ -289,13 +296,37 @@ function collectArrets() {
             return;
         }
 
+        const ccoAJourCheckbox = document.getElementById(`cco_a_jour_${id}`);
+        const dtCheckbox = document.getElementById(`dt_${id}`);
+
+        // DT handling: checkbox label is "DT non excusée" (NOT excused)
+        // - Checked → string "0" (NOT excused, block payment)
+        // - Unchecked → integer 0 or 1 (normal or excused, allow payment)
+        // We need to check if there's a hidden field storing the original value
+        const dtOriginalValue = document.getElementById(`dt_original_${id}`)?.value;
+        let dtLineValue;
+
+        if (dtCheckbox.checked) {
+            // Checkbox checked = DT NOT excused = block
+            dtLineValue = "0"; // String "0" to block
+        } else {
+            // Checkbox unchecked = normal or excused
+            // Use original value if available, otherwise default to integer 0
+            if (dtOriginalValue !== undefined && dtOriginalValue !== '') {
+                dtLineValue = dtOriginalValue === '1' ? 1 : 0;
+            } else {
+                dtLineValue = 0; // Default to normal (integer 0)
+            }
+        }
+
         const arret = {
             'arret-from-line': arretFrom,
             'arret-to-line': arretTo,
             'code-patho-line': document.getElementById(`code_patho_${id}`).value || '',
-            'rechute-line': document.getElementById(`rechute_${id}`).checked ? '1' : '0',
-            'dt-line': document.getElementById(`dt_${id}`).checked ? '1' : '0',
-            'gpm-member-line': document.getElementById(`gpm_${id}`).checked ? '1' : '0',
+            'rechute-line': document.getElementById(`rechute_${id}`).checked ? 1 : 0,
+            'dt-line': dtLineValue,
+            'gpm-member-line': document.getElementById(`gpm_${id}`).checked ? 1 : 0,
+            'cco_a_jour': ccoAJourCheckbox ? (ccoAJourCheckbox.checked ? 1 : 0) : 1,
             'declaration-date-line': document.getElementById(`declaration_date_${id}`).value || '',
             'attestation-date-line': document.getElementById(`attestation_date_${id}`).value || ''
         };
@@ -449,15 +480,95 @@ async function calculateAll() {
     }
 }
 
+/**
+ * Clear all form fields before loading new mock data
+ */
+function clearAllFormFields() {
+    // Clear main form fields
+    document.getElementById('statut').value = '';
+    document.getElementById('classe').value = '';
+    document.getElementById('option').value = '1';
+    document.getElementById('pass_value').value = '47000';
+    document.getElementById('birth_date').value = '';
+    document.getElementById('current_date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('attestation_date').value = '';
+    document.getElementById('last_payment_date').value = '';
+    document.getElementById('affiliation_date').value = '';
+    document.getElementById('nb_trimestres').value = '0';
+    document.getElementById('previous_cumul_days').value = '0';
+    document.getElementById('prorata').value = '1';
+    document.getElementById('patho_anterior').checked = false;
+    document.getElementById('forced_rate').value = '';
+
+    // Clear revenue fields
+    const revenuInput = document.getElementById('revenu_n_moins_2');
+    const taxeOfficeCheckbox = document.getElementById('taxe_office');
+    if (revenuInput) revenuInput.value = '';
+    if (taxeOfficeCheckbox) taxeOfficeCheckbox.checked = false;
+
+    // Hide auto-determination info
+    const classeAutoInfo = document.getElementById('classe_auto_info');
+    if (classeAutoInfo) classeAutoInfo.style.display = 'none';
+
+    // Hide revenue calculation
+    hideRevenuCalculation();
+
+    // Clear results
+    document.getElementById('results').innerHTML = '';
+
+    // Clear arrets
+    document.getElementById('arrets-container').innerHTML = '';
+    arretCount = 0;
+}
+
 async function loadMockData(mockFile = 'mock.json') {
     try {
         const response = await fetch(`${API_URL}?endpoint=load-mock&file=${mockFile}`);
         const result = await response.json();
 
         if (result.success) {
-            // Clear existing arrets
-            document.getElementById('arrets-container').innerHTML = '';
-            arretCount = 0;
+            // Clear all form fields first
+            clearAllFormFields();
+
+            // Load configuration if available
+            if (result.config) {
+                const config = result.config;
+
+                // Populate form fields with configuration
+                if (config.statut) document.getElementById('statut').value = config.statut;
+                if (config.classe) document.getElementById('classe').value = config.classe;
+                if (config.option !== undefined) {
+                    const optionValue = config.option / 100; // Convert 100 to 1, 25 to 0.25, etc.
+                    document.getElementById('option').value = optionValue;
+                }
+                if (config.pass_value) document.getElementById('pass_value').value = config.pass_value;
+                if (config.birth_date) document.getElementById('birth_date').value = config.birth_date;
+                if (config.attestation_date) document.getElementById('attestation_date').value = config.attestation_date;
+                if (config.affiliation_date) document.getElementById('affiliation_date').value = config.affiliation_date;
+                if (config.nb_trimestres !== undefined) document.getElementById('nb_trimestres').value = config.nb_trimestres;
+                if (config.previous_cumul_days !== undefined) document.getElementById('previous_cumul_days').value = config.previous_cumul_days;
+                if (config.prorata !== undefined) document.getElementById('prorata').value = config.prorata;
+                if (config.patho_anterior !== undefined) document.getElementById('patho_anterior').checked = config.patho_anterior === 1;
+                if (config.forced_rate !== undefined) document.getElementById('forced_rate').value = config.forced_rate;
+
+                // Set current date to today
+                document.getElementById('current_date').value = new Date().toISOString().split('T')[0];
+
+                // Display expected results as info
+                if (config.expected !== undefined || config.nbe_jours !== undefined) {
+                    let infoText = '<strong>📊 Résultats attendus pour ce mock:</strong><br>';
+                    if (config.expected !== undefined) {
+                        infoText += `Montant: <strong style="color: #28a745;">${config.expected.toFixed(2)} €</strong><br>`;
+                    }
+                    if (config.nbe_jours !== undefined) {
+                        infoText += `Nombre de jours: <strong style="color: #28a745;">${config.nbe_jours} jours</strong>`;
+                    }
+
+                    // Show info box at the top
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = `<div class="info-box" style="background: #d4edda; border-left-color: #28a745;">${infoText}</div>`;
+                }
+            }
 
             // Load mock arrets
             result.data.forEach(arret => {
@@ -496,14 +607,21 @@ async function loadMockData(mockFile = 'mock.json') {
                         </div>
                         <div class="form-group">
                             <div class="checkbox-group">
-                                <input type="checkbox" id="dt_${arretCount}" ${arret['dt-line'] == '1' ? 'checked' : ''}>
+                                <input type="checkbox" id="dt_${arretCount}" ${arret['dt-line'] === '0' ? 'checked' : ''}>
                                 <label>DT non excusée</label>
+                                <input type="hidden" id="dt_original_${arretCount}" value="${arret['dt-line'] === 1 || arret['dt-line'] === '1' ? '1' : '0'}">
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="checkbox-group">
                                 <input type="checkbox" id="gpm_${arretCount}" ${arret['gpm-member-line'] == '1' ? 'checked' : ''}>
                                 <label>Membre GPM mis à jour</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="cco_a_jour_${arretCount}" ${(arret['cco_a_jour'] === undefined || arret['cco_a_jour'] == 1) ? 'checked' : ''}>
+                                <label>Compte cotisant à jour</label>
                             </div>
                         </div>
                     </div>
@@ -526,7 +644,12 @@ async function loadMockData(mockFile = 'mock.json') {
                 container.appendChild(arretDiv);
             });
 
-            showSuccess(`Données ${mockFile} chargées avec succès`);
+            // Update success message
+            let successMsg = `✅ ${mockFile} chargé avec succès`;
+            if (result.config && result.config.expected !== undefined) {
+                successMsg += ` - Résultat attendu: ${result.config.expected.toFixed(2)} €`;
+            }
+            showSuccess(successMsg);
         } else {
             showError(result.error);
         }

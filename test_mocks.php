@@ -100,7 +100,7 @@ $testCases = [
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1962-05-01',
-        'current_date' => '2024-12-27',
+        'current_date' => date("Y-m-d"),
         'attestation_date' => '2024-12-27',
         'last_payment_date' => null,
         'affiliation_date' => null,
@@ -340,7 +340,7 @@ $testCases = [
         'patho_anterior' => 1
     ],
     'mock21.json' => [
-        'expected' => 725.58,
+        'expected' => 725.58,  // 29 jours × 25.02€ = 725.58€
         'statut' => 'M',
         'classe' => 'A',
         'option' => 100,
@@ -354,7 +354,7 @@ $testCases = [
         'previous_cumul_days' => 0,
         'prorata' => 1,
         'patho_anterior' => 1,
-        "forced_rate" => 725.58
+        "forced_rate" => 25.02  // Taux journalier forcé
     ],
 ];
 

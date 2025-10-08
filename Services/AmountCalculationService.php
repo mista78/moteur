@@ -121,9 +121,41 @@ class AmountCalculationService implements AmountCalculationInterface
             $amount *= $prorata;
         }
 
-        // Appliquer le taux forcé si fourni (remplace tous les calculs)
-        if ($forcedRate !== null) {
-            $amount = $forcedRate;
+        // Appliquer le taux forcé si fourni (forced_rate = taux journalier forcé)
+        if ($forcedRate !== null && $nbJours > 0) {
+            // forced_rate est le TAUX JOURNALIER, pas le montant total
+            $forcedDailyRate = $forcedRate;
+            $amount = $forcedDailyRate * $nbJours;
+
+            // Mettre à jour les payment_details avec le taux forcé
+            foreach ($paymentDetails as &$detail) {
+                if ($detail['payable_days'] > 0 && isset($detail['rate_breakdown'])) {
+                    // Recalculer les montants avec le taux forcé
+                    $detailDays = $detail['payable_days'];
+                    $detailMontant = $detailDays * $forcedDailyRate;
+
+                    $detail['montant'] = round($detailMontant, 2);
+                    $detail['daily_rate'] = $forcedDailyRate;
+
+                    // Mettre à jour rate_breakdown avec le taux forcé
+                    foreach ($detail['rate_breakdown'] as &$breakdown) {
+                        $breakdown['rate'] = $forcedDailyRate;
+                        $breakdown['taux'] = 'Forcé';
+                    }
+                    unset($breakdown);
+
+                    // Mettre à jour daily_breakdown avec le taux forcé
+                    if (isset($detail['daily_breakdown'])) {
+                        foreach ($detail['daily_breakdown'] as &$day) {
+                            $day['daily_rate'] = $forcedDailyRate;
+                            $day['amount'] = $forcedDailyRate;
+                            $day['taux'] = 'Forcé';
+                        }
+                        unset($day);
+                    }
+                }
+            }
+            unset($detail);
         }
 
         // Calculer les dates de fin de paiement
