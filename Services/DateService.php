@@ -99,6 +99,71 @@ class DateService implements DateCalculationInterface
         }
     }
 
+    /**
+     * Vérifier si une date est un jour férié français
+     */
+    private function isFrenchPublicHoliday(DateTime $date): bool
+    {
+        $year = (int) $date->format('Y');
+        $month = (int) $date->format('n');
+        $day = (int) $date->format('j');
+
+        // Jours fériés fixes
+        $fixedHolidays = [
+            '01-01', // Jour de l'an
+            '05-01', // Fête du travail
+            '05-08', // Victoire 1945
+            '07-14', // Fête nationale
+            '08-15', // Assomption
+            '11-01', // Toussaint
+            '11-11', // Armistice 1918
+            '12-25', // Noël
+        ];
+
+        $dateStr = sprintf('%02d-%02d', $month, $day);
+        if (in_array($dateStr, $fixedHolidays)) {
+            return true;
+        }
+
+        // Pâques et jours fériés mobiles
+        $easter = easter_date($year);
+        $easterDate = new DateTime();
+        $easterDate->setTimestamp($easter);
+
+        // Lundi de Pâques (+1 jour)
+        $easterMonday = clone $easterDate;
+        $easterMonday->modify('+1 day');
+
+        // Ascension (+39 jours)
+        $ascension = clone $easterDate;
+        $ascension->modify('+39 days');
+
+        // Lundi de Pentecôte (+50 jours)
+        $pentecoteMonday = clone $easterDate;
+        $pentecoteMonday->modify('+50 days');
+
+        $mobileHolidays = [
+            $easterMonday->format('Y-m-d'),
+            $ascension->format('Y-m-d'),
+            $pentecoteMonday->format('Y-m-d'),
+        ];
+
+        return in_array($date->format('Y-m-d'), $mobileHolidays);
+    }
+
+    /**
+     * Ajouter 1 jour ouvré (sautant weekends ET jours fériés)
+     */
+    private function addOneBusinessDay(DateTime $date): DateTime
+    {
+        $result = clone $date;
+        do {
+            $result->modify('+1 day');
+        } while ($result->format('N') >= 6 || $this->isFrenchPublicHoliday($result));
+
+        return $result;
+    }
+
     public function mergeProlongations(array $arrets): array
     {
         usort($arrets, function ($a, $b) {
@@ -116,9 +181,10 @@ class DateService implements DateCalculationInterface
             $lastEnd = new DateTime($last['arret-to-line']);
             $currentStart = new DateTime($arret['arret-from-line']);
 
-            $lastEnd->modify('+1 weekday');
+            // Calculer le prochain jour ouvré après la fin du dernier arrêt
+            $nextBusinessDay = $this->addOneBusinessDay($lastEnd);
 
-            if ($lastEnd->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+            if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
                 $last['arret-to-line'] = $arret['arret-to-line'];
             } else {
                 $merged[] = $arret;
@@ -126,6 +192,42 @@ class DateService implements DateCalculationInterface
         }
 
         return $merged;
+    }
+
+    /**
+     * Déterminer automatiquement si un arrêt est une rechute
+     * Règle: Si rechute-line est déjà défini (forcé par commission), le respecter.
+     * Sinon, calculer automatiquement: rechute si date début < (date fin dernier arrêt + 1 an)
+     * et que l'arrêt n'est pas une prolongation (consécutif)
+     */
+    private function isRechute(array $currentArret, ?array $previousArret): bool
+    {
+        // Si rechute-line est explicitement défini (forcé par commission), le respecter
+        if (isset($currentArret['rechute-line']) && $currentArret['rechute-line'] !== null && $currentArret['rechute-line'] !== '') {
+            return (int)$currentArret['rechute-line'] === 1;
+        }
+
+        // Pas de précédent arrêt → pas une rechute
+        if (!$previousArret) {
+            return false;
+        }
+
+        $lastEnd = new DateTime($previousArret['arret-to-line']);
+        $currentStart = new DateTime($currentArret['arret-from-line']);
+
+        // Vérifier si consécutif (prolongation)
+        $nextBusinessDay = $this->addOneBusinessDay($lastEnd);
+        if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+            // C'est une prolongation, pas une rechute
+            return false;
+        }
+
+        // Vérifier si < 1 an après la fin du dernier arrêt
+        // Règle: date début <= date fin dernier + 1 an - 1 jour
+        $oneYearAfterLast = clone $lastEnd;
+        $oneYearAfterLast->modify('+1 year')->modify('-1 day');
+
+        return $currentStart <= $oneYearAfterLast;
     }
 
     public function calculateDateEffet(array $arrets, ?string $birthDate = null, int $previousCumulDays = 0): array
@@ -219,17 +321,48 @@ class DateService implements DateCalculationInterface
             }
             // Arrêts suivants - rechute ou prolongation
             elseif ($increment > 0) {
-                $siRechute = ($currentData['rechute-line'] ?? 0) > 0 ? 1 : 0;
+                // Déterminer si c'est une rechute (forcée via rechute-line OU automatique < 1 an)
+                $previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
+                $siRechute = $this->isRechute($currentData, $previousArret);
 
-                // Rechute immédiate (rechute-line = 1) - droits au 1er jour
-                if ($siRechute === 1 && $currentData['rechute-line'] === 1) {
+                // Rechute immédiate (rechute-line = 1 forcé) - droits au 1er jour
+                if ($siRechute && isset($currentData['rechute-line']) && $currentData['rechute-line'] === 1) {
                     $dates = $startDate->format('Y-m-d');
                 }
-                // Arrêt >= 15 jours mais pas rechute immédiate - droits au 15ème jour
-                elseif ($arret_diff >= 15 && $currentData['rechute-line'] !== 1) {
-                    $dateEffet = clone $startDate;
-                    $dateEffet->modify('+14 days');
-                    $dates = $dateEffet->format('Y-m-d');
+                // Rechute automatique (< 1 an) OU arrêt >= 15 jours - droits au 15ème jour avec calcul max
+                elseif ($siRechute || $arret_diff >= 15) {
+                    // Date de base: 15ème jour d'arrêt
+                    $dateDeb = clone $startDate;
+                    $dateDeb->modify('+14 days');
+
+                    // Variables pour DT et cotisations (comme pour le seuil de 90 jours)
+                    $dateDT = null;
+                    $dateCotis = null;
+
+                    // Gérer les DT non excusées (dt-line = 0) - 15ème jour après déclaration
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
+                        if ($increment > 0) {
+                            $choice = $arrets[0];
+                        }
+                        $slect = $choice ?? $currentData;
+                        $dtDate = new DateTime($slect['declaration-date-line']);
+                        $dtDate->modify('+14 days'); // +14 pour obtenir le 15ème jour
+                        $dateDT = $dtDate->format('Y-m-d');
+                    }
+
+                    // Gérer la mise à jour du compte (dt-line = 1 et date_maj_compte présente) - 15ème jour après MAJ
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+                        $cotisDate = new DateTime($currentData['date_maj_compte']);
+                        $cotisDate->modify('+14 days'); // +14 pour obtenir le 15ème jour
+                        $dateCotis = $cotisDate->format('Y-m-d');
+                    }
+
+                    // Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
+                    $dates = date('Y-m-d', max([
+                        strtotime($dateDeb->format('Y-m-d')),
+                        strtotime($dateDT ?? '1970-01-01'),
+                        strtotime($dateCotis ?? '1970-01-01'),
+                    ]));
                 }
             }
 
@@ -245,6 +378,34 @@ class DateService implements DateCalculationInterface
         return $arrets;
     }
 
+    /**
+     * Calculer le 1er jour du semestre suivant le 75ème anniversaire
+     * Si anniversaire entre 01/01 et 30/06 → retourne 01/07 de cette année
+     * Si anniversaire entre 01/07 et 31/12 → retourne 01/01 de l'année suivante
+     */
+    private function getFirstDayOfSemesterAfter75thBirthday(string $birthDate): ?string
+    {
+        if (empty($birthDate) || $birthDate === '0000-00-00') {
+            return null;
+        }
+
+        $birth = new DateTime($birthDate);
+        $age75Date = clone $birth;
+        $age75Date->modify('+75 years');
+
+        $month = (int) $age75Date->format('n');
+        $year = (int) $age75Date->format('Y');
+
+        // Si anniversaire entre janvier et juin (mois 1-6)
+        if ($month >= 1 && $month <= 6) {
+            return "$year-07-01";
+        } else {
+            // Si anniversaire entre juillet et décembre (mois 7-12)
+            $nextYear = $year + 1;
+            return "$nextYear-01-01";
+        }
+    }
+
     public function calculatePayableDays(
         array $arrets,
         ?string $attestationDate = null,
@@ -258,6 +419,22 @@ class DateService implements DateCalculationInterface
         $paymentDetails = [];
 
         foreach ($arrets as $index => $arret) {
+            // Vérifier cco_a_jour - pas de paiement si compte cotisant pas à jour
+            if (isset($arret['cco_a_jour']) && $arret['cco_a_jour'] != 1) {
+                $paymentDetails[$index] = [
+                    'arret_index' => $index,
+                    'arret_from' => $arret['arret-from-line'],
+                    'arret_to' => $arret['arret-to-line'],
+                    'date_effet' => $arret['date-effet'] ?? null,
+                    'attestation_date' => null,
+                    'payment_start' => null,
+                    'payment_end' => null,
+                    'payable_days' => 0,
+                    'reason' => 'Account not up to date (cco_a_jour != 1)'
+                ];
+                continue;
+            }
+
             // Vérifier valid_med_controleur - pas de paiement si != 1
             if (isset($arret['valid_med_controleur']) && $arret['valid_med_controleur'] != 1) {
                 $paymentDetails[$index] = [
@@ -270,6 +447,22 @@ class DateService implements DateCalculationInterface
                     'payment_end' => null,
                     'payable_days' => 0,
                     'reason' => 'Not validated by medical controller (valid_med_controleur != 1)'
+                ];
+                continue;
+            }
+
+            // Vérifier dt-line - pas de paiement si DT non excusée (dt-line === "0" string)
+            if (isset($arret['dt-line']) && $arret['dt-line'] === '0') {
+                $paymentDetails[$index] = [
+                    'arret_index' => $index,
+                    'arret_from' => $arret['arret-from-line'],
+                    'arret_to' => $arret['arret-to-line'],
+                    'date_effet' => $arret['date-effet'] ?? null,
+                    'attestation_date' => null,
+                    'payment_start' => null,
+                    'payment_end' => null,
+                    'payable_days' => 0,
+                    'reason' => 'DT not excused (dt-line === "0")'
                 ];
                 continue;
             }
@@ -289,8 +482,27 @@ class DateService implements DateCalculationInterface
                 continue;
             }
 
-            // Utiliser la date d'attestation spécifique à l'arrêt, ou utiliser la globale
-            $arretAttestationDate = $arret['attestation-date-line'] ?? $attestationDate;
+            // Vérifier limite 75 ans - pas de paiement si date d'effet >= 1er jour semestre après 75ème anniversaire
+            if (isset($arret['date_naissance']) && !empty($arret['date_naissance'])) {
+                $limitDate75 = $this->getFirstDayOfSemesterAfter75thBirthday($arret['date_naissance']);
+                if ($limitDate75 && $arret['date-effet'] >= $limitDate75) {
+                    $paymentDetails[$index] = [
+                        'arret_index' => $index,
+                        'arret_from' => $arret['arret-from-line'],
+                        'arret_to' => $arret['arret-to-line'],
+                        'date_effet' => $arret['date-effet'],
+                        'attestation_date' => null,
+                        'payment_start' => null,
+                        'payment_end' => null,
+                        'payable_days' => 0,
+                        'reason' => "Age limit: date effet >= first day of semester after 75th birthday ($limitDate75)"
+                    ];
+                    continue;
+                }
+            }
+
+            // Utiliser uniquement la date d'attestation globale (pas de date d'attestation par arrêt)
+            $arretAttestationDate = $attestationDate;
 
             $dateEffet = new DateTime($arret['date-effet']);
             $endDate = new DateTime($arret['arret-to-line']);

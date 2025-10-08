@@ -406,8 +406,8 @@ class IJCalculator
                 continue;
             }
 
-            // Utiliser la date d'attestation spécifique à l'arrêt, ou utiliser la globale
-            $arretAttestationDate = $arret['attestation-date-line'] ?? $attestationDate;
+            // Utiliser uniquement la date d'attestation globale (pas de date d'attestation par arrêt)
+            $arretAttestationDate = $attestationDate;
 
             $dateEffet = new DateTime($arret['date-effet']);
             $endDate = new DateTime($arret['arret-to-line']);

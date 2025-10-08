@@ -598,6 +598,15 @@ function displayFullResults(data) {
 
     let html = '<div class="results"><h2>💰 Résultats Complets</h2>';
 
+    // Add tabs
+    html += '<div class="tabs">';
+    html += '<button class="tab active" onclick="switchTab(event, \'summary\')">📊 Résumé</button>';
+    html += '<button class="tab" onclick="switchTab(event, \'calendar\')">📅 Calendrier</button>';
+    html += '</div>';
+
+    // Summary tab content
+    html += '<div id="summary" class="tab-content active">';
+
     // Main results
     html += `<div class="result-item">
         <span class="result-label">Âge</span>
@@ -616,7 +625,7 @@ function displayFullResults(data) {
 
     html += `<div class="result-item">
         <span class="result-label">Montant total</span>
-        <span class="result-value">${data.montant.toFixed(2)} €</span>
+        <span class="result-value">${(data.montant || 0).toFixed(2)} €</span>
     </div>`;
 
     html += `<div class="result-item">
@@ -805,9 +814,22 @@ function displayFullResults(data) {
 
     html += '</table>';
 
-    html += '</div>';
+    // Close summary tab
+    html += '</div>'; // End summary tab-content
+
+    // Calendar tab content
+    html += '<div id="calendar" class="tab-content">';
+    html += generateCalendarView(data);
+    html += '</div>'; // End calendar tab-content
+
+    html += '</div>'; // End results div
 
     resultsDiv.innerHTML = html;
+
+    // Initialize calendar if data is available
+    if (window.calendarData) {
+        initializeCalendar();
+    }
 }
 
 function showLoading(show) {
