@@ -156,7 +156,7 @@ describe('AmountCalculationService', function() {
         $result = $service->calculateAmount($data);
 
         expect($result['nb_jours'])->toBe(0);
-        expect($result['montant'])->toBe(0);
+        expect($result['montant'])->toEqual(0);
     });
 
     test('should limit cumulative days to 365 for age >= 70', function() {
@@ -290,7 +290,7 @@ describe('AmountCalculationService', function() {
         $result = $service->calculateAmount($data);
 
         expect($result['nb_jours'])->toBe(0);
-        expect($result['montant'])->toBe(0);
+        expect($result['montant'])->toEqual(0);
     });
 
     test('should auto-calculate trimestres from affiliation date', function() {

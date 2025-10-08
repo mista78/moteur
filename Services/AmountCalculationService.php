@@ -68,7 +68,7 @@ class AmountCalculationService implements AmountCalculationInterface
         }
 
         // Check 3-year maximum
-        if ($previousCumulDays > 1095) {
+        if ($previousCumulDays >= 1095) {
             $nbJours = 0;
         }
 
@@ -82,43 +82,49 @@ class AmountCalculationService implements AmountCalculationInterface
             }
         }
 
-        // Get year for rate table
-        $firstDateEffet = null;
-        foreach ($arrets as $arret) {
-            if (isset($arret['date-effet'])) {
-                $firstDateEffet = $arret['date-effet'];
-                break;
+        // Initialize amount
+        $amount = 0;
+
+        // Only calculate amount if there are payable days
+        if ($nbJours > 0) {
+            // Get year for rate table
+            $firstDateEffet = null;
+            foreach ($arrets as $arret) {
+                if (isset($arret['date-effet'])) {
+                    $firstDateEffet = $arret['date-effet'];
+                    break;
+                }
             }
+            $year = $firstDateEffet ? (int) date('Y', strtotime($firstDateEffet)) : (int) date('Y');
+
+            // Calculate amount with details
+            $calculationResult = $this->calculateMontantByAgeWithDetails(
+                $nbJours,
+                $previousCumulDays,
+                $age,
+                $classe,
+                $statut,
+                $option,
+                $year,
+                $nbTrimestres,
+                $pathoAnterior,
+                $paymentDetails,
+                $affiliationDate,
+                $currentDate,
+                $birthDate,
+                $historicalReducedRate
+            );
+            $amount = $calculationResult['montant'];
+            $paymentDetails = $calculationResult['payment_details'];
+
+            // Apply prorata
+            $amount *= $prorata;
         }
-        $year = $firstDateEffet ? (int) date('Y', strtotime($firstDateEffet)) : (int) date('Y');
 
-        // Calculate amount with details
-        $calculationResult = $this->calculateMontantByAgeWithDetails(
-            $nbJours,
-            $previousCumulDays,
-            $age,
-            $classe,
-            $statut,
-            $option,
-            $year,
-            $nbTrimestres,
-            $pathoAnterior,
-            $paymentDetails,
-            $affiliationDate,
-            $currentDate,
-            $birthDate,
-            $historicalReducedRate
-        );
-        $amount = $calculationResult['montant'];
-        $paymentDetails = $calculationResult['payment_details'];
-
-        // Apply forced rate if provided
+        // Apply forced rate if provided (overrides all calculations)
         if ($forcedRate !== null) {
             $amount = $forcedRate;
         }
-
-        // Apply prorata
-        $amount *= $prorata;
 
         // Calculate end payment dates
         $endDates = $this->calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate);
