@@ -13,7 +13,7 @@ interface RateServiceInterface
      *
      * @param string $statut Professional status (M, RSPM, CCPL)
      * @param string $classe Contribution class (A, B, C)
-     * @param string|int $option Option percentage (can be string like "0,25" or int like 25)
+     * @param string|int|float $option Option percentage (can be string like "0,25", int like 25, or float like 0.25)
      * @param int $taux Tax number (1-9)
      * @param int $year Year for rate lookup
      * @param string|null $date Specific date for rate lookup
@@ -24,7 +24,7 @@ interface RateServiceInterface
     public function getDailyRate(
         string $statut,
         string $classe,
-        string|int $option,
+        string|int|float $option,
         int $taux,
         int $year,
         ?string $date = null,

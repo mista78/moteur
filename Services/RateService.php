@@ -71,7 +71,7 @@ class RateService implements RateServiceInterface
     public function getDailyRate(
         string $statut,
         string $classe,
-        string|int $option,
+        string|int|float $option,
         int $taux,
         int $year,
         ?string $date = null,

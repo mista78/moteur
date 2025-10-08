@@ -234,7 +234,7 @@ class AmountCalculationService implements AmountCalculationInterface
         int $age,
         string $classe,
         string $statut,
-        string|int $option,
+        string|int|float $option,
         int $year,
         int $nbTrimestres,
         bool $pathoAnterior,
