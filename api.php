@@ -199,7 +199,7 @@ try {
 
                     // Extract simple values
                     if (preg_match("/'statut'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['statut'] = $m[1];
-                    if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['classe'] = $m[1];
+                    if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['classe'] = strtoupper($m[1]);
                     if (preg_match("/'option'\s*=>\s*(\d+)/", $configStr, $m)) $config['option'] = (float)$m[1];
                     if (preg_match("/'pass_value'\s*=>\s*(\d+)/", $configStr, $m)) $config['pass_value'] = (int)$m[1];
                     if (preg_match("/'birth_date'\s*=>\s*null/", $configStr)) {

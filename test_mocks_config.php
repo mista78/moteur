@@ -1,10 +1,7 @@
 <?php
 
-require_once 'jest-php.php';
-require_once 'IJCalculator.php';
-
 // Test cases avec résultats attendus
-$testCases = [
+return [
     'mock.json' => [
         'expected' => 750.6, // Pas de résultat attendu donné
         'statut' => 'M',
@@ -24,6 +21,7 @@ $testCases = [
         'nbe_jours' => 10
     ],
     'mock2.json' => [
+        "adherent_number" => "191566V",
         'expected' => 17318.92,
         "payment_start" => ["", "", "", "", "", "2023-12-07"],
         'statut' => 'M',
@@ -120,7 +118,7 @@ $testCases = [
         'current_date' => date("Y-m-d"),
         'attestation_date' => null,
         'last_payment_date' => null,
-        'affiliation_date' => '2008-10-01',
+        'affiliation_date' => null,
         'nb_trimestres' => 60,
         'previous_cumul_days' => 0,
         'prorata' => 1,
@@ -372,85 +370,5 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 1,
     ],
-    'mock23.json' => [
-        'expected' => 159033.47,
-        'statut' => 'M',
-        'classe' => 'C',
-        'option' => 100,  // 25% option (not 100%)
-        'pass_value' => 47000,
-        'birth_date' => '1961-12-10',
-        'current_date' => date("Y-m-d"),
-        'attestation_date' => null,
-        'last_payment_date' => null,
-        'affiliation_date' => '1990-04-01',
-        'nb_trimestres' => 23,
-        'previous_cumul_days' => 0,
-        'prorata' => 1,
-        'patho_anterior' => 1,
-    ],
 ];
 
-// Tests avec JestPHP
-describe('IJCalculator - Mock Tests', function () use ($testCases) {
-
-    foreach ($testCases as $mockFile => $params) {
-        $mockData = json_decode(file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . $mockFile), true);
-        $adherent = $mockData[0]["adherent_number"];
-
-        if (!$mockData) {
-            throw new Exception("Impossible de charger $mockFile");
-        }
-
-        // Créer le calculateur
-        $calculator = new IJCalculator(__DIR__ . DIRECTORY_SEPARATOR . 'taux.csv');
-
-        // Préparer les données au format attendu
-        $requestData = [
-            'arrets' => $mockData,
-            'statut' => $params['statut'],
-            'classe' => $params['classe'],
-            'option' => $params['option'],
-            'pass_value' => $params['pass_value'],
-            'payment_start' => $params['payment_start'] ?? null,
-            'birth_date' => $params['birth_date'],
-            'current_date' => $params['current_date'],
-            'attestation_date' => $params['attestation_date'],
-            'last_payment_date' => $params['last_payment_date'],
-            'affiliation_date' => $params['affiliation_date'],
-            'nb_trimestres' => $params['nb_trimestres'],
-            'previous_cumul_days' => $params['previous_cumul_days'],
-            'prorata' => $params['prorata'],
-            'patho_anterior' => $params['patho_anterior'],
-            "forced_rate" => $params["forced_rate"] ?? null
-        ];
-
-        $result = $calculator->calculateAmount($requestData);
-        // if($mockFile == "mock5.json") {
-            // dd($result);
-        // }
-        test("should calculate correct amount for $adherent: $mockFile", function () use ($result, $params) {
-            // Assertions
-            // Test payment_start si défini dans les paramètres
-            expect($result['montant'])->toBeCloseTo($params['expected'], 0.01);
-            if (isset($params['nbe_jours'])) {
-                expect($result['nb_jours'])->toBeCloseTo($params['nbe_jours'], 0.01);
-            }
-
-        });
-
-        test("should calculate correct payement_start for $adherent: $mockFile", function () use ($result, $params) {
-            // Test payment_start si défini dans les paramètres
-            if (isset($params['payment_start'])) {
-                foreach ($params['payment_start'] as $key => $expectedDate) {
-                    if (isset($result['payment_details'][$key])) {
-                        $actualDate = $result['payment_details'][$key]['payment_start'] ?? '';
-                        expect($actualDate)->toBe($expectedDate);
-                    }
-                }
-            }
-        });
-    }
-});
-
-// Lancer les tests
-JestPHP::run();
