@@ -145,7 +145,7 @@ $testCases = [
     ],
     'mock9.json' => [
         'expected' => 53467.98,
-        'nbe_jours' => 365,
+        'nbe_jours' => 730,
         'statut' => 'M',
         'classe' => 'B',
         'option' => 100,

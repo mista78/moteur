@@ -72,15 +72,35 @@ class AmountCalculationService implements AmountCalculationInterface
             $nbJours = 0;
         }
 
-        // Vérifier la limite 70+
+        // Calculer l'âge au début des IJ (première date d'effet) et à la date actuelle
+        $firstDateEffetForAge = null;
+        foreach ($arrets as $arret) {
+            if (isset($arret['date-effet'])) {
+                $firstDateEffetForAge = $arret['date-effet'];
+                break;
+            }
+        }
+
         $age = $this->dateService->calculateAge($currentDate, $birthDate);
-        if ($age >= 70) {
+        $ageAtStart = $firstDateEffetForAge ? $this->dateService->calculateAge($firstDateEffetForAge, $birthDate) : $age;
+
+        // Vérifier la limite selon l'âge et la transition d'âge
+        if ($ageAtStart >= 70) {
+            // Règle 1: Si déjà 70 ans ou plus au début → limite 365 jours
             if ($nbJours + $previousCumulDays > 365) {
                 $nbJours = 365 - $previousCumulDays;
                 if ($nbJours < 0)
                     $nbJours = 0;
             }
+        } elseif ($ageAtStart < 70 && $age >= 70) {
+            // Règle 2: Si moins de 70 ans au début mais atteint 70 ans pendant la période → limite 730 jours
+            if ($nbJours + $previousCumulDays > 730) {
+                $nbJours = 730 - $previousCumulDays;
+                if ($nbJours < 0)
+                    $nbJours = 0;
+            }
         }
+        // Sinon: moins de 70 ans pendant toute la période → limite 1095 jours (déjà vérifié ci-dessus)
 
         // Initialiser le montant
         $amount = 0;
@@ -196,16 +216,31 @@ class AmountCalculationService implements AmountCalculationInterface
             return null;
         }
 
+        // Calculer l'âge au début de l'IJ
+        $ageAtStart = $this->dateService->calculateAge($firstDateEffet->format('Y-m-d'), $birthDate);
+
         $result = [];
 
-        if ($age >= 70) {
-            // Période unique de 365 jours pour 70+
+        if ($ageAtStart >= 70) {
+            // Règle 1: Déjà 70 ans ou plus au début → période unique de 365 jours
             $endDate = clone $firstDateEffet;
             $endDate->modify('+' . (365 - $previousCumulDays) . ' days');
             $endDate->modify('-1 day');
             $result['end_period_1'] = $endDate->format('Y-m-d');
+        } elseif ($ageAtStart < 70 && $age >= 70) {
+            // Règle 2: Moins de 70 au début mais atteint 70 pendant la période → limite 730 jours (2 périodes)
+            $endDate1 = clone $firstDateEffet;
+            $endDate1->modify('+' . (365 - $previousCumulDays) . ' days');
+            $endDate1->modify('-1 day');
+            $result['end_period_1'] = $endDate1->format('Y-m-d');
+
+            $endDate2 = clone $firstDateEffet;
+            $endDate2->modify('+' . (730 - $previousCumulDays) . ' days');
+            $endDate2->modify('-1 day');
+            $result['end_period_2'] = $endDate2->format('Y-m-d');
+            // Pas de période 3 dans ce cas
         } elseif ($age >= 62) {
-            // Trois périodes pour 62-69
+            // Règle 3: 62-69 ans pendant toute la période → trois périodes (1095 jours)
             $endDate1 = clone $firstDateEffet;
             $endDate1->modify('+' . (365 - $previousCumulDays) . ' days');
             $endDate1->modify('-1 day');
