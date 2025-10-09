@@ -202,9 +202,21 @@ try {
                     if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['classe'] = $m[1];
                     if (preg_match("/'option'\s*=>\s*(\d+)/", $configStr, $m)) $config['option'] = (float)$m[1];
                     if (preg_match("/'pass_value'\s*=>\s*(\d+)/", $configStr, $m)) $config['pass_value'] = (int)$m[1];
-                    if (preg_match("/'birth_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['birth_date'] = $m[1];
-                    if (preg_match("/'attestation_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['attestation_date'] = $m[1];
-                    if (preg_match("/'affiliation_date'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['affiliation_date'] = $m[1];
+                    if (preg_match("/'birth_date'\s*=>\s*null/", $configStr)) {
+                        $config['birth_date'] = null;
+                    } elseif (preg_match("/'birth_date'\s*=>\s*[\"']([^\"']*)[\"']/", $configStr, $m)) {
+                        $config['birth_date'] = $m[1];
+                    }
+                    if (preg_match("/'attestation_date'\s*=>\s*null/", $configStr)) {
+                        $config['attestation_date'] = null;
+                    } elseif (preg_match("/'attestation_date'\s*=>\s*[\"']([^\"']*)[\"']/", $configStr, $m)) {
+                        $config['attestation_date'] = $m[1];
+                    }
+                    if (preg_match("/'affiliation_date'\s*=>\s*null/", $configStr)) {
+                        $config['affiliation_date'] = null;
+                    } elseif (preg_match("/'affiliation_date'\s*=>\s*[\"']([^\"']*)[\"']/", $configStr, $m)) {
+                        $config['affiliation_date'] = $m[1];
+                    }
                     if (preg_match("/'nb_trimestres'\s*=>\s*(\d+)/", $configStr, $m)) $config['nb_trimestres'] = (int)$m[1];
                     if (preg_match("/'previous_cumul_days'\s*=>\s*(\d+)/", $configStr, $m)) $config['previous_cumul_days'] = (int)$m[1];
                     if (preg_match("/'prorata'\s*=>\s*([\d.]+)/", $configStr, $m)) $config['prorata'] = (float)$m[1];
