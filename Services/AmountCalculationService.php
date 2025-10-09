@@ -85,6 +85,7 @@ class AmountCalculationService implements AmountCalculationInterface
         $ageAtStart = $firstDateEffetForAge ? $this->dateService->calculateAge($firstDateEffetForAge, $birthDate) : $age;
 
         // Vérifier la limite selon l'âge et la transition d'âge
+        $originalNbJours = $nbJours;
         if ($ageAtStart >= 70) {
             // Règle 1: Si déjà 70 ans ou plus au début → limite 365 jours
             if ($nbJours + $previousCumulDays > 365) {
@@ -101,6 +102,11 @@ class AmountCalculationService implements AmountCalculationInterface
             }
         }
         // Sinon: moins de 70 ans pendant toute la période → limite 1095 jours (déjà vérifié ci-dessus)
+
+        // Si nbJours a été réduit par la limite d'âge, ajuster paymentDetails
+        if ($nbJours < $originalNbJours) {
+            $paymentDetails = $this->truncatePaymentDetails($paymentDetails, $nbJours);
+        }
 
         // Initialiser le montant
         $amount = 0;
@@ -566,5 +572,51 @@ class AmountCalculationService implements AmountCalculationInterface
         }
 
         return $segments;
+    }
+
+    /**
+     * Truncate payment details to respect the day limit (for age restrictions)
+     *
+     * @param array $paymentDetails Payment details array
+     * @param int $maxDays Maximum number of days allowed
+     * @return array Truncated payment details
+     */
+    private function truncatePaymentDetails(array $paymentDetails, int $maxDays): array
+    {
+        $truncatedDetails = [];
+        $daysCounted = 0;
+
+        foreach ($paymentDetails as $detail) {
+            if ($daysCounted >= $maxDays) {
+                break;
+            }
+
+            $remainingDays = $maxDays - $daysCounted;
+            $detailDays = $detail['payable_days'] ?? 0;
+
+            if ($detailDays <= $remainingDays) {
+                // Include entire detail
+                $truncatedDetails[] = $detail;
+                $daysCounted += $detailDays;
+            } else {
+                // Truncate this detail
+                $truncatedDetail = $detail;
+                $truncatedDetail['payable_days'] = $remainingDays;
+
+                // Adjust payment_end date
+                if (isset($detail['payment_start']) && $remainingDays > 0) {
+                    $paymentStart = new \DateTime($detail['payment_start']);
+                    $paymentEnd = clone $paymentStart;
+                    $paymentEnd->modify('+' . ($remainingDays - 1) . ' days');
+                    $truncatedDetail['payment_end'] = $paymentEnd->format('Y-m-d');
+                }
+
+                $truncatedDetails[] = $truncatedDetail;
+                $daysCounted += $remainingDays;
+                break;
+            }
+        }
+
+        return $truncatedDetails;
     }
 }
