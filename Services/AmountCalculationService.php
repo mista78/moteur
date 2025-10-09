@@ -304,6 +304,8 @@ class AmountCalculationService implements AmountCalculationInterface
                 } elseif ($segmentAge >= 62 && $segmentAge <= 69) {
                     // Pour 62-69, calculer les périodes par arrêt INDIVIDUEL
                     $nbJoursRestants = $yearData['days'];
+                    $segmentStartDate = new DateTime($yearData['start']);
+                    $daysConsumedInSegment = 0; // Track position within this segment
 
                     // Traiter les jours de ce segment selon leur position dans L'ARRÊT
                     while ($nbJoursRestants > 0) {
@@ -355,10 +357,17 @@ class AmountCalculationService implements AmountCalculationInterface
                             break;
                         }
 
+                        // Calculate actual start and end dates for this period within the segment
+                        $periodStart = clone $segmentStartDate;
+                        $periodStart->modify("+{$daysConsumedInSegment} days");
+
+                        $periodEnd = clone $periodStart;
+                        $periodEnd->modify("+". ($joursP - 1) ." days");
+
                         // For taux 4-6 (period 3), pass $usePeriode2 to determine tier
-                        $dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, $usePeriode2);
+                        $dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $periodStart->format('Y-m-d'), $segmentAge, $usePeriode2);
                         $arretMontant += $joursP * $dailyRate;
-                        $trimester = $this->dateService->getTrimesterFromDate($yearData['start']);
+                        $trimester = $this->dateService->getTrimesterFromDate($periodStart->format('Y-m-d'));
 
                         $rateInfo[] = [
                             'year' => $yearData['year'],
@@ -366,8 +375,8 @@ class AmountCalculationService implements AmountCalculationInterface
                             'trimester' => $trimester,
                             'nb_trimestres' => $periodNbTrimestres,
                             'period' => $periodNumber,
-                            'start' => $yearData['start'],
-                            'end' => $yearData['end'],
+                            'start' => $periodStart->format('Y-m-d'),
+                            'end' => $periodEnd->format('Y-m-d'),
                             'days' => $joursP,
                             'rate' => $dailyRate,
                             'taux' => $taux
@@ -375,6 +384,7 @@ class AmountCalculationService implements AmountCalculationInterface
 
                         $joursDansArret += $joursP;
                         $nbJoursRestants -= $joursP;
+                        $daysConsumedInSegment += $joursP;
                     }
                 } else { // segmentAge >= 70
                     // Age >= 70: reduced rate (taux 4, 5 or 6)
