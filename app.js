@@ -339,6 +339,14 @@ function addArret() {
         </div>
         <div class="form-grid">
             <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="valid_med_controleur_${arretCount}" checked>
+                    <label>Validé par médecin contrôleur</label>
+                </div>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
                 <label>Date de déclaration</label>
                 <input type="date" id="declaration_date_${arretCount}">
             </div>
@@ -400,6 +408,8 @@ function collectArrets() {
             }
         }
 
+        const validMedControleurCheckbox = document.getElementById(`valid_med_controleur_${id}`);
+
         const arret = {
             'arret-from-line': arretFrom,
             'arret-to-line': arretTo,
@@ -408,6 +418,7 @@ function collectArrets() {
             'dt-line': dtLineValue,
             'gpm-member-line': document.getElementById(`gpm_${id}`).checked ? 1 : 0,
             'cco_a_jour': ccoAJourCheckbox ? (ccoAJourCheckbox.checked ? 1 : 0) : 1,
+            'valid_med_controleur': validMedControleurCheckbox ? (validMedControleurCheckbox.checked ? 1 : 0) : 1,
             'declaration-date-line': document.getElementById(`declaration_date_${id}`).value || '',
             'attestation-date-line': document.getElementById(`attestation_date_${id}`).value || ''
         };
@@ -709,6 +720,14 @@ async function loadMockData(mockFile = 'mock.json') {
                             <div class="checkbox-group">
                                 <input type="checkbox" id="cco_a_jour_${arretCount}" ${(arret['cco_a_jour'] === undefined || arret['cco_a_jour'] == 1) ? 'checked' : ''}>
                                 <label>Compte cotisant à jour</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="valid_med_controleur_${arretCount}" ${(arret['valid_med_controleur'] === undefined || arret['valid_med_controleur'] == 1) ? 'checked' : ''}>
+                                <label>Validé par médecin contrôleur</label>
                             </div>
                         </div>
                     </div>
