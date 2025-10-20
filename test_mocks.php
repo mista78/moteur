@@ -388,6 +388,22 @@ $testCases = [
         'prorata' => 1,
         'patho_anterior' => 1,
     ],
+    'mock28.json' => [
+        'expected' => 0,
+        'statut' => 'M',
+        'classe' => 'C',
+        'option' => 100,  // 25% option (not 100%)
+        'pass_value' => 47000,
+        'birth_date' => '1956-07-18',
+        'current_date' => date("Y-m-d"),
+        'attestation_date' => null,
+        'last_payment_date' => null,
+        'affiliation_date' => '2013-01-01',
+        'nb_trimestres' => 23,
+        'previous_cumul_days' => 0,
+        'prorata' => 1,
+        'patho_anterior' => 1,
+    ],
 ];
 
 // Tests avec JestPHP
