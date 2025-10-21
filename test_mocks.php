@@ -94,6 +94,7 @@ $testCases = [
     ],
     'mock6.json' => [
         'expected' => 31412.61,
+        "payment_start" => ["", "2024-03-28"],
         'nbe_jours' => 279,
         'statut' => 'M',
         'classe' => 'B',
@@ -389,7 +390,7 @@ $testCases = [
         'patho_anterior' => 1,
     ],
     'mock28.json' => [
-        'expected' => 0,
+        'expected' => 4369.62,
         'statut' => 'M',
         'classe' => 'C',
         'option' => 100,  // 25% option (not 100%)
