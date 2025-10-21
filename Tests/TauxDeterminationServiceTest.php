@@ -124,4 +124,3 @@ describe('TauxDeterminationService', function() {
     });
 });
 
-JestPHP::run();

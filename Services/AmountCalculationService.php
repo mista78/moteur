@@ -187,13 +187,21 @@ class AmountCalculationService implements AmountCalculationInterface
         // Calculer les dates de fin de paiement
         $endDates = $this->calculateEndPaymentDates($arrets, $previousCumulDays, $birthDate, $currentDate);
 
+        // Calculer le total des jours calendaires de tous les arrêts (pour rechute/pathologie)
+        $totalArretDays = 0;
+        foreach ($arrets as $arret) {
+            if (isset($arret['arret_diff'])) {
+                $totalArretDays += $arret['arret_diff'];
+            }
+        }
+
         return [
             'nb_jours' => $nbJours,
             'montant' => round($amount, 2),
             'arrets' => $arrets,
             'payment_details' => $paymentDetails,
             'end_payment_dates' => $endDates,
-            'total_cumul_days' => $previousCumulDays + $nbJours,
+            'total_cumul_days' => $previousCumulDays + $totalArretDays,
             'age' => $age,
             'nb_trimestres' => $nbTrimestres
         ];

@@ -467,6 +467,3 @@ describe('IJCalculator - Mock Tests', function () use ($testCases) {
         });
     }
 });
-
-// Lancer les tests
-JestPHP::run();

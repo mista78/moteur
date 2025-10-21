@@ -324,4 +324,3 @@ describe('AmountCalculationService', function() {
     });
 });
 
-JestPHP::run();

@@ -426,6 +426,7 @@ function collectArrets() {
         const dateEffetForced = document.getElementById(`date_effet_forced_${id}`).value;
         if (dateEffetForced) {
             arret['date-effet-forced'] = dateEffetForced;
+            arret['date_deb_droit'] = dateEffetForced; // Also send as date_deb_droit for backend compatibility
         }
 
         arrets.push(arret);
@@ -705,8 +706,8 @@ async function loadMockData(mockFile = 'mock.json') {
                         </div>
                         <div class="form-group">
                             <div class="checkbox-group">
-                                <input type="checkbox" id="dt_${arretCount}" ${arret['dt-line'] === '0' ? 'checked' : ''}>
-                                <label>DT non excusée</label>
+                                <input type="checkbox" id="dt_${arretCount}">
+                                <label>DT non excusée (bloquer paiement)</label>
                                 <input type="hidden" id="dt_original_${arretCount}" value="${arret['dt-line'] === 1 || arret['dt-line'] === '1' ? '1' : '0'}">
                             </div>
                         </div>
@@ -742,7 +743,7 @@ async function loadMockData(mockFile = 'mock.json') {
                         </div>
                         <div class="form-group">
                             <label>Date d'effet forcée (optionnel)</label>
-                            <input type="date" id="date_effet_forced_${arretCount}">
+                            <input type="date" id="date_effet_forced_${arretCount}" value="${arret['date_deb_droit'] && arret['date_deb_droit'] !== '0000-00-00' ? arret['date_deb_droit'] : ''}">
                         </div>
                     </div>
                 `;
@@ -852,6 +853,23 @@ function displayFullResults(data) {
         <span class="result-value">${data.nb_jours} jours</span>
     </div>`;
 
+    // Calculate total decompte days
+    let totalDecompte = 0;
+    if (data.payment_details && data.payment_details.length > 0) {
+        data.payment_details.forEach((detail) => {
+            if (detail.decompte_days) {
+                totalDecompte += detail.decompte_days;
+            }
+        });
+    }
+
+    if (totalDecompte > 0) {
+        html += `<div class="result-item" style="background-color: #fff9e6;">
+            <span class="result-label" style="color: #856404;">⏱️ Décompte total (jours non payés)</span>
+            <span class="result-value" style="color: #856404; font-weight: bold;">${totalDecompte} jours</span>
+        </div>`;
+    }
+
     html += `<div class="result-item">
         <span class="result-label">Montant total</span>
         <span class="result-value">${(data.montant || 0).toFixed(2)} €</span>
@@ -892,13 +910,24 @@ function displayFullResults(data) {
     if (data.payment_details && data.payment_details.length > 0) {
         html += '<h3 style="margin-top: 20px; color: #667eea;">Détail des paiements par arrêt</h3>';
         html += '<table>';
-        html += '<tr><th>N°</th><th>Début arrêt</th><th>Fin arrêt</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
+        html += '<tr><th>N°</th><th>Début arrêt</th><th>Fin arrêt</th><th>Durée</th><th>Décompte<br>(non payé)</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
 
         data.payment_details.forEach((detail) => {
             html += '<tr>';
             html += `<td>${detail.arret_index + 1}</td>`;
             html += `<td>${detail.arret_from}</td>`;
             html += `<td>${detail.arret_to}</td>`;
+            html += `<td>${detail.arret_diff || '-'}j</td>`;
+
+            // Add decompte column with color coding
+            let decompteHtml = '';
+            if (detail.decompte_days !== undefined && detail.decompte_days > 0) {
+                decompteHtml = `<td style="background-color: #fff3cd; color: #856404; font-weight: bold;">${detail.decompte_days}j</td>`;
+            } else {
+                decompteHtml = `<td style="color: #999;">0j</td>`;
+            }
+            html += decompteHtml;
+
             html += `<td>${detail.date_effet || '-'}</td>`;
             html += `<td>${detail.attestation_date || '-'}</td>`;
             html += `<td>${detail.payment_start || '-'}</td>`;
@@ -926,6 +955,18 @@ function displayFullResults(data) {
         });
 
         html += '</table>';
+
+        // Add explanation for decompte
+        html += `
+            <div style="margin-top: 15px; padding: 12px; background-color: #e7f3ff; border-left: 4px solid #667eea; border-radius: 4px;">
+                <strong style="color: #667eea;">ℹ️ Décompte (jours non payés) :</strong><br>
+                <span style="font-size: 13px; color: #555;">
+                    Le décompte représente les jours qui comptent vers le seuil (90 jours pour nouvelle pathologie, 15 jours pour rechute)
+                    mais qui ne sont <strong>pas payés</strong> car situés avant la date d'effet.<br>
+                    <em>Exemple: Un arrêt de 120 jours avec date d'effet au jour 91 aura 90 jours de décompte et 30 jours payables.</em>
+                </span>
+            </div>
+        `;
 
         // Add payment period recap
         html += '<h3 style="margin-top: 30px; color: #667eea;">Récapitulatif par période de taux</h3>';

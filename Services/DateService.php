@@ -325,12 +325,9 @@ class DateService implements DateCalculationInterface
                 $previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
                 $siRechute = $this->isRechute($currentData, $previousArret);
 
-                // Rechute immédiate (rechute-line = 1 forcé) - droits au 1er jour
-                if ($siRechute && isset($currentData['rechute-line']) && $currentData['rechute-line'] === 1) {
-                    $dates = $startDate->format('Y-m-d');
-                }
-                // Rechute automatique (< 1 an) OU arrêt >= 15 jours - droits au 15ème jour avec calcul max
-                elseif ($siRechute || $arret_diff >= 15) {
+                // Rechute: droits au 15ème jour (règle des 15 jours pour rechute)
+                // Note: Si MC veut forcer au jour 1, utiliser le champ date-effet qui sera traité plus haut
+                if ($siRechute) {
                     // Date de base: 15ème jour d'arrêt
                     $dateDeb = clone $startDate;
                     $dateDeb->modify('+14 days');
@@ -363,6 +360,44 @@ class DateService implements DateCalculationInterface
                         strtotime($dateDT ?? '1970-01-01'),
                         strtotime($dateCotis ?? '1970-01-01'),
                     ]));
+                }
+                // Si ce n'est pas une rechute, c'est une nouvelle pathologie -> règle des 90 jours
+                else {
+                    // Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
+                    $arretDroits = 0;
+                    $nbJours = 0; // Reset pour nouvelle pathologie
+                    $newNbJours = $arret_diff; // Seulement les jours de cet arrêt
+
+                    $lessDate = 90 - $arret_diff;
+                    $dateDeb = clone $startDate;
+                    $dateDeb->modify("+$lessDate days");
+
+                    // Gérer les DT non excusées (31 jours pour nouvelle pathologie)
+                    $dateDT = null;
+                    $dateCotis = null;
+
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
+                        $dtDate = new DateTime($currentData['declaration-date-line']);
+                        $dtDate->modify('+30 days');
+                        $dateDT = $dtDate->format('Y-m-d');
+                    }
+
+                    // Gérer la mise à jour du compte (31 jours pour nouvelle pathologie)
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+                        $cotisDate = new DateTime($currentData['date_maj_compte']);
+                        $cotisDate->modify('+30 days');
+                        $dateCotis = $cotisDate->format('Y-m-d');
+                    }
+
+                    // Si on dépasse 90 jours, on définit la date d'effet
+                    if ($newNbJours > 90) {
+                        $dates = date('Y-m-d', max([
+                            strtotime($dateDeb->format('Y-m-d')),
+                            strtotime($dateDT ?? '1970-01-01'),
+                            strtotime($dateCotis ?? '1970-01-01'),
+                        ]));
+                        $arretDroits++;
+                    }
                 }
             }
 
@@ -421,11 +456,15 @@ class DateService implements DateCalculationInterface
         foreach ($arrets as $index => $arret) {
             // Vérifier cco_a_jour - pas de paiement si compte cotisant pas à jour
             if (isset($arret['cco_a_jour']) && $arret['cco_a_jour'] != 1) {
+                // Calculer les jours de décompte (avant date d'effet)
+                $decompte_days = $this->calculateDecompteDays($arret);
+
                 $paymentDetails[$index] = [
                     'arret_index' => $index,
                     'arret_from' => $arret['arret-from-line'],
                     'arret_to' => $arret['arret-to-line'],
                     'date_effet' => $arret['date-effet'] ?? null,
+                    'decompte_days' => $decompte_days,
                     'attestation_date' => null,
                     'payment_start' => null,
                     'payment_end' => null,
@@ -437,11 +476,14 @@ class DateService implements DateCalculationInterface
 
             // Vérifier valid_med_controleur - pas de paiement si != 1
             if (isset($arret['valid_med_controleur']) && $arret['valid_med_controleur'] != 1) {
+                $decompte_days = $this->calculateDecompteDays($arret);
+
                 $paymentDetails[$index] = [
                     'arret_index' => $index,
                     'arret_from' => $arret['arret-from-line'],
                     'arret_to' => $arret['arret-to-line'],
                     'date_effet' => $arret['date-effet'] ?? null,
+                    'decompte_days' => $decompte_days,
                     'attestation_date' => null,
                     'payment_start' => null,
                     'payment_end' => null,
@@ -453,11 +495,14 @@ class DateService implements DateCalculationInterface
 
             // Vérifier dt-line - pas de paiement si DT non excusée (dt-line === "0" string)
             if (isset($arret['dt-line']) && $arret['dt-line'] === '0') {
+                $decompte_days = $this->calculateDecompteDays($arret);
+
                 $paymentDetails[$index] = [
                     'arret_index' => $index,
                     'arret_from' => $arret['arret-from-line'],
                     'arret_to' => $arret['arret-to-line'],
                     'date_effet' => $arret['date-effet'] ?? null,
+                    'decompte_days' => $decompte_days,
                     'attestation_date' => null,
                     'payment_start' => null,
                     'payment_end' => null,
@@ -468,11 +513,14 @@ class DateService implements DateCalculationInterface
             }
 
             if (!isset($arret['date-effet'])) {
+                $decompte_days = $this->calculateDecompteDays($arret);
+
                 $paymentDetails[$index] = [
                     'arret_index' => $index,
                     'arret_from' => $arret['arret-from-line'],
                     'arret_to' => $arret['arret-to-line'],
                     'date_effet' => null,
+                    'decompte_days' => $decompte_days,
                     'attestation_date' => null,
                     'payment_start' => null,
                     'payment_end' => null,
@@ -486,11 +534,14 @@ class DateService implements DateCalculationInterface
             if (isset($arret['date_naissance']) && !empty($arret['date_naissance'])) {
                 $limitDate75 = $this->getFirstDayOfSemesterAfter75thBirthday($arret['date_naissance']);
                 if ($limitDate75 && $arret['date-effet'] >= $limitDate75) {
+                    $decompte_days = $this->calculateDecompteDays($arret);
+
                     $paymentDetails[$index] = [
                         'arret_index' => $index,
                         'arret_from' => $arret['arret-from-line'],
                         'arret_to' => $arret['arret-to-line'],
                         'date_effet' => $arret['date-effet'],
+                        'decompte_days' => $decompte_days,
                         'attestation_date' => null,
                         'payment_start' => null,
                         'payment_end' => null,
@@ -544,12 +595,16 @@ class DateService implements DateCalculationInterface
 
             $totalDays += $arretDays;
 
+            // Calculer les jours de décompte (avant date d'effet)
+            $decompte_days = $this->calculateDecompteDays($arret);
+
             $paymentDetails[$index] = [
                 'arret_index' => $index,
                 'arret_from' => $arret['arret-from-line'],
                 'arret_to' => $arret['arret-to-line'],
                 'arret_diff' => $arret['arret_diff'] ?? null,
                 'date_effet' => $arret['date-effet'],
+                'decompte_days' => $decompte_days,
                 'attestation_date' => $arretAttestationDate,
                 'attestation_date_extended' => $attestation->format('Y-m-d'),
                 'payment_start' => $arretDays > 0 ? $paymentStart->format('Y-m-d') : '',
@@ -563,5 +618,46 @@ class DateService implements DateCalculationInterface
             'total_days' => $totalDays,
             'payment_details' => $paymentDetails
         ];
+    }
+
+    /**
+     * Calculer les jours de décompte (avant date d'effet) pour un arrêt
+     * Ce sont les jours qui comptent vers le seuil mais ne sont pas payés
+     *
+     * @param array $arret L'arrêt à analyser
+     * @return int Nombre de jours de décompte
+     */
+    private function calculateDecompteDays(array $arret): int
+    {
+        // Si pas de date d'effet, tous les jours sont en décompte
+        if (!isset($arret['date-effet']) || empty($arret['date-effet'])) {
+            if (isset($arret['arret_diff'])) {
+                return $arret['arret_diff'];
+            }
+            $startDate = new DateTime($arret['arret-from-line']);
+            $endDate = new DateTime($arret['arret-to-line']);
+            return $startDate->diff($endDate)->days + 1;
+        }
+
+        $startDate = new DateTime($arret['arret-from-line']);
+        $dateEffet = new DateTime($arret['date-effet']);
+
+        // Si date d'effet est avant ou égale au début de l'arrêt, pas de décompte
+        if ($dateEffet <= $startDate) {
+            return 0;
+        }
+
+        // Calculer les jours entre le début et la date d'effet (exclusif)
+        // date d'effet - 1 jour car le paiement commence à date d'effet
+        $dayBeforeEffet = clone $dateEffet;
+        $dayBeforeEffet->modify('-1 day');
+
+        // Si le jour avant effet est avant le début, pas de décompte
+        if ($dayBeforeEffet < $startDate) {
+            return 0;
+        }
+
+        // Décompte = jours du début jusqu'au jour avant date d'effet (inclus)
+        return $startDate->diff($dayBeforeEffet)->days + 1;
     }
 }

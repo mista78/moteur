@@ -47,6 +47,11 @@ class JestPHP {
         echo "\n";
 
         foreach (self::$suites as $suite) {
+            // Check if suite has tests array
+            if (!isset($suite['tests']) || !is_array($suite['tests'])) {
+                continue;
+            }
+
             foreach ($suite['tests'] as $test) {
                 self::$stats['total']++;
                 $testName = "{$suite['description']} › {$test['description']}";
@@ -104,6 +109,17 @@ class JestPHP {
 
         echo "\033[32m" . self::$stats['passed'] . " passed\033[0m, " . self::$stats['total'] . " total\n";
         echo "\033[1mTime:\033[0m        {$duration}ms\n";
+    }
+
+    public static function reset() {
+        self::$suites = [];
+        self::$currentSuite = null;
+        self::$stats = [
+            'passed' => 0,
+            'failed' => 0,
+            'total' => 0
+        ];
+        self::$failedTests = [];
     }
 }
 

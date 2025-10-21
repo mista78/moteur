@@ -182,4 +182,3 @@ describe('DateService', function() {
     });
 });
 
-JestPHP::run();

@@ -4,111 +4,345 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a VBA-based Excel automation project for calculating French medical professional sick leave benefits ("Indemnités Journalières" - IJ). The system handles complex calculations based on contribution class, age, prior affiliation periods, and pathology status.
+French medical professional sick leave benefits calculator ("Indemnités Journalières" - IJ) for CARMF (Caisse Autonome de Retraite des Médecins de France). The system handles complex calculations based on:
+- Contribution class (A/B/C)
+- Professional status (M/RSPM/CCPL)
+- Age brackets (<62, 62-69, 70+)
+- Affiliation quarters
+- Prior pathology status
+- Historical rate tables (2022-2025)
+
+## Development Commands
+
+### Running Tests
+
+**Run all tests** (46 unit tests + 18 integration tests):
+```bash
+php run_all_tests.php
+```
+
+**Individual service tests**:
+```bash
+php Tests/RateServiceTest.php
+php Tests/DateServiceTest.php
+php Tests/TauxDeterminationServiceTest.php
+php Tests/AmountCalculationServiceTest.php
+```
+
+**Integration tests only**:
+```bash
+php test_mocks.php
+```
+
+**Debug specific mock scenarios**:
+```bash
+php debug_mock9.php   # Age 70 transition testing
+php debug_mock20.php  # Period 2 calculations
+php debug_mock23.php  # Complex scenarios
+```
+
+### Development Server
+
+**PHP built-in server**:
+```bash
+php -S localhost:8000
+```
+
+Access at: `http://localhost:8000`
+
+**CakePHP server** (if using CakePHP integration):
+```bash
+bin/cake server
+```
+
+Access at: `http://localhost:8765/indemnite-journaliere`
+
+### CakePHP Commands (if applicable)
+
+**Database migrations**:
+```bash
+bin/cake migrations migrate
+bin/cake migrations rollback
+bin/cake migrations status
+```
+
+**Cache clearing**:
+```bash
+bin/cake cache clear_all
+```
 
 ## Core Architecture
 
-### Main Entry Point
-- `Sub IJ()` (code.vba:20): Primary calculation routine that orchestrates the entire IJ calculation workflow
+### Dual Implementation
 
-### Calculation Flow
-1. **Age calculation**: `ageDate()` determines age at specific date
-2. **Date consolidation**: Automatic merging of consecutive work stoppage periods (code.vba:34-46)
-3. **Rights determination**: `datesEffetsDroits()` calculates when benefit rights begin (90-day rule, relapses, etc.)
-4. **Days calculation**: `calculNbJours()` determines payable days from rights start date to current payment period
-5. **Amount calculation**: `calculMontant()` computes benefit amounts using tiered rates
-6. **Rate selection**: `selectStatut()` routes to appropriate rate table based on professional status
+The project has two parallel implementations:
 
-### Professional Status Types
-- **M** (Médecins): Doctors with classes A/B/C
-- **RSPM**: Special medical regime with 0.25% or 1% contribution options
-- **CCPL**: Complementary coverage with 0.25% or 0.5% contribution options
+1. **Standalone PHP** (`IJCalculator.php` + Services):
+   - Monolithic calculator with service-oriented refactoring
+   - Direct usage via `new IJCalculator('taux.csv')`
+   - Used by web interface (`index.html` + `api.php`)
 
-### Rate Calculation Logic
-The system uses tiered rates based on:
-- **Age brackets**: <62, 62-69, 70+
-- **Cumulative days**: Three annual periods (0-365, 366-730, 731-1095 days)
-- **Pathology anterior status**: Additional rate adjustments for members with prior pathology and limited affiliation quarters
-- **Year**: Historical rate tables for 2022-2025
+2. **CakePHP 5 Integration** (`src/` directory):
+   - Full MVC structure with Models, Controllers, Services
+   - Database persistence for calculations and work stoppages
+   - RESTful API endpoints
 
-Rate functions:
-- `medecinTaux()` (code.vba:622): Reads rates from "Taux médecins" sheet
-- `RSPMTaux()` (code.vba:678): Reads rates from "Taux RSPM" sheet
-- `CCPLTaux()` (code.vba:646): Reads rates from "Taux CCPL" sheet
+### Service Layer (SOLID Architecture)
+
+Located in `/Services/` directory with interface-based design:
+
+**RateService** (`RateServiceInterface.php`):
+- `getDailyRate()`: Calculate daily rate based on status, class, age, tier
+- `getRateForYear()`: Get rate data for specific year
+- `getRateForDate()`: Get rate data for specific date
+- Handles tier determination (1, 2, 3) and option multipliers
+
+**DateService** (`DateCalculationInterface.php`):
+- `calculateAge()`: Age at specific date
+- `calculateTrimesters()`: Affiliation quarters (Q1-Q4 based)
+- `mergeProlongations()`: Merge consecutive work stoppage periods
+- `calculateDateEffet()`: Rights opening dates (90-day rule)
+- `calculatePayableDays()`: Payable days calculation per period
+- `getTrimesterFromDate()`: Quarter number extraction
+
+**TauxDeterminationService** (`TauxDeterminationInterface.php`):
+- `determineTauxNumber()`: Rate number (1-9) based on age/quarters/pathology
+- `determineClasse()`: Contribution class (A/B/C) from revenue
+
+**AmountCalculationService** (`AmountCalculationInterface.php`):
+- `calculateTotalAmount()`: Main calculation orchestration
+- Integrates all services for complete benefit calculation
 
 ### Key Business Rules
-- **90-day threshold**: Benefits begin after 90 cumulative days of work stoppage
-- **Relapse handling**: Different start rules for relapses (1st day vs 15th day)
-- **3-year maximum**: 1095 days maximum indemnity period
-- **70+ age limit**: Maximum 365 days per affiliation for members 70 and older
-- **8 quarters minimum**: No benefits if less than 8 quarters of affiliation
-- **Class change adjustments**: `gestionChangeClasse()` handles retroactive adjustments when contribution class changes
 
-## Data Files
+**90-day threshold**:
+- Benefits begin after 90 cumulative days of work stoppage
+- Different relapse rules (1st day vs 15th day)
 
-### taux.csv
-CSV file containing historical daily benefit rates with columns:
-- Date ranges (date_start, date_end)
-- Rates for classes A/B/C across three annual tiers (taux_a1/a2/a3, taux_b1/b2/b3, taux_c1/c2/c3)
+**Age-based periods** (62-69 years):
+- Period 1 (days 1-365): Full rate
+- Period 2 (days 366-730): Rate minus 25% (taux 7-9)
+- Period 3 (days 731-1095): Reduced senior rate (taux 4-6)
 
-### mock.json
-Test data structure with work stoppage periods including:
-- `arret-from-line`, `arret-to-line`: Work stoppage dates
-- `rechute-line`: Relapse indicator (0/1)
-- `dt-line`, `gpm-member-line`: Declaration tracking
-- `declaration-date-line`: Official declaration date
+**70+ age limit**:
+- Maximum 365 days per affiliation
+- Uses senior reduced rates (taux 4-6)
 
-## Excel Worksheet Interface
+**27-rate system**:
+- 9 base rates (3 age brackets × 3 pathology levels)
+- Taux 1-3: <62 years (full, -1/3, -2/3)
+- Taux 4-6: ≥70 years (reduced, -1/3, -2/3)
+- Taux 7-9: 62-69 years after 1 year (full-25%, -1/3, -2/3)
 
-The VBA code interacts with Excel cells at specific locations:
+**Pathology anterior reductions**:
+- <8 quarters: No benefits
+- 8-15 quarters: -1/3 reduction (taux +1)
+- 16-23 quarters: -2/3 reduction (taux +2)
+- ≥24 quarters: Full rate
 
-### Input Cells (Row 3)
-- (3,9): Contribution class (A/B/C)
-- (3,10): Contribution option percentage
-- (3,11): Birth date
-- (3,12): Attestation date
-- (3,14): Current date / calculation date
-- (3,15): Professional status (M/RSPM/CCPL)
-- (3,16): Last payment date
-- (3,17): Prior pathology flag (O/N)
-- (3,18): Affiliation date
-- (3,19): Affiliation quarters count
+**Trimester calculation rule** (CRITICAL):
+- Quarters are Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
+- If affiliation date falls within a quarter, that quarter counts as **complete**
+- Example: 2019-01-15 (mid-Q1) to 2024-04-11 (Q2) = 22 quarters
+- Calculation: (5 years × 4) + (Q2 - Q1) + 1 = 22
+- Implementation: `DateService::calculateTrimesters()` (Services/DateService.php:31)
 
-### Work Stoppage Rows (starting row 3)
-- Column 1-2: Start and end dates
-- Column 3: Unexcused medical certificate flag (N)
-- Column 4: Unexcused certificate date
-- Column 5: Relapse flag (O/N)
-- Column 6: Rights start date (calculated or forced)
-- Column 7-8: Contribution account update flag and date
+## Data Structures
 
-### Output Cells
-- (7,14): Age at calculation date
-- (10,14): Number of indemnifiable days
-- (10,15): Rate breakdown detail string
-- (13,14): Total benefit amount
-- (16,8): Previously accumulated days
-- (16,14): Total cumulative days
-- (16,18), (19,18), (22,18): Tiered period end dates
-- (19,14): Class change adjustment amount
-- (19,8): Previous contribution class
+### Input Format (mock.json / API)
 
-### Utility Functions
-- `viderRes()` (code.vba:1): Clears result cells for fresh calculation
+```json
+{
+  "statut": "M",
+  "classe": "A",
+  "option": 100,
+  "birth_date": "1960-01-15",
+  "current_date": "2024-01-15",
+  "attestation_date": "2024-01-31",
+  "last_payment_date": null,
+  "affiliation_date": "2019-01-15",
+  "nb_trimestres": 22,
+  "previous_cumul_days": 0,
+  "patho_anterior": false,
+  "prorata": 1,
+  "pass_value": 47000,
+  "arrets": [
+    {
+      "arret-from-line": "2023-09-04",
+      "arret-to-line": "2023-11-10",
+      "rechute-line": 0,
+      "dt-line": 1,
+      "gpm-member-line": 1,
+      "declaration-date-line": "2023-09-19"
+    }
+  ]
+}
+```
 
-## Trimester Calculation
+### Rate CSV Format (taux.csv)
 
-**Business Rule**: Trimesters are counted by quarter periods (Q1-Q4). If the affiliation date falls within a quarter, that quarter counts as **complete**.
+```csv
+id;date_start;date_end;taux_a1;taux_a2;taux_a3;taux_b1;taux_b2;taux_b3;taux_c1;taux_c2;taux_c3
+1;2024-01-01;2024-12-31;75.06;38.3;56.3;112.59;57.45;84.45;150.12;76.6;112.59
+```
 
-**Quarter Definitions**:
-- Q1: January 1 - March 31
-- Q2: April 1 - June 30
-- Q3: July 1 - September 30
-- Q4: October 1 - December 31
+Columns:
+- `taux_X1`: Period 1 rate (0-365 days)
+- `taux_X2`: Period 2 rate (366-730 days)
+- `taux_X3`: Period 3 rate (731-1095 days)
+- X = a/b/c for classes A/B/C
 
-**Example**: Affiliation on 2019-01-15 (mid-Q1) to 2024-04-11 (Q2) = 22 complete quarters
-- Calculation: (5 years × 4) + (Q2 - Q1) + 1 = 20 + 1 + 1 = 22 ✓
+## API Endpoints
 
-This rule is critical for pathology anterior rate determinations (8-15 trimesters = -1/3, 16-23 = -2/3, 24+ = full rate).
+### Standalone API (api.php)
 
-**Implementation**: `DateService::calculateTrimesters()` (Services/DateService.php:31)
+**Calculate date effet**:
+```bash
+POST /api.php?endpoint=date-effet
+```
+
+**Calculate end payment dates**:
+```bash
+POST /api.php?endpoint=end-payment
+```
+
+**Full calculation**:
+```bash
+POST /api.php?endpoint=calculate
+```
+
+**Calculate revenue (PASS)**:
+```bash
+POST /api.php?endpoint=revenu
+```
+
+**Load mock data**:
+```bash
+GET /api.php?endpoint=load-mock
+```
+
+### CakePHP API (if integrated)
+
+**API calculate**:
+```bash
+POST /indemnite-journaliere/api-calculate.json
+```
+
+## Test Data
+
+18 integration test scenarios in root directory (`mock.json`, `mock2.json`, etc.) and `webroot/mocks/`:
+
+Key scenarios:
+- `mock.json`: Basic calculation (750.60€)
+- `mock2.json`: Multiple stoppages (17318.92€)
+- `mock7.json`: CCPL with pathology anterior (74331.79€)
+- `mock9.json`: Age 70 transition (53467.98€)
+- `mock10.json`: Period 2 intermediate (51744.25€)
+
+## File Organization
+
+```
+/
+├── IJCalculator.php           # Main calculator (refactored with services)
+├── Services/                  # Service layer (SOLID principles)
+│   ├── RateService.php
+│   ├── DateService.php
+│   ├── TauxDeterminationService.php
+│   ├── AmountCalculationService.php
+│   └── *Interface.php         # Interface contracts
+├── Tests/                     # Unit tests (46 tests)
+│   ├── RateServiceTest.php
+│   ├── DateServiceTest.php
+│   ├── TauxDeterminationServiceTest.php
+│   └── AmountCalculationServiceTest.php
+├── src/                       # CakePHP 5 integration
+│   ├── Controller/
+│   ├── Model/
+│   ├── Service/
+│   └── Form/
+├── config/                    # CakePHP config + migrations
+├── api.php                    # Standalone REST API
+├── index.html                 # Web interface
+├── app.js                     # Frontend logic
+├── taux.csv                   # Rate tables
+├── test_mocks.php             # Integration tests (18 tests)
+├── run_all_tests.php          # Test runner
+└── mock*.json                 # Test scenarios
+```
+
+## Key Implementation Notes
+
+### Class Determination (CLASSE_DETERMINATION.md)
+
+Automatic class determination based on N-2 revenue:
+- Class A: < 1 PASS (< 47,000€)
+- Class B: 1-3 PASS (47,000€ - 141,000€)
+- Class C: > 3 PASS (> 141,000€)
+
+Method: `IJCalculator::determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice)`
+
+### Rate Determination Logic
+
+The `determineTauxNumber()` method (TauxDeterminationService.php) implements the decision tree:
+1. Check eligibility (≥8 quarters)
+2. Apply historical rate if exists
+3. Determine age bracket
+4. Calculate pathology anterior reduction
+5. Return taux number (1-9)
+
+### Date Effet Calculation
+
+The 90-day rule implementation (`DateService::calculateDateEffet()`):
+- Accumulates days from all work stoppages
+- Handles relapses (rechute)
+- Applies DT and GPM adjustments (+31 days each)
+- Returns payment start date or empty string if not payable
+
+### Backward Compatibility
+
+The refactoring maintains 100% backward compatibility:
+- Original VBA logic preserved in comments
+- All 18 integration tests pass without modification
+- Services can be injected or use defaults
+
+## Common Development Patterns
+
+### Adding a New Test
+
+1. Create mock JSON in root or `webroot/mocks/`
+2. Add test case to `test_mocks.php` with expected values
+3. Run: `php test_mocks.php`
+
+### Modifying Rate Logic
+
+1. Update service in `Services/` directory
+2. Update corresponding interface if signature changes
+3. Run unit tests: `php Tests/[Service]Test.php`
+4. Run integration tests: `php test_mocks.php`
+5. Update REFACTORING.md if architecture changes
+
+### Adding New Business Rules
+
+1. Identify appropriate service (Rate/Date/Taux/Amount)
+2. Add method to interface
+3. Implement in service
+4. Add unit tests
+5. Update integration tests if needed
+6. Document in relevant .md file (RATE_RULES.md, CLASSE_DETERMINATION.md, etc.)
+
+## Documentation References
+
+- **REFACTORING.md**: SOLID principles and service architecture
+- **RATE_RULES.md**: Complete 27-rate system explanation
+- **CLASSE_DETERMINATION.md**: Revenue-based class determination
+- **QUICKSTART.md**: CakePHP installation guide
+- **README.md**: API documentation and usage examples
+- **TESTING_SUMMARY.md**: Test coverage and strategy
+- **TRIMESTER_CALCULATION_FIX.md**: Quarter calculation rules
+
+## Original VBA Reference
+
+The project was ported from VBA Excel automation (`code.vba`):
+- Original entry point: `Sub IJ()` (line 20)
+- VBA functions mapped to PHP services
+- Excel cell references documented but not used in PHP version

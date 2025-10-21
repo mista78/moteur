@@ -112,4 +112,3 @@ describe('RateService', function() {
     });
 });
 
-JestPHP::run();
