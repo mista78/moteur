@@ -361,44 +361,6 @@ class DateService implements DateCalculationInterface
                         strtotime($dateCotis ?? '1970-01-01'),
                     ]));
                 }
-                // Si ce n'est pas une rechute, c'est une nouvelle pathologie -> règle des 90 jours
-                else {
-                    // Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
-                    $arretDroits = 0;
-                    $nbJours = 0; // Reset pour nouvelle pathologie
-                    $newNbJours = $arret_diff; // Seulement les jours de cet arrêt
-
-                    $lessDate = 90 - $arret_diff;
-                    $dateDeb = clone $startDate;
-                    $dateDeb->modify("+$lessDate days");
-
-                    // Gérer les DT non excusées (31 jours pour nouvelle pathologie)
-                    $dateDT = null;
-                    $dateCotis = null;
-
-                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
-                        $dtDate = new DateTime($currentData['declaration-date-line']);
-                        $dtDate->modify('+30 days');
-                        $dateDT = $dtDate->format('Y-m-d');
-                    }
-
-                    // Gérer la mise à jour du compte (31 jours pour nouvelle pathologie)
-                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
-                        $cotisDate = new DateTime($currentData['date_maj_compte']);
-                        $cotisDate->modify('+30 days');
-                        $dateCotis = $cotisDate->format('Y-m-d');
-                    }
-
-                    // Si on dépasse 90 jours, on définit la date d'effet
-                    if ($newNbJours > 90) {
-                        $dates = date('Y-m-d', max([
-                            strtotime($dateDeb->format('Y-m-d')),
-                            strtotime($dateDT ?? '1970-01-01'),
-                            strtotime($dateCotis ?? '1970-01-01'),
-                        ]));
-                        $arretDroits++;
-                    }
-                }
             }
 
             $currentData['date-effet'] = $dates;

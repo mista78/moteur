@@ -291,9 +291,12 @@ function addArret() {
     arretDiv.className = 'arret-item';
     arretDiv.id = `arret-${arretCount}`;
 
+    // Determine if this is a rechute (all arrets after the first are rechute)
+    const isRechute = arretCount > 1;
+
     arretDiv.innerHTML = `
         <div class="arret-header">
-            <h3>Arrêt ${arretCount}</h3>
+            <h3>Arrêt ${arretCount}${isRechute ? ' (Rechute)' : ''}</h3>
             <button class="btn btn-danger" onclick="removeArret(${arretCount})">Supprimer</button>
         </div>
         <div class="form-grid">
@@ -313,8 +316,8 @@ function addArret() {
         <div class="form-grid">
             <div class="form-group">
                 <div class="checkbox-group">
-                    <input type="checkbox" id="rechute_${arretCount}">
-                    <label>Rechute</label>
+                    <input type="checkbox" id="rechute_${arretCount}" ${isRechute ? 'checked disabled' : ''}>
+                    <label>Rechute${isRechute ? ' (automatique)' : ''}</label>
                 </div>
             </div>
             <div class="form-group">
@@ -670,7 +673,7 @@ async function loadMockData(mockFile = 'mock.json') {
             }
 
             // Load mock arrets
-            result.data.forEach(arret => {
+            result.data.forEach((arret, index) => {
                 arretCount++;
                 const container = document.getElementById('arrets-container');
 
@@ -678,9 +681,12 @@ async function loadMockData(mockFile = 'mock.json') {
                 arretDiv.className = 'arret-item';
                 arretDiv.id = `arret-${arretCount}`;
 
+                // Determine if this is a rechute (all arrets after the first are rechute)
+                const isRechute = index > 0;
+
                 arretDiv.innerHTML = `
                     <div class="arret-header">
-                        <h3>Arrêt ${arretCount}</h3>
+                        <h3>Arrêt ${arretCount}${isRechute ? ' (Rechute)' : ''}</h3>
                         <button class="btn btn-danger" onclick="removeArret(${arretCount})">Supprimer</button>
                     </div>
                     <div class="form-grid">
@@ -700,8 +706,8 @@ async function loadMockData(mockFile = 'mock.json') {
                     <div class="form-grid">
                         <div class="form-group">
                             <div class="checkbox-group">
-                                <input type="checkbox" id="rechute_${arretCount}" ${arret['rechute-line'] == '1' ? 'checked' : ''}>
-                                <label>Rechute</label>
+                                <input type="checkbox" id="rechute_${arretCount}" ${isRechute ? 'checked disabled' : (arret['rechute-line'] == '1' ? 'checked' : '')}>
+                                <label>Rechute${isRechute ? ' (automatique)' : ''}</label>
                             </div>
                         </div>
                         <div class="form-group">

@@ -87,6 +87,14 @@ The project has two parallel implementations:
    - Database persistence for calculations and work stoppages
    - RESTful API endpoints
 
+### Web Interface Behavior
+
+**Automatic Rechute (Relapse) Handling**:
+- In the web interface, ALL arrets (work stoppages) after the first one are automatically treated as rechute (relapse)
+- The first arret is the initial work stoppage
+- Any subsequent arret added to the calculation is considered a relapse by default
+- This behavior simplifies data entry for the common case where multiple stoppages represent relapses
+
 ### Service Layer (SOLID Architecture)
 
 Located in `/Services/` directory with interface-based design:
@@ -114,6 +122,12 @@ Located in `/Services/` directory with interface-based design:
 - Integrates all services for complete benefit calculation
 
 ### Key Business Rules
+
+**Rechute (Relapse) handling**:
+- **Interface behavior**: All arrets after the first are automatically treated as rechute
+- First arret: Initial work stoppage (rechute-line = 0)
+- Subsequent arrets: Automatically marked as rechute (rechute-line = 1)
+- Rechute affects day counting: resumes from 1st day if relapse, otherwise from 15th day
 
 **90-day threshold**:
 - Benefits begin after 90 cumulative days of work stoppage
