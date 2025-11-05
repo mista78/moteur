@@ -39,6 +39,12 @@ php test_mocks.php
 php debug_mock9.php   # Age 70 transition testing
 php debug_mock20.php  # Period 2 calculations
 php debug_mock23.php  # Complex scenarios
+php debug_mock2.php   # Multiple stoppages debugging
+```
+
+**Run Jest-PHP tests** (alternative test framework):
+```bash
+php jest-php.php
 ```
 
 ### Development Server
@@ -124,10 +130,15 @@ Located in `/Services/` directory with interface-based design:
 ### Key Business Rules
 
 **Rechute (Relapse) handling**:
-- **Interface behavior**: All arrets after the first are automatically treated as rechute
+- **Critical rule**: An arret is only a rechute if rights have been opened (date-effet exists for previous arret)
+- If the 90-day threshold hasn't been reached yet, subsequent arrets accumulate days, they are NOT relapses
 - First arret: Initial work stoppage (rechute-line = 0)
-- Subsequent arrets: Automatically marked as rechute (rechute-line = 1)
-- Rechute affects day counting: resumes from 1st day if relapse, otherwise from 15th day
+- Rechute criteria (all must be met):
+  1. Previous arret has date-effet (rights were opened)
+  2. Not consecutive (not a prolongation)
+  3. Starts within 1 year after previous arret ended
+- Rechute affects day counting: resumes from 15th day (instead of 91st day for new pathology)
+- Implementation: `DateService::isRechute()` (Services/DateService.php:204)
 
 **90-day threshold**:
 - Benefits begin after 90 cumulative days of work stoppage
@@ -157,9 +168,15 @@ Located in `/Services/` directory with interface-based design:
 **Trimester calculation rule** (CRITICAL):
 - Quarters are Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
 - If affiliation date falls within a quarter, that quarter counts as **complete**
+- If current date is NOT at the end of a quarter, add 1 to include the next complete quarter
 - Example: 2019-01-15 (mid-Q1) to 2024-04-11 (Q2) = 22 quarters
 - Calculation: (5 years × 4) + (Q2 - Q1) + 1 = 22
 - Implementation: `DateService::calculateTrimesters()` (Services/DateService.php:31)
+
+**Décompte days** (Days counted but not paid):
+- Days before the date d'effet (rights opening date) are counted toward the 90-day threshold
+- These days are tracked separately as "jours de décompte"
+- Implementation: `DateService::calculateDecompteDays()` (Services/DateService.php:628)
 
 ## Data Structures
 
@@ -244,7 +261,7 @@ POST /indemnite-journaliere/api-calculate.json
 
 ## Test Data
 
-18 integration test scenarios in root directory (`mock.json`, `mock2.json`, etc.) and `webroot/mocks/`:
+23+ integration test scenarios in root directory (`mock.json`, `mock2.json`, ..., `mock28.json`) and `webroot/mocks/`:
 
 Key scenarios:
 - `mock.json`: Basic calculation (750.60€)
@@ -252,6 +269,7 @@ Key scenarios:
 - `mock7.json`: CCPL with pathology anterior (74331.79€)
 - `mock9.json`: Age 70 transition (53467.98€)
 - `mock10.json`: Period 2 intermediate (51744.25€)
+- `mock28.json`: Recent test scenario
 
 ## File Organization
 
@@ -278,10 +296,13 @@ Key scenarios:
 ├── api.php                    # Standalone REST API
 ├── index.html                 # Web interface
 ├── app.js                     # Frontend logic
+├── calendar_functions.js      # Calendar view features
 ├── taux.csv                   # Rate tables
-├── test_mocks.php             # Integration tests (18 tests)
+├── test_mocks.php             # Integration tests (23+ tests)
 ├── run_all_tests.php          # Test runner
-└── mock*.json                 # Test scenarios
+├── jest-php.php               # Jest-style test framework
+├── debug_mock*.php            # Debug scripts for specific scenarios
+└── mock*.json                 # Test scenarios (mock.json to mock28.json)
 ```
 
 ## Key Implementation Notes
@@ -353,6 +374,10 @@ The refactoring maintains 100% backward compatibility:
 - **README.md**: API documentation and usage examples
 - **TESTING_SUMMARY.md**: Test coverage and strategy
 - **TRIMESTER_CALCULATION_FIX.md**: Quarter calculation rules
+- **RECHUTE_IMPLEMENTATION_SUMMARY.md**: Relapse detection and implementation
+- **DECOMPTE_FEATURE.md**: Days counting before payment starts (décompte)
+- **CALENDAR_VIEW_FEATURE.md**: Calendar view functionality
+- **JEST-PHP-README.md**: Jest-style testing framework documentation
 
 ## Original VBA Reference
 

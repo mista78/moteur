@@ -12,23 +12,18 @@ echo "==========================================================================
 echo "                       IJCalculator Test Suite                                  \n";
 echo "================================================================================\n";
 echo "\n";
-
-$testFiles = [
-    'Tests/RateServiceTest.php' => 'Rate Service Unit Tests',
-    'Tests/DateServiceTest.php' => 'Date Service Unit Tests',
-    'Tests/TauxDeterminationServiceTest.php' => 'Taux Determination Service Unit Tests',
-    'Tests/AmountCalculationServiceTest.php' => 'Amount Calculation Service Unit Tests',
-    'Tests/RechuteTest.php' => 'Rechute (Relapse) Business Rules Unit Tests',
-    'test_mocks.php' => 'Integration Tests (IJCalculator with real mocks)'
-];
+define('ROOT_PATH', __DIR__ . '/');
+$testFiles = glob(ROOT_PATH . 'Tests/*.php');
 
 $totalPassed = 0;
 $totalFailed = 0;
 $startTime = microtime(true);
 
-foreach ($testFiles as $file => $description) {
+foreach ($testFiles as $file) {
     include $file;
 }
+
+
 
 // Run all tests once
 ob_start();

@@ -291,12 +291,10 @@ function addArret() {
     arretDiv.className = 'arret-item';
     arretDiv.id = `arret-${arretCount}`;
 
-    // Determine if this is a rechute (all arrets after the first are rechute)
-    const isRechute = arretCount > 1;
-
     arretDiv.innerHTML = `
         <div class="arret-header">
-            <h3>Arrêt ${arretCount}${isRechute ? ' (Rechute)' : ''}</h3>
+            <h3>Arrêt ${arretCount}</h3>
+            <div id="arret_status_${arretCount}" class="arret-status-badge" style="display: none;"></div>
             <button class="btn btn-danger" onclick="removeArret(${arretCount})">Supprimer</button>
         </div>
         <div class="form-grid">
@@ -316,8 +314,8 @@ function addArret() {
         <div class="form-grid">
             <div class="form-group">
                 <div class="checkbox-group">
-                    <input type="checkbox" id="rechute_${arretCount}" ${isRechute ? 'checked disabled' : ''}>
-                    <label>Rechute${isRechute ? ' (automatique)' : ''}</label>
+                    <input type="checkbox" id="rechute_${arretCount}">
+                    <label>Rechute (si droits déjà ouverts)</label>
                 </div>
             </div>
             <div class="form-group">
@@ -413,11 +411,13 @@ function collectArrets() {
 
         const validMedControleurCheckbox = document.getElementById(`valid_med_controleur_${id}`);
 
+        const rechute = document.getElementById(`rechute_${id}`);
+
         const arret = {
             'arret-from-line': arretFrom,
             'arret-to-line': arretTo,
             'code-patho-line': document.getElementById(`code_patho_${id}`).value || '',
-            'rechute-line': document.getElementById(`rechute_${id}`).checked ? 1 : 0,
+            'rechute-line': rechute.checked ? 1 : null, // null = auto-determine by backend
             'dt-line': dtLineValue,
             'gpm-member-line': document.getElementById(`gpm_${id}`).checked ? 1 : 0,
             'cco_a_jour': ccoAJourCheckbox ? (ccoAJourCheckbox.checked ? 1 : 0) : 1,
@@ -681,12 +681,10 @@ async function loadMockData(mockFile = 'mock.json') {
                 arretDiv.className = 'arret-item';
                 arretDiv.id = `arret-${arretCount}`;
 
-                // Determine if this is a rechute (all arrets after the first are rechute)
-                const isRechute = index > 0;
-
                 arretDiv.innerHTML = `
                     <div class="arret-header">
-                        <h3>Arrêt ${arretCount}${isRechute ? ' (Rechute)' : ''}</h3>
+                        <h3>Arrêt ${arretCount}</h3>
+                        <div id="arret_status_${arretCount}" class="arret-status-badge" style="display: none;"></div>
                         <button class="btn btn-danger" onclick="removeArret(${arretCount})">Supprimer</button>
                     </div>
                     <div class="form-grid">
@@ -706,8 +704,8 @@ async function loadMockData(mockFile = 'mock.json') {
                     <div class="form-grid">
                         <div class="form-group">
                             <div class="checkbox-group">
-                                <input type="checkbox" id="rechute_${arretCount}" ${isRechute ? 'checked disabled' : (arret['rechute-line'] == '1' ? 'checked' : '')}>
-                                <label>Rechute${isRechute ? ' (automatique)' : ''}</label>
+                                <input type="checkbox" id="rechute_${arretCount}" ${arret['rechute-line'] == '1' ? 'checked' : ''}>
+                                <label>Rechute (si droits déjà ouverts)</label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -827,6 +825,44 @@ function displayEndPaymentResults(data) {
     html += '</div>';
 
     resultsDiv.innerHTML = html;
+}
+
+function updateArretStatusBadges(arrets) {
+    const container = document.getElementById('arrets-container');
+    const arretItems = container.querySelectorAll('.arret-item');
+
+    arretItems.forEach((item, index) => {
+        const id = item.id.split('-')[1];
+        const badge = document.getElementById(`arret_status_${id}`);
+
+        if (badge && arrets[index]) {
+            const arret = arrets[index];
+            let badgeHtml = '';
+            let badgeStyle = '';
+
+            if (arret.is_rechute === true) {
+                // Show which arret this is a rechute of
+                if (arret.rechute_of_arret_index !== undefined && arret.rechute_of_arret_index !== null) {
+                    const sourceArretNum = arret.rechute_of_arret_index + 1;
+                    badgeHtml = `🔄 Rechute de l'arrêt #${sourceArretNum}`;
+                } else {
+                    badgeHtml = '🔄 Rechute';
+                }
+                badgeStyle = 'background-color: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;';
+            } else if (arret.is_rechute === false && index > 0) {
+                badgeHtml = '🆕 Nouvelle pathologie';
+                badgeStyle = 'background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;';
+            } else if (index === 0) {
+                badgeHtml = '1ère pathologie';
+                badgeStyle = 'color: #666; padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+            }
+
+            if (badgeHtml) {
+                badge.innerHTML = badgeHtml;
+                badge.style = badgeStyle + '; display: inline-block; margin-left: 10px;';
+            }
+        }
+    });
 }
 
 function displayFullResults(data) {
@@ -1072,12 +1108,32 @@ function displayFullResults(data) {
     // Arrêts with dates effet
     html += '<h3 style="margin-top: 20px; color: #667eea;">Détail des arrêts</h3>';
     html += '<table>';
-    html += '<tr><th>N°</th><th>Début</th><th>Fin</th><th>Date d\'effet</th><th>Durée</th></tr>';
+    html += '<tr><th>N°</th><th>Début</th><th>Fin</th><th>Date d\'effet</th><th>Durée</th><th>Type</th></tr>';
 
     data.arrets.forEach((arret, index) => {
         const startDate = new Date(arret['arret-from-line']);
         const endDate = new Date(arret['arret-to-line']);
         const duration = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+        // Determine arret type based on backend determination
+        let typeLabel = '';
+        let typeStyle = '';
+        if (arret.is_rechute === true) {
+            // Show which arret this is a rechute of
+            if (arret.rechute_of_arret_index !== undefined && arret.rechute_of_arret_index !== null) {
+                const sourceArretNum = arret.rechute_of_arret_index + 1; // +1 for human-readable numbering
+                typeLabel = `🔄 Rechute de l'arrêt #${sourceArretNum}`;
+            } else {
+                typeLabel = '🔄 Rechute';
+            }
+            typeStyle = 'background-color: #fff3cd; color: #856404; font-weight: bold;';
+        } else if (arret.is_rechute === false && index > 0) {
+            typeLabel = '🆕 Nouvelle pathologie';
+            typeStyle = 'background-color: #d4edda; color: #155724; font-weight: bold;';
+        } else {
+            typeLabel = '1ère pathologie';
+            typeStyle = 'color: #666;';
+        }
 
         html += '<tr>';
         html += `<td>${index + 1}</td>`;
@@ -1085,10 +1141,24 @@ function displayFullResults(data) {
         html += `<td>${arret['arret-to-line']}</td>`;
         html += `<td><strong>${arret['date-effet'] || 'N/A'}</strong></td>`;
         html += `<td>${duration} jours</td>`;
+        html += `<td style="${typeStyle}">${typeLabel}</td>`;
         html += '</tr>';
     });
 
     html += '</table>';
+
+    // Add explanation for arret types
+    html += `
+        <div style="margin-top: 15px; padding: 12px; background-color: #e7f3ff; border-left: 4px solid #667eea; border-radius: 4px;">
+            <strong style="color: #667eea;">ℹ️ Types d'arrêts :</strong><br>
+            <span style="font-size: 13px; color: #555;">
+                <strong>🔄 Rechute de l'arrêt #X :</strong> Indique que cet arrêt est une rechute de l'arrêt #X (le dernier arrêt avec droits ouverts).
+                Droits déjà ouverts + arrêt < 1 an après → Paiement dès le 15ème jour<br>
+                <strong>🆕 Nouvelle pathologie :</strong> Droits pas encore ouverts OU arrêt > 1 an après le dernier avec droits ouverts → Nouveau seuil de 90 jours requis<br>
+                <strong>1ère pathologie :</strong> Premier arrêt de travail de l'affiliation
+            </span>
+        </div>
+    `;
 
     // Close summary tab
     html += '</div>'; // End summary tab-content
@@ -1101,6 +1171,11 @@ function displayFullResults(data) {
     html += '</div>'; // End results div
 
     resultsDiv.innerHTML = html;
+
+    // Update arret status badges in the form
+    if (data.arrets) {
+        updateArretStatusBadges(data.arrets);
+    }
 
     // Initialize calendar if data is available
     if (window.calendarData) {

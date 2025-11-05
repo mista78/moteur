@@ -263,52 +263,7 @@ describe('Rechute (Relapse) Business Rules', function() {
         });
     });
 
-    // describe('Rechute with Medical Controller Override', function() use ($calculator) {
-    //     // TODO: MC override test - requires additional field structure
-    //     // Currently payment_start is not populated in the expected format
-    //     // This is a known limitation documented in RECHUTE_IMPLEMENTATION_SUMMARY.md
-    //
-    //     it('should allow Medical Controller to override rechute to start at day 1', function() use ($calculator) {
-    //         // Medical Controller can force rechute to start at day 1
-    //         $data = [
-    //             'arrets' => [
-    //                 [
-    //                     'arret-from-line' => '2023-01-01',
-    //                     'arret-to-line' => '2023-02-01',
-    //                     'rechute-line' => 0,
-    //                     'dt-line' => 0,
-    //                     'gpm-member-line' => 0,
-    //                     'declaration-date-line' => '2023-01-01'
-    //                 ],
-    //                 [
-    //                     'arret-from-line' => '2023-06-01',
-    //                     'arret-to-line' => '2023-06-30',
-    //                     'rechute-line' => 1,
-    //                     'dt-line' => 0,
-    //                     'gpm-member-line' => 0,
-    //                     'declaration-date-line' => '2023-06-01',
-    //                     'date-effet' => '2023-06-01'  // MC forced to day 1
-    //                 ]
-    //             ],
-    //             'statut' => 'M',
-    //             'classe' => 'A',
-    //             'option' => 100,
-    //             'birth_date' => '1980-01-01',
-    //             'current_date' => '2024-01-15',
-    //             'attestation_date' => '2024-01-15',
-    //             'nb_trimestres' => 20,
-    //             'previous_cumul_days' => 0,
-    //             'patho_anterior' => false,
-    //             'prorata' => 1
-    //         ];
-    //
-    //         $result = $calculator->calculateAmount($data);
-    //
-    //         // Payment should start from day 1 as forced
-    //         expect(isset($result['arrets']))->toBeTruthy();
-    //         expect($result['arrets'][1]['payment_start'])->toBe('2023-06-01');
-    //     });
-    // });
+    
 
     describe('Rechute vs Prolongation Distinction', function() use ($calculator) {
 

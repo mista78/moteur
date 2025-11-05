@@ -199,6 +199,7 @@ class DateService implements DateCalculationInterface
      * Règle: Si rechute-line est déjà défini (forcé par commission), le respecter.
      * Sinon, calculer automatiquement: rechute si date début < (date fin dernier arrêt + 1 an)
      * et que l'arrêt n'est pas une prolongation (consécutif)
+     * ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
      */
     private function isRechute(array $currentArret, ?array $previousArret): bool
     {
@@ -209,6 +210,12 @@ class DateService implements DateCalculationInterface
 
         // Pas de précédent arrêt → pas une rechute
         if (!$previousArret) {
+            return false;
+        }
+
+        // CRITICAL: Si l'arrêt précédent n'a pas de date-effet (droits pas ouverts),
+        // alors ce n'est pas une rechute, juste une accumulation vers le seuil de 90 jours
+        if (!isset($previousArret['date-effet']) || empty($previousArret['date-effet'])) {
             return false;
         }
 
@@ -287,6 +294,9 @@ class DateService implements DateCalculationInterface
 
             // Premier arrêt - calcul de la date d'ouverture des droits (90 jours)
             if ($arretDroits === 0) {
+                // Premier arrêt ou nouvelle pathologie, pas une rechute
+                $currentData['is_rechute'] = false;
+
                 $lessDate = 90 - ($newNbJours - $arret_diff);
                 $dateDeb = clone $startDate;
                 $dateDeb->modify("+$lessDate days");
@@ -325,6 +335,20 @@ class DateService implements DateCalculationInterface
                 $previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
                 $siRechute = $this->isRechute($currentData, $previousArret);
 
+                // Ajouter l'indication de rechute au résultat pour l'affichage frontend
+                $currentData['is_rechute'] = $siRechute;
+
+                // Si c'est une rechute, identifier de quel arrêt (le dernier avec date-effet)
+                if ($siRechute) {
+                    // Trouver le dernier arrêt précédent qui a une date-effet
+                    for ($i = $increment - 1; $i >= 0; $i--) {
+                        if (isset($arrets[$i]['date-effet']) && !empty($arrets[$i]['date-effet'])) {
+                            $currentData['rechute_of_arret_index'] = $i;
+                            break;
+                        }
+                    }
+                }
+
                 // Rechute: droits au 15ème jour (règle des 15 jours pour rechute)
                 // Note: Si MC veut forcer au jour 1, utiliser le champ date-effet qui sera traité plus haut
                 if ($siRechute) {
@@ -360,6 +384,42 @@ class DateService implements DateCalculationInterface
                         strtotime($dateDT ?? '1970-01-01'),
                         strtotime($dateCotis ?? '1970-01-01'),
                     ]));
+                } else {
+                    // Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
+                    $arretDroits = 0;
+                    $nbJours = 0; // Reset pour nouvelle pathologie
+                    $newNbJours = $arret_diff; // Seulement les jours de cet arrêt
+
+                    $lessDate = 90 - $arret_diff;
+                    $dateDeb = clone $startDate;
+                    $dateDeb->modify("+$lessDate days");
+
+                    // Gérer les DT non excusées (31 jours pour nouvelle pathologie)
+                    $dateDT = null;
+                    $dateCotis = null;
+
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
+                        $dtDate = new DateTime($currentData['declaration-date-line']);
+                        $dtDate->modify('+30 days');
+                        $dateDT = $dtDate->format('Y-m-d');
+                    }
+
+                    // Gérer la mise à jour du compte (31 jours pour nouvelle pathologie)
+                    if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+                        $cotisDate = new DateTime($currentData['date_maj_compte']);
+                        $cotisDate->modify('+30 days');
+                        $dateCotis = $cotisDate->format('Y-m-d');
+                    }
+
+                    // Si on dépasse 90 jours, on définit la date d'effet
+                    if ($newNbJours > 90) {
+                        $dates = date('Y-m-d', max([
+                            strtotime($dateDeb->format('Y-m-d')),
+                            strtotime($dateDT ?? '1970-01-01'),
+                            strtotime($dateCotis ?? '1970-01-01'),
+                        ]));
+                        $arretDroits++;
+                    }
                 }
             }
 

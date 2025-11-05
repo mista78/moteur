@@ -58,18 +58,40 @@ function generateCalendarView(data) {
 
     // Legend
     html += '<div class="calendar-legend">';
+    html += '<h4 style="margin-bottom: 10px; color: #667eea;">📅 Légende</h4>';
+
+    html += '<div style="margin-bottom: 15px;">';
+    html += '<strong>États des jours:</strong><br>';
     html += '<div class="calendar-legend-item">';
     html += '<div class="calendar-legend-color" style="background: #28a745;"></div>';
     html += '<span>Jour payé</span>';
     html += '</div>';
     html += '<div class="calendar-legend-item">';
     html += '<div class="calendar-legend-color" style="background: #dc3545;"></div>';
-    html += '<span>Jour non payé</span>';
+    html += '<span>Jour non payé (avant droits)</span>';
     html += '</div>';
     html += '<div class="calendar-legend-item">';
     html += '<div class="calendar-legend-color" style="background: #ffc107;"></div>';
-    html += '<span>Début arrêt</span>';
+    html += '<span>Début d\'arrêt</span>';
     html += '</div>';
+    html += '</div>';
+
+    html += '<div>';
+    html += '<strong>Types d\'arrêts (bordures):</strong><br>';
+    html += '<div class="calendar-legend-item">';
+    html += '<div class="calendar-legend-color" style="background: #fff; border: 3px solid #ff9800;"></div>';
+    html += '<span>🔄 Rechute</span>';
+    html += '</div>';
+    html += '<div class="calendar-legend-item">';
+    html += '<div class="calendar-legend-color" style="background: #fff; border: 3px solid #4caf50;"></div>';
+    html += '<span>🆕 Nouvelle pathologie</span>';
+    html += '</div>';
+    html += '<div class="calendar-legend-item">';
+    html += '<div class="calendar-legend-color" style="background: #fff; border: 2px solid #ccc;"></div>';
+    html += '<span>1ère pathologie</span>';
+    html += '</div>';
+    html += '</div>';
+
     html += '</div>';
 
     html += '</div>';
@@ -83,8 +105,24 @@ function generateCalendarView(data) {
 function extractCalendarData(data) {
     const payments = [];
 
+    // Build a map of arret info (is_rechute, rechute_of_arret_index)
+    const arretInfo = {};
+    if (data && data.arrets && Array.isArray(data.arrets)) {
+        data.arrets.forEach((arret, index) => {
+            arretInfo[index] = {
+                is_rechute: arret.is_rechute,
+                rechute_of_arret_index: arret.rechute_of_arret_index,
+                arret_from: arret['arret-from-line'],
+                arret_to: arret['arret-to-line']
+            };
+        });
+    }
+
     if (data && data.payment_details && Array.isArray(data.payment_details)) {
         data.payment_details.forEach(detail => {
+            const arretIdx = detail.arret_index || 0;
+            const info = arretInfo[arretIdx] || {};
+
             // Add the arrêt start date as a special marker
             if (detail.arret_from) {
                 payments.push({
@@ -93,10 +131,12 @@ function extractCalendarData(data) {
                     amount: 0,
                     taux: 0,
                     period: 0,
-                    arret_index: detail.arret_index || 0,
+                    arret_index: arretIdx,
                     arret_from: detail.arret_from || '',
                     arret_to: detail.arret_to || '',
-                    is_arret_start: true
+                    is_arret_start: true,
+                    is_rechute: info.is_rechute,
+                    rechute_of_arret_index: info.rechute_of_arret_index
                 });
             }
 
@@ -110,10 +150,12 @@ function extractCalendarData(data) {
                             amount: day.amount || 0,
                             taux: day.taux || 0,
                             period: day.period || 0,
-                            arret_index: detail.arret_index || 0,
+                            arret_index: arretIdx,
                             arret_from: detail.arret_from || '',
                             arret_to: detail.arret_to || '',
-                            is_arret_start: false
+                            is_arret_start: false,
+                            is_rechute: info.is_rechute,
+                            rechute_of_arret_index: info.rechute_of_arret_index
                         });
                     }
                 });
@@ -121,7 +163,7 @@ function extractCalendarData(data) {
         });
     }
 
-    return { payments };
+    return { payments, arretInfo };
 }
 
 /**
@@ -184,23 +226,51 @@ function renderCalendar(month, year) {
                 const isArretStart = payment.is_arret_start === true;
                 const isPaid = payment.rate > 0;
 
-                let bgColor, displayText, titleText;
+                let bgColor, displayText, titleText, borderStyle = '';
+
+                // Determine arret type info
+                let arretTypeInfo = '';
+                if (payment.is_rechute === true) {
+                    if (payment.rechute_of_arret_index !== undefined && payment.rechute_of_arret_index !== null) {
+                        arretTypeInfo = ` - 🔄 Rechute de l'arrêt #${payment.rechute_of_arret_index + 1}`;
+                    } else {
+                        arretTypeInfo = ' - 🔄 Rechute';
+                    }
+                    borderStyle = 'border: 3px solid #ff9800;'; // Orange border for rechute
+                } else if (payment.is_rechute === false && payment.arret_index > 0) {
+                    arretTypeInfo = ' - 🆕 Nouvelle pathologie';
+                    borderStyle = 'border: 3px solid #4caf50;'; // Green border for new pathology
+                } else if (payment.arret_index === 0) {
+                    arretTypeInfo = ' - 1ère pathologie';
+                }
 
                 if (isArretStart) {
                     bgColor = '#ffc107';
-                    displayText = '🏥 Début arrêt';
-                    titleText = `Arrêt #${payment.arret_index + 1} - Début: ${payment.arret_from}`;
+                    let startLabel = '🏥 Début';
+
+                    // Add rechute indicator for start date
+                    if (payment.is_rechute === true) {
+                        startLabel = '🔄 Début rechute';
+                        if (payment.rechute_of_arret_index !== undefined && payment.rechute_of_arret_index !== null) {
+                            startLabel = `🔄 Rechute #${payment.rechute_of_arret_index + 1}`;
+                        }
+                    } else if (payment.is_rechute === false && payment.arret_index > 0) {
+                        startLabel = '🆕 Nouvelle patho';
+                    }
+
+                    displayText = startLabel;
+                    titleText = `Arrêt #${payment.arret_index + 1}${arretTypeInfo} - Début: ${payment.arret_from}`;
                 } else if (isPaid) {
                     bgColor = '#28a745';
                     displayText = `${payment.rate.toFixed(2)}€`;
-                    titleText = `Arrêt #${payment.arret_index + 1}: ${payment.rate.toFixed(2)}€`;
+                    titleText = `Arrêt #${payment.arret_index + 1}${arretTypeInfo}: ${payment.rate.toFixed(2)}€`;
                 } else {
                     bgColor = '#dc3545';
-                    displayText = 'Jour non payé';
-                    titleText = `Arrêt #${payment.arret_index + 1} - Jour non payé (avant droits)`;
+                    displayText = 'Non payé';
+                    titleText = `Arrêt #${payment.arret_index + 1}${arretTypeInfo} - Jour non payé (avant droits)`;
                 }
 
-                html += `<div class="calendar-payment" style="background: ${bgColor};" title="${titleText}">`;
+                html += `<div class="calendar-payment" style="background: ${bgColor}; ${borderStyle}" title="${titleText}">`;
                 html += displayText;
                 html += '</div>';
             });
