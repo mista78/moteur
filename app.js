@@ -1,6 +1,7 @@
 const API_URL = 'api.php';
 
 let arretCount = 0;
+let currentMockInfo = null; // Store current mock file info and expected values
 
 // Initialize with current date
 document.addEventListener('DOMContentLoaded', () => {
@@ -253,6 +254,49 @@ function formatMoney(value, showDecimals = false) {
         minimumFractionDigits: showDecimals ? 2 : 0,
         maximumFractionDigits: showDecimals ? 2 : 0
     }).format(value);
+}
+
+function displayLoadedMock(mockFile, config = null) {
+    // Create or update the loaded mock indicator
+    let indicator = document.getElementById('loaded-mock-indicator');
+
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'loaded-mock-indicator';
+        indicator.style.cssText = `
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-left: 15px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            animation: fadeIn 0.3s ease-in;
+        `;
+
+        // Insert after the mock buttons container
+        const container = document.getElementById('mock-buttons-container');
+        container.parentNode.insertBefore(indicator, container.nextSibling);
+    }
+
+    // Make sure it's visible
+    indicator.style.display = 'inline-block';
+
+    // Extract number from filename
+    const match = mockFile.match(/mock(\d*)\.json/);
+    const number = match[1] || '';
+    const label = number ? `Mock ${number}` : 'Mock';
+
+    indicator.innerHTML = `✅ ${label} chargé`;
+
+    // Store mock info globally
+    currentMockInfo = {
+        file: mockFile,
+        label: label,
+        config: config
+    };
 }
 
 async function loadMockList() {
@@ -616,6 +660,13 @@ function clearAllFormFields() {
     // Clear arrets
     document.getElementById('arrets-container').innerHTML = '';
     arretCount = 0;
+
+    // Hide loaded mock indicator and clear mock info
+    const indicator = document.getElementById('loaded-mock-indicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+    currentMockInfo = null;
 }
 
 async function loadMockData(mockFile = 'mock.json') {
@@ -628,8 +679,12 @@ async function loadMockData(mockFile = 'mock.json') {
             clearAllFormFields();
 
             // Load configuration if available
-            if (result.config) {
-                const config = result.config;
+            const config = result.config || null;
+
+            // Show which mock is loaded (pass config for expected values)
+            displayLoadedMock(mockFile, config);
+
+            if (config) {
 
                 // Populate form fields with configuration
                 if (config.statut) {
@@ -868,7 +923,44 @@ function updateArretStatusBadges(arrets) {
 function displayFullResults(data) {
     const resultsDiv = document.getElementById('results');
 
-    let html = '<div class="results"><h2>💰 Résultats Complets</h2>';
+    let html = '<div class="results">';
+
+    // Show loaded mock indicator if available
+    if (currentMockInfo) {
+        html += `<div style="margin-bottom: 15px; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
+            <div style="margin-bottom: 8px;">✅ ${currentMockInfo.label} chargé</div>`;
+
+        // Show expected values if available
+        if (currentMockInfo.config) {
+            const config = currentMockInfo.config;
+            html += '<div style="font-size: 12px; font-weight: normal; opacity: 0.95; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.3);">';
+            html += '<strong>Valeurs attendues:</strong><br>';
+
+            if (config.expected_montant !== undefined) {
+                const match = data.montant !== undefined && Math.abs(data.montant - config.expected_montant) < 0.01;
+                const icon = match ? '✓' : '✗';
+                const color = match ? '#d4edda' : '#f8d7da';
+                html += `<span style="background: ${color}; color: #333; padding: 2px 6px; border-radius: 3px; margin-right: 8px;">${icon} Montant: ${config.expected_montant.toFixed(2)}€</span>`;
+            }
+
+            if (config.expected_nb_jours !== undefined) {
+                const match = data.nb_jours !== undefined && data.nb_jours === config.expected_nb_jours;
+                const icon = match ? '✓' : '✗';
+                const color = match ? '#d4edda' : '#f8d7da';
+                html += `<span style="background: ${color}; color: #333; padding: 2px 6px; border-radius: 3px;">${icon} Jours: ${config.expected_nb_jours}</span>`;
+            }
+
+            if (config.description) {
+                html += `<br><em style="font-size: 11px;">${config.description}</em>`;
+            }
+
+            html += '</div>';
+        }
+
+        html += '</div>';
+    }
+
+    html += '<h2>💰 Résultats Complets</h2>';
 
     // Add tabs
     html += '<div class="tabs">';
@@ -952,7 +1044,7 @@ function displayFullResults(data) {
     if (data.payment_details && data.payment_details.length > 0) {
         html += '<h3 style="margin-top: 20px; color: #667eea;">Détail des paiements par arrêt</h3>';
         html += '<table>';
-        html += '<tr><th>N°</th><th>Début arrêt</th><th>Fin arrêt</th><th>Durée</th><th>Décompte<br>(non payé)</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
+        html += '<tr><th>N°</th><th>Début arrêt</th><th>Fin arrêt</th><th>Durée</th><th>Décompte<br>(non payé)</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
 
         data.payment_details.forEach((detail) => {
             html += '<tr>';
@@ -976,13 +1068,39 @@ function displayFullResults(data) {
             html += `<td>${detail.payment_end || '-'}</td>`;
             html += `<td><strong>${detail.payable_days}</strong></td>`;
 
+            // Display taux index
+            if (detail.rate_breakdown && detail.rate_breakdown.length > 0) {
+                // Collect unique taux values
+                const tauxSet = new Set();
+                detail.rate_breakdown.forEach(rb => {
+                    if (rb.taux) {
+                        tauxSet.add(rb.taux);
+                    }
+                });
+                const tauxArray = Array.from(tauxSet).sort((a, b) => a - b);
+
+                if (tauxArray.length > 0) {
+                    let tauxHtml = '';
+                    tauxArray.forEach((taux, idx) => {
+                        if (idx > 0) tauxHtml += ', ';
+                        tauxHtml += `<span style="background-color: #667eea; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;">${taux}</span>`;
+                    });
+                    html += `<td style="text-align: center;">${tauxHtml}</td>`;
+                } else {
+                    html += `<td>-</td>`;
+                }
+            } else {
+                html += `<td>-</td>`;
+            }
+
             // Display rate information
             if (detail.rate_breakdown && detail.rate_breakdown.length > 0) {
                 let rateStr = '';
                 detail.rate_breakdown.forEach(rb => {
                     const yearLabel = rb.year ? `[${rb.year}] ` : '';
                     const periodLabel = rb.period ? `P${rb.period}` : '';
-                    rateStr += `${yearLabel}${periodLabel}: ${rb.days}j × ${rb.rate}€<br>`;
+                    const tauxLabel = rb.taux ? ` T${rb.taux}` : '';
+                    rateStr += `${yearLabel}${periodLabel}${tauxLabel}: ${rb.days}j × ${rb.rate}€<br>`;
                 });
                 html += `<td style="font-size: 11px;">${rateStr}</td>`;
             } else if (detail.daily_rate) {
@@ -1006,6 +1124,20 @@ function displayFullResults(data) {
                     Le décompte représente les jours qui comptent vers le seuil (90 jours pour nouvelle pathologie, 15 jours pour rechute)
                     mais qui ne sont <strong>pas payés</strong> car situés avant la date d'effet.<br>
                     <em>Exemple: Un arrêt de 120 jours avec date d'effet au jour 91 aura 90 jours de décompte et 30 jours payables.</em>
+                </span>
+            </div>
+        `;
+
+        // Add explanation for taux system
+        html += `
+            <div style="margin-top: 15px; padding: 12px; background-color: #f0f7ff; border-left: 4px solid #667eea; border-radius: 4px;">
+                <strong style="color: #667eea;">📊 Système de Taux (1-9) :</strong><br>
+                <span style="font-size: 13px; color: #555;">
+                    Le <strong>taux</strong> détermine le montant journalier selon l'âge, les trimestres d'affiliation et la pathologie antérieure :<br>
+                    • <strong>Taux 1-3</strong> : &lt;62 ans (plein, -1/3, -2/3)<br>
+                    • <strong>Taux 4-6</strong> : ≥70 ans (réduit senior, -1/3, -2/3)<br>
+                    • <strong>Taux 7-9</strong> : 62-69 ans après 365j (plein-25%, -1/3, -2/3)<br>
+                    <em>Les réductions s'appliquent selon le nombre de trimestres : 8-15 trim = -2/3, 16-23 trim = -1/3, ≥24 trim = plein</em>
                 </span>
             </div>
         `;

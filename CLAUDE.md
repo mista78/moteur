@@ -4,206 +4,181 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-French medical professional sick leave benefits calculator ("Indemnités Journalières" - IJ) for CARMF (Caisse Autonome de Retraite des Médecins de France). The system handles complex calculations based on:
-- Contribution class (A/B/C)
-- Professional status (M/RSPM/CCPL)
-- Age brackets (<62, 62-69, 70+)
-- Affiliation quarters
-- Prior pathology status
-- Historical rate tables (2022-2025)
+French medical professional sick leave benefits calculator ("Indemnités Journalières" - IJ) for CARMF (Caisse Autonome de Retraite des Médecins de France). The system calculates daily benefits based on:
+- Contribution class (A/B/C) and professional status (M/RSPM/CCPL)
+- Age brackets (<62, 62-69, 70+) with different rate periods
+- Affiliation quarters and pathology anterior status
+- Complex 27-rate system with historical rate tables (2022-2025)
+- 90-day threshold for initial benefits, 15-day threshold for relapses (rechute)
 
 ## Development Commands
 
 ### Running Tests
 
-**Run all tests** (46 unit tests + 18 integration tests):
+**Run all tests** (~255+ tests: unit + integration):
 ```bash
 php run_all_tests.php
 ```
 
 **Individual service tests**:
 ```bash
-php Tests/RateServiceTest.php
-php Tests/DateServiceTest.php
-php Tests/TauxDeterminationServiceTest.php
-php Tests/AmountCalculationServiceTest.php
+php Tests/RateServiceTest.php              # 13 tests
+php Tests/DateServiceTest.php              # 17 tests
+php Tests/TauxDeterminationServiceTest.php # 16 tests
+php Tests/AmountCalculationServiceTest.php # Tests for amount calculations
+php Tests/RechuteTest.php                  # 10 rechute-specific tests
 ```
 
-**Integration tests only**:
+**Integration tests**:
 ```bash
-php test_mocks.php
+php test_mocks.php           # 18+ integration tests with real scenarios
+php test_rechute_integration.php  # Rechute integration tests
+php test_decompte.php        # Decompte (non-paid days) tests
 ```
 
-**Debug specific mock scenarios**:
+**Debug specific scenarios**:
 ```bash
-php debug_mock9.php   # Age 70 transition testing
-php debug_mock20.php  # Period 2 calculations
-php debug_mock23.php  # Complex scenarios
-php debug_mock2.php   # Multiple stoppages debugging
-```
-
-**Run Jest-PHP tests** (alternative test framework):
-```bash
-php jest-php.php
+php debug_mock9.php   # Age 70 transition
+php debug_mock20.php  # Period 2 calculations (62-69 age)
+php debug_mock23.php  # Complex multi-period scenarios
+php debug_mock2.php   # Multiple stoppages with rechute
 ```
 
 ### Development Server
 
-**PHP built-in server**:
+**PHP built-in server** (recommended for standalone):
 ```bash
 php -S localhost:8000
 ```
-
 Access at: `http://localhost:8000`
 
-**CakePHP server** (if using CakePHP integration):
+**CakePHP server** (for CakePHP integration):
 ```bash
 bin/cake server
 ```
-
 Access at: `http://localhost:8765/indemnite-journaliere`
-
-### CakePHP Commands (if applicable)
-
-**Database migrations**:
-```bash
-bin/cake migrations migrate
-bin/cake migrations rollback
-bin/cake migrations status
-```
-
-**Cache clearing**:
-```bash
-bin/cake cache clear_all
-```
 
 ## Core Architecture
 
-### Dual Implementation
+The project uses a **service-oriented architecture** following SOLID principles, with two parallel implementations:
 
-The project has two parallel implementations:
+### 1. Standalone PHP Implementation (Primary)
+- **Entry point**: `IJCalculator.php` (690 lines)
+- **Services**: Modular services in `/Services/` directory (~1,800 lines)
+- **API**: RESTful endpoints via `api.php`
+- **Frontend**: Web interface (`index.html` + `app.js` + `calendar_functions.js`)
+- **Tests**: Unit tests in `/Tests/`, integration tests in root directory
 
-1. **Standalone PHP** (`IJCalculator.php` + Services):
-   - Monolithic calculator with service-oriented refactoring
-   - Direct usage via `new IJCalculator('taux.csv')`
-   - Used by web interface (`index.html` + `api.php`)
-
-2. **CakePHP 5 Integration** (`src/` directory):
-   - Full MVC structure with Models, Controllers, Services
-   - Database persistence for calculations and work stoppages
-   - RESTful API endpoints
-
-### Web Interface Behavior
-
-**Automatic Rechute (Relapse) Handling**:
-- In the web interface, ALL arrets (work stoppages) after the first one are automatically treated as rechute (relapse)
-- The first arret is the initial work stoppage
-- Any subsequent arret added to the calculation is considered a relapse by default
-- This behavior simplifies data entry for the common case where multiple stoppages represent relapses
+### 2. CakePHP 5 Integration (Optional)
+- **Location**: `src/` directory
+- **Purpose**: MVC structure with database persistence
+- **Controllers**: `src/Controller/` - API endpoints
+- **Models**: `src/Model/` - Database entities (Calculations, Arrets)
+- **Migrations**: `config/Migrations/` - Database schema
 
 ### Service Layer (SOLID Architecture)
 
-Located in `/Services/` directory with interface-based design:
+All services implement interfaces and are located in `/Services/`:
 
-**RateService** (`RateServiceInterface.php`):
-- `getDailyRate()`: Calculate daily rate based on status, class, age, tier
-- `getRateForYear()`: Get rate data for specific year
-- `getRateForDate()`: Get rate data for specific date
-- Handles tier determination (1, 2, 3) and option multipliers
+**RateService** (`RateServiceInterface.php`) - 156 lines:
+- `getDailyRate()`: Calculate daily rate from CSV based on status, class, age, tier
+- `getRateForYear()` / `getRateForDate()`: Retrieve rate data for specific periods
+- Handles tier determination (1/2/3 for periods) and option multipliers (CCPL/RSPM)
 
-**DateService** (`DateCalculationInterface.php`):
-- `calculateAge()`: Age at specific date
-- `calculateTrimesters()`: Affiliation quarters (Q1-Q4 based)
-- `mergeProlongations()`: Merge consecutive work stoppage periods
-- `calculateDateEffet()`: Rights opening dates (90-day rule)
-- `calculatePayableDays()`: Payable days calculation per period
-- `getTrimesterFromDate()`: Quarter number extraction
+**DateService** (`DateCalculationInterface.php`) - 685 lines:
+- `calculateAge()`: Age calculation at specific date
+- `calculateTrimesters()`: Affiliation quarters with Q1-Q4 rounding rules
+- `mergeProlongations()`: Merge consecutive work stoppages
+- `calculateDateEffet()`: Rights opening dates (90-day rule, 15-day for rechute)
+- `calculatePayableDays()`: Payable days per period considering attestation dates
+- `calculateDecompteDays()`: Non-paid days before date-effet (décompte feature)
+- `isRechute()`: Detect relapse conditions (< 1 year, non-consecutive, rights opened)
 
-**TauxDeterminationService** (`TauxDeterminationInterface.php`):
-- `determineTauxNumber()`: Rate number (1-9) based on age/quarters/pathology
-- `determineClasse()`: Contribution class (A/B/C) from revenue
+**TauxDeterminationService** (`TauxDeterminationInterface.php`) - 112 lines:
+- `determineTauxNumber()`: Rate number (1-9) from age/quarters/pathology decision tree
+- `determineClasse()`: Contribution class (A/B/C) from N-2 revenue
 
-**AmountCalculationService** (`AmountCalculationInterface.php`):
-- `calculateTotalAmount()`: Main calculation orchestration
-- Integrates all services for complete benefit calculation
+**AmountCalculationService** (`AmountCalculationInterface.php`) - 630 lines:
+- `calculateTotalAmount()`: Main orchestration of entire calculation pipeline
+- Integrates all services, handles multi-period calculations, returns detailed breakdown
 
-### Key Business Rules
+### Critical Business Rules
 
-**Rechute (Relapse) handling**:
-- **Critical rule**: An arret is only a rechute if rights have been opened (date-effet exists for previous arret)
-- If the 90-day threshold hasn't been reached yet, subsequent arrets accumulate days, they are NOT relapses
-- First arret: Initial work stoppage (rechute-line = 0)
-- Rechute criteria (all must be met):
-  1. Previous arret has date-effet (rights were opened)
-  2. Not consecutive (not a prolongation)
+**Rechute (Relapse) Detection** - `DateService::isRechute()` (line 204):
+- **CRITICAL**: An arret is only a rechute if rights were already opened (previous date-effet exists)
+- If 90-day threshold not reached, subsequent arrets accumulate days (NOT relapses)
+- Rechute criteria (ALL must be met):
+  1. Previous arret has date-effet (rights opened)
+  2. NOT consecutive (gap between stoppages)
   3. Starts within 1 year after previous arret ended
-- Rechute affects day counting: resumes from 15th day (instead of 91st day for new pathology)
-- Implementation: `DateService::isRechute()` (Services/DateService.php:204)
+- Rechute uses **15-day threshold** (vs 91-day for new pathology)
+- Penalties reduced to 15 days (vs 31 days) for DT/GPM on rechute
 
-**90-day threshold**:
-- Benefits begin after 90 cumulative days of work stoppage
-- Different relapse rules (1st day vs 15th day)
+**90-Day Threshold Rule**:
+- Initial pathology: Benefits begin at day 91 (90 days décompte)
+- Cumulative calculation across all arrêts for same pathology
+- Days before date-effet are "décompte" (counted but not paid)
 
-**Age-based periods** (62-69 years):
-- Period 1 (days 1-365): Full rate
-- Period 2 (days 366-730): Rate minus 25% (taux 7-9)
-- Period 3 (days 731-1095): Reduced senior rate (taux 4-6)
+**Age-Based Period System**:
+- **< 62 years**: Taux 1-3 (single rate throughout)
+- **62-69 years**: Three periods with different rates
+  - Period 1 (days 1-365): Full rate
+  - Period 2 (days 366-730): Rate -25% (taux 7-9)
+  - Period 3 (days 731-1095): Reduced senior rate (taux 4-6)
+- **≥ 70 years**: Maximum 365 days, reduced rates (taux 4-6)
 
-**70+ age limit**:
-- Maximum 365 days per affiliation
-- Uses senior reduced rates (taux 4-6)
+**27-Rate System** (9 taux × 3 classes):
+- Taux 1-3: <62 years (full, -1/3 reduction, -2/3 reduction)
+- Taux 4-6: ≥70 years (senior reduced, -1/3, -2/3)
+- Taux 7-9: 62-69 years Period 2 (full-25%, -1/3, -2/3)
+- Classes A/B/C multiply base rate by contribution level
+- See RATE_RULES.md for complete decision tree
 
-**27-rate system**:
-- 9 base rates (3 age brackets × 3 pathology levels)
-- Taux 1-3: <62 years (full, -1/3, -2/3)
-- Taux 4-6: ≥70 years (reduced, -1/3, -2/3)
-- Taux 7-9: 62-69 years after 1 year (full-25%, -1/3, -2/3)
-
-**Pathology anterior reductions**:
-- <8 quarters: No benefits
+**Pathology Anterior Reductions**:
+- < 8 quarters: NO benefits (ineligible)
 - 8-15 quarters: -1/3 reduction (taux +1)
 - 16-23 quarters: -2/3 reduction (taux +2)
-- ≥24 quarters: Full rate
+- ≥ 24 quarters: Full rate (no reduction)
 
-**Trimester calculation rule** (CRITICAL):
-- Quarters are Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
-- If affiliation date falls within a quarter, that quarter counts as **complete**
-- If current date is NOT at the end of a quarter, add 1 to include the next complete quarter
-- Example: 2019-01-15 (mid-Q1) to 2024-04-11 (Q2) = 22 quarters
-- Calculation: (5 years × 4) + (Q2 - Q1) + 1 = 22
-- Implementation: `DateService::calculateTrimesters()` (Services/DateService.php:31)
+**Trimester Calculation** - `DateService::calculateTrimesters()` (line 31):
+- Quarters: Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
+- **Partial quarters count as complete** (rounding rule)
+- Example: 2019-01-15 to 2024-04-11 = (5 years × 4) + (Q2 - Q1) + 1 = 22 quarters
+- Trimesters calculated from affiliation date to **first arret date** (NOT payment start)
+- See TRIMESTER_CALCULATION_FIX.md for detailed examples
 
-**Décompte days** (Days counted but not paid):
-- Days before the date d'effet (rights opening date) are counted toward the 90-day threshold
-- These days are tracked separately as "jours de décompte"
-- Implementation: `DateService::calculateDecompteDays()` (Services/DateService.php:628)
+**Décompte Feature** (Non-Paid Days):
+- "Décompte" = days counted toward threshold but not paid
+- Days before date-effet are décompte (90 for new pathology, 14 for rechute)
+- Displayed separately in web interface with yellow highlighting
+- Implementation: `DateService::calculateDecompteDays()` (line 628)
 
 ## Data Structures
 
-### Input Format (mock.json / API)
+### Input Format (POST to api.php or mock.json)
 
 ```json
 {
-  "statut": "M",
-  "classe": "A",
-  "option": 100,
+  "statut": "M",                        // M=Médecin, RSPM, CCPL
+  "classe": "A",                        // A/B/C contribution class
+  "option": 100,                        // Option multiplier (25, 50, 75, 100)
   "birth_date": "1960-01-15",
-  "current_date": "2024-01-15",
-  "attestation_date": "2024-01-31",
+  "current_date": "2024-01-15",         // Calculation date
+  "attestation_date": "2024-01-31",     // Last medical attestation
   "last_payment_date": null,
-  "affiliation_date": "2019-01-15",
-  "nb_trimestres": 22,
-  "previous_cumul_days": 0,
-  "patho_anterior": false,
-  "prorata": 1,
-  "pass_value": 47000,
+  "affiliation_date": "2019-01-15",     // CARMF affiliation start
+  "nb_trimestres": 22,                  // Auto-calculated if affiliation_date provided
+  "previous_cumul_days": 0,             // Cumulative days from prior calculations
+  "patho_anterior": false,              // Pathology existed before affiliation
+  "prorata": 1,                         // Prorata multiplier (usually 1)
+  "pass_value": 47000,                  // PASS (Plafond Annuel SS) for year
   "arrets": [
     {
       "arret-from-line": "2023-09-04",
       "arret-to-line": "2023-11-10",
-      "rechute-line": 0,
-      "dt-line": 1,
-      "gpm-member-line": 1,
+      "rechute-line": 0,                // 0=new pathology, 1=rechute (auto-detected)
+      "dt-line": 1,                     // 1=late declaration penalty applies
+      "gpm-member-line": 1,             // 1=GPM account update penalty
       "declaration-date-line": "2023-09-19"
     }
   ]
@@ -212,176 +187,317 @@ Located in `/Services/` directory with interface-based design:
 
 ### Rate CSV Format (taux.csv)
 
+Historical rates by year, class, and period:
+
 ```csv
 id;date_start;date_end;taux_a1;taux_a2;taux_a3;taux_b1;taux_b2;taux_b3;taux_c1;taux_c2;taux_c3
 1;2024-01-01;2024-12-31;75.06;38.3;56.3;112.59;57.45;84.45;150.12;76.6;112.59
 ```
 
 Columns:
-- `taux_X1`: Period 1 rate (0-365 days)
-- `taux_X2`: Period 2 rate (366-730 days)
-- `taux_X3`: Period 3 rate (731-1095 days)
+- `taux_X1`: Period 1 rate (days 1-365)
+- `taux_X2`: Period 2 rate (days 366-730) - for age 62-69 only
+- `taux_X3`: Period 3 rate (days 731-1095) - for age 62-69 only
 - X = a/b/c for classes A/B/C
 
-## API Endpoints
+### Output Format (API Response)
 
-### Standalone API (api.php)
-
-**Calculate date effet**:
-```bash
-POST /api.php?endpoint=date-effet
+```json
+{
+  "success": true,
+  "data": {
+    "nb_jours": 59,
+    "montant": 4428.54,
+    "age": 64,
+    "total_cumul_days": 59,
+    "end_payment_dates": {
+      "end_period_1": "2024-12-02",
+      "end_period_2": "2025-11-02",
+      "end_period_3": "2026-10-02"
+    },
+    "payment_details": [
+      {
+        "arret_index": 0,
+        "arret_from": "2023-09-04",
+        "arret_to": "2023-11-10",
+        "date-effet": "2023-12-03",
+        "nb_jours": 59,
+        "decompte_days": 90,
+        "daily_breakdown": [
+          {
+            "date": "2023-12-03",
+            "rate": 75.06,
+            "amount": 75.06,
+            "taux": 1,
+            "period": 1
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-**Calculate end payment dates**:
-```bash
-POST /api.php?endpoint=end-payment
-```
+## API Endpoints (api.php)
 
-**Full calculation**:
+All endpoints accept JSON POST data unless noted:
+
+**Full Calculation** (most commonly used):
 ```bash
 POST /api.php?endpoint=calculate
 ```
+Returns complete calculation with amounts, dates, daily breakdown
 
-**Calculate revenue (PASS)**:
+**Calculate Date Effet** (90-day rule):
+```bash
+POST /api.php?endpoint=date-effet
+```
+Returns rights opening dates for each arret
+
+**Calculate End Payment Dates**:
+```bash
+POST /api.php?endpoint=end-payment
+```
+Returns period 1/2/3 end dates based on age
+
+**Calculate Revenue (PASS-based)**:
 ```bash
 POST /api.php?endpoint=revenu
 ```
+Determines revenue from class and PASS value
 
-**Load mock data**:
+**Load Mock Data** (test data):
 ```bash
 GET /api.php?endpoint=load-mock
 ```
+Returns mock.json for testing interface
 
-### CakePHP API (if integrated)
+## Test Data & Mock Scenarios
 
-**API calculate**:
-```bash
-POST /indemnite-journaliere/api-calculate.json
-```
+28+ integration test scenarios in root directory and `webroot/mocks/`:
 
-## Test Data
+**Key test scenarios**:
+- `mock.json`: Basic single arret (750.60€)
+- `mock2.json`: Multiple stoppages with rechute (17318.92€)
+- `mock7.json`: CCPL status with pathology anterior (74331.79€)
+- `mock9.json`: Age 70 transition case (53467.98€)
+- `mock10.json`: Age 62-69 Period 2 calculations (51744.25€)
+- `mock20.json`: Complex multi-period scenario
+- `mock28.json`: Recent comprehensive test
 
-23+ integration test scenarios in root directory (`mock.json`, `mock2.json`, ..., `mock28.json`) and `webroot/mocks/`:
+**Test coverage**: ~255+ total tests
+- Unit tests: 56 (Rate, Date, Taux, Amount services, Rechute)
+- Integration tests: 18+ (test_mocks.php)
+- Specialized: Decompte, trimester, rechute scenarios
 
-Key scenarios:
-- `mock.json`: Basic calculation (750.60€)
-- `mock2.json`: Multiple stoppages (17318.92€)
-- `mock7.json`: CCPL with pathology anterior (74331.79€)
-- `mock9.json`: Age 70 transition (53467.98€)
-- `mock10.json`: Period 2 intermediate (51744.25€)
-- `mock28.json`: Recent test scenario
+## Web Interface Features
+
+**Tabs System** (index.html + app.js):
+- **📊 Résumé**: Traditional summary view with results table
+- **📅 Calendrier**: Interactive monthly calendar showing daily payments
+
+**Calendar View** (calendar_functions.js):
+- Monthly navigation with prev/next buttons
+- Visual indicators: 🏥 (arret start), green (paid day), yellow (décompte)
+- Daily breakdown tooltips with rate/amount/period info
+- Auto-initializes to first payment month
+
+**Results Display**:
+- Age, trimestres, total amount, cumulative days
+- Period end dates (for age 62-69: periods 1/2/3)
+- Detailed arret table with décompte column (yellow highlighted)
+- Rechute badges and source display in arret list
+- Explanatory info boxes for décompte and calculation rules
 
 ## File Organization
 
 ```
 /
-├── IJCalculator.php           # Main calculator (refactored with services)
-├── Services/                  # Service layer (SOLID principles)
-│   ├── RateService.php
-│   ├── DateService.php
-│   ├── TauxDeterminationService.php
-│   ├── AmountCalculationService.php
-│   └── *Interface.php         # Interface contracts
-├── Tests/                     # Unit tests (46 tests)
-│   ├── RateServiceTest.php
-│   ├── DateServiceTest.php
-│   ├── TauxDeterminationServiceTest.php
-│   └── AmountCalculationServiceTest.php
-├── src/                       # CakePHP 5 integration
-│   ├── Controller/
-│   ├── Model/
-│   ├── Service/
-│   └── Form/
-├── config/                    # CakePHP config + migrations
-├── api.php                    # Standalone REST API
-├── index.html                 # Web interface
-├── app.js                     # Frontend logic
-├── calendar_functions.js      # Calendar view features
-├── taux.csv                   # Rate tables
-├── test_mocks.php             # Integration tests (23+ tests)
-├── run_all_tests.php          # Test runner
+├── IJCalculator.php           # Main calculator (~690 lines)
+├── Services/                  # SOLID service layer (~1,800 lines)
+│   ├── RateService.php / RateServiceInterface.php
+│   ├── DateService.php / DateCalculationInterface.php
+│   ├── TauxDeterminationService.php / TauxDeterminationInterface.php
+│   └── AmountCalculationService.php / AmountCalculationInterface.php
+├── Tests/                     # Unit tests (~56 tests)
+│   ├── RateServiceTest.php (13 tests)
+│   ├── DateServiceTest.php (17 tests)
+│   ├── TauxDeterminationServiceTest.php (16 tests)
+│   ├── AmountCalculationServiceTest.php
+│   └── RechuteTest.php (10 tests)
+├── api.php                    # REST API endpoints
+├── index.html                 # Web interface (HTML structure)
+├── app.js                     # Frontend logic & results display
+├── calendar_functions.js      # Calendar view functionality
+├── taux.csv                   # Historical rate tables
+├── test_mocks.php             # Integration tests (18+ scenarios)
+├── run_all_tests.php          # Test runner (all tests)
 ├── jest-php.php               # Jest-style test framework
 ├── debug_mock*.php            # Debug scripts for specific scenarios
-└── mock*.json                 # Test scenarios (mock.json to mock28.json)
+├── mock*.json                 # Test scenarios (root + webroot/mocks/)
+├── src/                       # CakePHP 5 integration (optional)
+│   ├── Controller/            # API controllers
+│   ├── Model/                 # Database entities
+│   └── Service/               # CakePHP service wrappers
+└── config/                    # CakePHP config + migrations
 ```
 
-## Key Implementation Notes
+## Common Development Workflows
 
-### Class Determination (CLASSE_DETERMINATION.md)
+### Adding a New Test Scenario
 
-Automatic class determination based on N-2 revenue:
-- Class A: < 1 PASS (< 47,000€)
-- Class B: 1-3 PASS (47,000€ - 141,000€)
-- Class C: > 3 PASS (> 141,000€)
+1. **Create mock JSON** in root or `webroot/mocks/`:
+   ```bash
+   cp mock.json mock29.json
+   # Edit mock29.json with new scenario
+   ```
 
-Method: `IJCalculator::determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice)`
+2. **Add to integration tests** in `test_mocks.php`:
+   ```php
+   'mock29' => [
+       'description' => 'New scenario description',
+       'expected_montant' => 1234.56,
+       'expected_nb_jours' => 100
+   ]
+   ```
 
-### Rate Determination Logic
+3. **Run tests**:
+   ```bash
+   php test_mocks.php
+   ```
 
-The `determineTauxNumber()` method (TauxDeterminationService.php) implements the decision tree:
-1. Check eligibility (≥8 quarters)
-2. Apply historical rate if exists
-3. Determine age bracket
-4. Calculate pathology anterior reduction
+### Modifying Business Logic
+
+**When changing calculation rules**:
+
+1. **Update appropriate service** in `Services/`:
+   - Rate changes → `RateService.php`
+   - Date/trimester logic → `DateService.php`
+   - Taux determination → `TauxDeterminationService.php`
+   - Orchestration → `AmountCalculationService.php`
+
+2. **Update interface** if method signature changes
+
+3. **Run unit tests first**:
+   ```bash
+   php Tests/[Service]Test.php
+   ```
+
+4. **Run full test suite**:
+   ```bash
+   php run_all_tests.php
+   ```
+
+5. **Verify integration tests** still pass:
+   ```bash
+   php test_mocks.php
+   ```
+
+### Debugging Calculation Issues
+
+**Use debug scripts for specific scenarios**:
+```bash
+php debug_mock2.php    # Multiple stoppages
+php debug_mock9.php    # Age transitions
+php debug_mock20.php   # Period 2 calculations
+```
+
+**Add temporary debug output** in services:
+```php
+error_log("DEBUG: date-effet = " . $dateEffet);
+var_dump($calculationData);  // Remove before commit
+```
+
+**Check daily breakdown** in web interface:
+- Open browser console (F12)
+- Click "📅 Calendrier" tab
+- Hover over days to see tooltips
+- Check `data.payment_details[].daily_breakdown` in console
+
+### Testing Rechute Logic
+
+**Key test files**:
+```bash
+php Tests/RechuteTest.php           # Unit tests
+php test_rechute_integration.php    # Integration tests
+php test_rechute_simple.php         # Basic verification
+```
+
+**Critical checks**:
+- Previous arret has date-effet (rights opened)
+- Gap between stoppages (not prolongation)
+- Within 1 year of previous arret end
+- 15-day threshold (not 91 days)
+
+## Important Implementation Details
+
+### Rate Determination Decision Tree
+
+`TauxDeterminationService::determineTauxNumber()`:
+1. Check eligibility (≥8 quarters, else return 0)
+2. Apply historical rate if exists (for same pathology)
+3. Determine age bracket (<62, 62-69, ≥70)
+4. Calculate pathology anterior reduction based on quarters
 5. Return taux number (1-9)
 
-### Date Effet Calculation
+### Date Effet Calculation (90-Day Rule)
 
-The 90-day rule implementation (`DateService::calculateDateEffet()`):
-- Accumulates days from all work stoppages
-- Handles relapses (rechute)
-- Applies DT and GPM adjustments (+31 days each)
-- Returns payment start date or empty string if not payable
+`DateService::calculateDateEffet()`:
+- Accumulates days across all work stoppages
+- **New pathology**: 90 days + DT penalty (31 days) + GPM penalty (31 days)
+- **Rechute**: 15 days + DT penalty (15 days) + GPM penalty (15 days)
+- Returns payment_start date or empty string if non-payable
+- Critical: Only counts days towards threshold, rechute requires previous date-effet
 
-### Backward Compatibility
+### Trimester Rounding Rule
 
-The refactoring maintains 100% backward compatibility:
-- Original VBA logic preserved in comments
-- All 18 integration tests pass without modification
-- Services can be injected or use defaults
+`DateService::calculateTrimesters()`:
+- **Partial quarters always count as complete**
+- Affiliation mid-quarter = complete quarter
+- Current date mid-quarter = rounds up to next complete quarter
+- Formula: `(years × 4) + (currentQ - affiliationQ) + 1`
+- Example: 2019-01-15 to 2024-04-11 = 22 quarters (NOT 21)
 
-## Common Development Patterns
+### Web Interface Behavior
 
-### Adding a New Test
-
-1. Create mock JSON in root or `webroot/mocks/`
-2. Add test case to `test_mocks.php` with expected values
-3. Run: `php test_mocks.php`
-
-### Modifying Rate Logic
-
-1. Update service in `Services/` directory
-2. Update corresponding interface if signature changes
-3. Run unit tests: `php Tests/[Service]Test.php`
-4. Run integration tests: `php test_mocks.php`
-5. Update REFACTORING.md if architecture changes
-
-### Adding New Business Rules
-
-1. Identify appropriate service (Rate/Date/Taux/Amount)
-2. Add method to interface
-3. Implement in service
-4. Add unit tests
-5. Update integration tests if needed
-6. Document in relevant .md file (RATE_RULES.md, CLASSE_DETERMINATION.md, etc.)
+**Automatic rechute handling**:
+- In web UI, all arrets after the first are marked with `rechute-line: 1`
+- Backend auto-detects true rechute based on 3 criteria
+- UI displays rechute badges and source indicators
+- Calendar view shows visual timeline of all stoppages
 
 ## Documentation References
 
-- **REFACTORING.md**: SOLID principles and service architecture
-- **RATE_RULES.md**: Complete 27-rate system explanation
-- **CLASSE_DETERMINATION.md**: Revenue-based class determination
-- **QUICKSTART.md**: CakePHP installation guide
-- **README.md**: API documentation and usage examples
-- **TESTING_SUMMARY.md**: Test coverage and strategy
-- **TRIMESTER_CALCULATION_FIX.md**: Quarter calculation rules
-- **RECHUTE_IMPLEMENTATION_SUMMARY.md**: Relapse detection and implementation
-- **DECOMPTE_FEATURE.md**: Days counting before payment starts (décompte)
-- **CALENDAR_VIEW_FEATURE.md**: Calendar view functionality
-- **JEST-PHP-README.md**: Jest-style testing framework documentation
+**Architecture & Design**:
+- **REFACTORING.md**: SOLID principles, service layer architecture, 100% backward compatibility
+- **README.md**: API documentation, endpoint usage, data formats
 
-## Original VBA Reference
+**Business Rules**:
+- **RATE_RULES.md**: Complete 27-rate system explanation and decision tree
+- **CLASSE_DETERMINATION.md**: Revenue-based class determination (PASS calculation)
+- **TRIMESTER_CALCULATION_FIX.md**: Quarter rounding rules with examples
+- **RECHUTE_IMPLEMENTATION_SUMMARY.md**: Relapse detection logic (3 criteria)
 
-The project was ported from VBA Excel automation (`code.vba`):
-- Original entry point: `Sub IJ()` (line 20)
+**Features**:
+- **DECOMPTE_FEATURE.md**: Non-paid days tracking (décompte) with UI display
+- **CALENDAR_VIEW_FEATURE.md**: Interactive calendar with daily breakdown
+- **NO_ATTESTATION_FEATURE.md**: Handling missing attestation dates
+
+**Testing & Development**:
+- **TESTING_SUMMARY.md**: Test coverage strategy (255+ tests)
+- **JEST-PHP-README.md**: Jest-style testing framework for PHP
+- **QUICKSTART.md**: CakePHP installation and setup guide
+
+**UI & Visualization**:
+- **CALENDAR_RECHUTE_DISPLAY.md**: Calendar rechute indicators
+- **INTERFACE_BADGES_VISUAL.md**: Badge system for arret status
+- **ARRET_LIST_BADGES.md**: Visual indicators in arret list
+
+## Historical Context
+
+**VBA Origin** (`code.vba`):
+- Original system was VBA Excel automation
+- Entry point: `Sub IJ()` (line 20)
 - VBA functions mapped to PHP services
-- Excel cell references documented but not used in PHP version
+- Excel cell references documented but not used in PHP
+- All VBA business logic preserved in service layer

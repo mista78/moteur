@@ -204,8 +204,9 @@ class DateService implements DateCalculationInterface
     private function isRechute(array $currentArret, ?array $previousArret): bool
     {
         // Si rechute-line est explicitement défini (forcé par commission), le respecter
+        // Note: rechute-line peut être 1 (rechute) ou un nombre > 1 (ex: 15 pour délai de 15 jours)
         if (isset($currentArret['rechute-line']) && $currentArret['rechute-line'] !== null && $currentArret['rechute-line'] !== '') {
-            return (int)$currentArret['rechute-line'] === 1;
+            return (int)$currentArret['rechute-line'] > 0;
         }
 
         // Pas de précédent arrêt → pas une rechute
@@ -274,6 +275,7 @@ class DateService implements DateCalculationInterface
             if (isset($currentData['date_deb_droit']) && !empty($currentData['date_deb_droit']) && $currentData['date_deb_droit'] !== '0000-00-00') {
                 $currentData['date-effet'] = $currentData['date_deb_droit'];
                 $nbJours = $newNbJours;
+                $arretDroits++; // Mark that rights have been opened for this arret
                 $increment++;
                 if (count($arrets) === $increment) {
                     break;
@@ -285,6 +287,7 @@ class DateService implements DateCalculationInterface
             if (isset($currentData['date-effet-forced'])) {
                 $currentData['date-effet'] = $currentData['date-effet-forced'];
                 $nbJours = $newNbJours;
+                $arretDroits++; // Mark that rights have been opened for this arret
                 $increment++;
                 if (count($arrets) === $increment) {
                     break;
