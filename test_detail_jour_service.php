@@ -42,33 +42,8 @@ if (!$arrets) {
 echo "Loaded mock: $mockFile\n";
 echo "Number of arrets: " . count($arrets) . "\n\n";
 
-// Test case configurations (same as test_recap_service.php)
-$testCases = [
-    'mock.json' => [
-        'statut' => 'M', 'classe' => 'A', 'option' => 100,
-        'birth_date' => '1989-09-26', 'current_date' => '2024-09-09',
-        'attestation_date' => null, 'affiliation_date' => null,
-        'nb_trimestres' => 8, 'patho_anterior' => 0, 'pass_value' => 47000,
-    ],
-    'mock2.json' => [
-        'statut' => 'M', 'classe' => 'c', 'option' => 100,
-        'birth_date' => '1958-06-03', 'current_date' => date("Y-m-d"),
-        'attestation_date' => '2024-06-12', 'affiliation_date' => "1991-07-01",
-        'nb_trimestres' => 8, 'patho_anterior' => 0, 'pass_value' => 47000,
-    ],
-    'mock3.json' => [
-        'statut' => 'M', 'classe' => 'B', 'option' => 100,
-        'birth_date' => '1961-12-01', 'current_date' => date("Y-m-d"),
-        'attestation_date' => '2024-12-27', 'affiliation_date' => null,
-        'nb_trimestres' => 8, 'patho_anterior' => 0, 'pass_value' => 47000,
-    ],
-    'mock6.json' => [
-        'statut' => 'M', 'classe' => 'B', 'option' => 100,
-        'birth_date' => '1962-05-01', 'current_date' => date("Y-m-d"),
-        'attestation_date' => '2024-12-27', 'affiliation_date' => null,
-        'nb_trimestres' => 50, 'patho_anterior' => 0, 'pass_value' => 47000,
-    ],
-];
+// Load common test case configurations
+$testCases = require 'test_cases_config.php';
 
 // Get test configuration for selected mock
 if (!isset($testCases[$mockFile])) {
