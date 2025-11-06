@@ -44,44 +44,93 @@ class RecapService
                 // Process each rate breakdown period
                 if (isset($detail['rate_breakdown']) && is_array($detail['rate_breakdown'])) {
                     foreach ($detail['rate_breakdown'] as $rateBreakdown) {
-                        $record = [
-                            // Primary identification
-                            'adherent_number' => $adherentNumber,
-                            'num_sinistre' => $numSinistre,
-                            'id_arret' => $idArret,
+                        // Split rate_breakdown by month
+                        $monthlyBreakdowns = $this->splitByMonth($rateBreakdown);
 
-                            // Period information
-                            'exercice' => $rateBreakdown['year'] ?? null,
-                            'periode' => $rateBreakdown['period'] ?? null,
-                            'date_start' => $rateBreakdown['start'] ?? null,
-                            'date_end' => $rateBreakdown['end'] ?? null,
+                        foreach ($monthlyBreakdowns as $monthly) {
+                            $record = [
+                                // Primary identification
+                                'adherent_number' => $adherentNumber,
+                                'num_sinistre' => $numSinistre,
+                                'id_arret' => $idArret,
 
-                            // Rate and amount information
-                            'num_taux' => $rateBreakdown['taux'] ?? null,
-                            'MT_journalier' => $this->convertToIntCents($rateBreakdown['rate'] ?? 0),
+                                // Period information
+                                'exercice' => $monthly['year'],
+                                'periode' => $monthly['month'], // Month (01-12), not period (1-3)
+                                'date_start' => $monthly['start'],
+                                'date_end' => $monthly['end'],
 
-                            // Financial information
-                            'MT_revenu_ref' => $revenuRef,
-                            'classe' => $classe,
+                                // Rate and amount information
+                                'num_taux' => $rateBreakdown['taux'] ?? null,
+                                'MT_journalier' => $this->convertToIntCents($rateBreakdown['rate'] ?? 0),
 
-                            // Personal information
-                            'personne_age' => $age,
-                            'nb_trimestre' => $nbTrimestres,
+                                // Financial information
+                                'MT_revenu_ref' => $revenuRef,
+                                'classe' => $classe,
 
-                            // Additional metadata (not in table but useful)
-                            '_nb_jours' => $rateBreakdown['days'] ?? 0,
-                            '_montant_total' => $this->convertToIntCents(
-                                ($rateBreakdown['rate'] ?? 0) * ($rateBreakdown['days'] ?? 0)
-                            ),
-                        ];
+                                // Personal information
+                                'personne_age' => $age,
+                                'nb_trimestre' => $nbTrimestres,
 
-                        $records[] = $record;
+                                // Additional metadata (not in table but useful)
+                                '_nb_jours' => $monthly['days'],
+                                '_montant_total' => $this->convertToIntCents(
+                                    ($rateBreakdown['rate'] ?? 0) * $monthly['days']
+                                ),
+                            ];
+
+                            $records[] = $record;
+                        }
                     }
                 }
             }
         }
 
         return $records;
+    }
+
+    /**
+     * Split a rate_breakdown entry by month
+     *
+     * @param array $rateBreakdown Rate breakdown entry with start/end dates
+     * @return array Array of monthly breakdowns
+     */
+    private function splitByMonth(array $rateBreakdown): array
+    {
+        if (!isset($rateBreakdown['start']) || !isset($rateBreakdown['end'])) {
+            return [];
+        }
+
+        $startDate = new \DateTime($rateBreakdown['start']);
+        $endDate = new \DateTime($rateBreakdown['end']);
+        $monthlyBreakdowns = [];
+
+        $currentDate = clone $startDate;
+
+        while ($currentDate <= $endDate) {
+            $year = $currentDate->format('Y');
+            $month = $currentDate->format('m');
+
+            // Calculate month boundaries
+            $monthStart = max($startDate, new \DateTime($year . '-' . $month . '-01'));
+            $monthEnd = min($endDate, new \DateTime($currentDate->format('Y-m-t'))); // Last day of month
+
+            // Calculate days in this month
+            $days = $monthStart->diff($monthEnd)->days + 1;
+
+            $monthlyBreakdowns[] = [
+                'year' => $year,
+                'month' => $month,
+                'start' => $monthStart->format('Y-m-d'),
+                'end' => $monthEnd->format('Y-m-d'),
+                'days' => $days,
+            ];
+
+            // Move to next month
+            $currentDate->modify('first day of next month');
+        }
+
+        return $monthlyBreakdowns;
     }
 
     /**

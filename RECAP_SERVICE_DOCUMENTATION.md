@@ -42,11 +42,11 @@ CREATE TABLE `ij_recap` (
 | Champ ij_recap | Source | Description |
 |----------------|--------|-------------|
 | `adherent_number` | `inputData['adherent_number']` | Numéro adhérent (7 car.) |
-| `exercice` | `rate_breakdown['year']` | Année (2023, 2024, etc.) |
-| `periode` | `rate_breakdown['period']` | Période (1, 2, ou 3) |
+| `exercice` | Extrait de la date | Année (2023, 2024, etc.) |
+| `periode` | Extrait de la date | Mois (01-12) |
 | `num_sinistre` | `inputData['num_sinistre']` | Numéro de sinistre |
-| `date_start` | `rate_breakdown['start']` | Date de début de période |
-| `date_end` | `rate_breakdown['end']` | Date de fin de période |
+| `date_start` | Calculé par mois | Date de début du mois |
+| `date_end` | Calculé par mois | Date de fin du mois |
 | `id_arret` | `detail['id']` ou `arret_index` | ID de l'arrêt |
 | `num_taux` | `rate_breakdown['taux']` | Numéro de taux (1-9) |
 | `MT_journalier` | `rate_breakdown['rate'] * 100` | Montant en centimes |
