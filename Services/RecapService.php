@@ -8,6 +8,19 @@ namespace IJCalculator\Services;
  */
 class RecapService
 {
+    private $calculator = null;
+
+    /**
+     * Set the calculator instance for class determination
+     *
+     * @param mixed $calculator IJCalculator instance
+     * @return void
+     */
+    public function setCalculator($calculator): void
+    {
+        $this->calculator = $calculator;
+    }
+
     /**
      * Generate ij_recap records from calculation results
      *
@@ -22,7 +35,9 @@ class RecapService
         // Extract common data from input
         $adherentNumber = $inputData['adherent_number'] ?? null;
         $numSinistre = $inputData['num_sinistre'] ?? null;
-        $classe = $inputData['classe'] ?? null;
+
+        // Auto-determine class if calculator available and revenu_n_moins_2 provided
+        $classe = $this->determineClasse($inputData);
         $age = $calculationResult['age'] ?? null;
         $nbTrimestres = $calculationResult['nb_trimestres'] ?? $inputData['nb_trimestres'] ?? null;
 
@@ -87,6 +102,32 @@ class RecapService
         }
 
         return $records;
+    }
+
+    /**
+     * Determine class from input data using calculator if available
+     *
+     * @param array $inputData Input data with classe or revenu_n_moins_2
+     * @return string|null Determined class (A/B/C) or null
+     */
+    private function determineClasse(array $inputData): ?string
+    {
+        // If class is already provided, use it
+        if (isset($inputData['classe']) && !empty($inputData['classe'])) {
+            return $inputData['classe'];
+        }
+
+        // If calculator is available and revenu_n_moins_2 is provided, auto-determine
+        if ($this->calculator !== null && isset($inputData['revenu_n_moins_2'])) {
+            $revenuNMoins2 = (float) $inputData['revenu_n_moins_2'];
+            $taxeOffice = isset($inputData['taxe_office']) ? (bool) $inputData['taxe_office'] : false;
+            $dateOuvertureDroits = $inputData['date_ouverture_droits'] ?? null;
+
+            return $this->calculator->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+        }
+
+        // No class determination possible
+        return null;
     }
 
     /**

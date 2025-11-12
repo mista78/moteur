@@ -30,7 +30,18 @@ class AmountCalculationService implements AmountCalculationInterface
     public function calculateAmount(array $data): array
     {
         $arrets = $data['arrets'];
-        $classe = strtoupper($data['classe']);
+
+        // Auto-determine class if not provided but revenu_n_moins_2 is available
+        if (!isset($data['classe']) || empty($data['classe'])) {
+            if (isset($data['revenu_n_moins_2'])) {
+                $revenuNMoins2 = (float) $data['revenu_n_moins_2'];
+                $taxeOffice = isset($data['taxe_office']) ? (bool) $data['taxe_office'] : false;
+                $dateOuvertureDroits = $data['date_ouverture_droits'] ?? null;
+                $data['classe'] = $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+            }
+        }
+
+        $classe = isset($data['classe']) ? strtoupper($data['classe']) : 'A';
         $statut = strtoupper($data['statut']);
         $option = $data['option'] ?? '0,25';
         $birthDate = $data['birth_date'];

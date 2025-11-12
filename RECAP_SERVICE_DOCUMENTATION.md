@@ -57,7 +57,7 @@ CREATE TABLE `ij_recap` (
 
 ## Utilisation du Service
 
-### 1. Instanciation Basique
+### 1. Instanciation Basique (avec détermination automatique de classe)
 
 ```php
 <?php
@@ -69,12 +69,20 @@ use IJCalculator\Services\RecapService;
 
 // Calculer les IJ
 $calculator = new IJCalculator('taux.csv');
+$calculator->setPassValue(47000);
+
+// Données avec revenu (pas besoin de spécifier la classe)
+$inputData['revenu_n_moins_2'] = 94000;  // La classe sera déterminée automatiquement
+
 $result = $calculator->calculateAmount($inputData);
 
-// Générer les enregistrements de recap
+// Générer les enregistrements de recap avec détermination de classe
 $recapService = new RecapService();
+$recapService->setCalculator($calculator);  // Activer l'auto-détermination
 $recapRecords = $recapService->generateRecapRecords($result, $inputData);
 ```
+
+**Note**: Appelez `setCalculator()` pour activer la détermination automatique de classe depuis `revenu_n_moins_2`.
 
 ### 2. Exemple Complet
 
@@ -499,6 +507,7 @@ async function generateRecap() {
 ✅ **Flexible**: Génère SQL, HTML, ou objets PHP
 ✅ **Testé**: Tests unitaires inclus
 ✅ **Documenté**: Code commenté et exemples fournis
+✅ **Détermination automatique de classe**: Auto-détermine la classe depuis revenu_n_moins_2 (nouveau!)
 
 ## Notes Importantes
 
@@ -518,6 +527,27 @@ Les champs préfixés par `_` sont des métadonnées utiles mais non insérées:
 ### Timestamps
 
 Les champs `date_de_creation` et `date_de_dern_maj` sont gérés automatiquement par MySQL (DEFAULT current_timestamp()).
+
+## Détermination Automatique de Classe (Nouveau!)
+
+Le RecapService peut maintenant **auto-déterminer la classe** (A/B/C) depuis `revenu_n_moins_2`:
+
+```php
+// Injecter le calculator pour activer l'auto-détermination
+$recapService = new RecapService();
+$recapService->setCalculator($calculator);
+
+// Si revenu_n_moins_2 fourni, la classe est déterminée automatiquement
+$inputData = [
+    'revenu_n_moins_2' => 94000,  // 2 PASS = Classe B
+    'pass_value' => 47000
+];
+
+$records = $recapService->generateRecapRecords($result, $inputData);
+// Tous les records auront classe = 'B'
+```
+
+**Documentation complète**: Voir `RECAP_CLASS_DETERMINATION.md`
 
 ## Évolutions Futures
 
