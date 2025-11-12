@@ -687,4 +687,21 @@ class IJCalculator
                 ];
         }
     }
+
+    /**
+     * Détermine automatiquement la classe de cotisation (A/B/C) selon les revenus N-2
+     *
+     * @param float|null $revenuNMoins2 Revenus de l'année N-2 en euros
+     * @param string|null $dateOuvertureDroits Date d'ouverture des droits (format Y-m-d)
+     * @param bool $taxeOffice Indique si le médecin est taxé d'office
+     * @return string Classe déterminée: 'A', 'B' ou 'C'
+     */
+    public function determineClasse(
+        ?float $revenuNMoins2 = null,
+        ?string $dateOuvertureDroits = null,
+        bool $taxeOffice = false
+    ): string {
+        // Delegate to TauxDeterminationService
+        return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+    }
 }

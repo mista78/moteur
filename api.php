@@ -93,6 +93,15 @@ try {
                 $calculator->setPassValue($input['pass_value']);
             }
 
+            // Auto-determine class if revenu_n_moins_2 provided but classe is not
+            if (isset($input['revenu_n_moins_2']) && !isset($input['classe'])) {
+                $revenuNMoins2 = (float)$input['revenu_n_moins_2'];
+                $taxeOffice = isset($input['taxe_office']) ? (bool)$input['taxe_office'] : false;
+                $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
+
+                $input['classe'] = $calculator->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+            }
+
             $result = $calculator->calculateAmount($input);
 
             echo json_encode([
@@ -125,6 +134,35 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $result
+            ]);
+            break;
+
+        case 'determine-classe':
+            if ($method !== 'POST') {
+                throw new Exception('Method not allowed');
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            $revenuNMoins2 = isset($input['revenu_n_moins_2']) ? (float)$input['revenu_n_moins_2'] : null;
+            $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
+            $taxeOffice = isset($input['taxe_office']) ? (bool)$input['taxe_office'] : false;
+
+            // Set PASS value if provided
+            if (isset($input['pass_value'])) {
+                $calculator->setPassValue($input['pass_value']);
+            }
+
+            $classe = $calculator->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'classe' => $classe,
+                    'revenu_n_moins_2' => $revenuNMoins2,
+                    'taxe_office' => $taxeOffice,
+                    'pass_value' => $input['pass_value'] ?? 47000
+                ]
             ]);
             break;
 
