@@ -69,7 +69,7 @@ class RecapService
                                 'classe' => $classe,
 
                                 // Personal information
-                                'personne_age' => $age,
+                                'personne_age' => $rateBreakdown['age'] ?? $age, // Use age from rate_breakdown if available
                                 'nb_trimestre' => $nbTrimestres,
 
                                 // Additional metadata (not in table but useful)

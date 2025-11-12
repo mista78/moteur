@@ -348,7 +348,8 @@ class AmountCalculationService implements AmountCalculationInterface
                         'end' => $yearData['end'],
                         'days' => $yearData['days'],
                         'rate' => $dailyRate,
-                        'taux' => $taux
+                        'taux' => $taux,
+                        'age' => $segmentAge
                     ];
                 } elseif ($segmentAge >= 62 && $segmentAge <= 69) {
                     // Pour 62-69, calculer les périodes par arrêt INDIVIDUEL
@@ -428,7 +429,8 @@ class AmountCalculationService implements AmountCalculationInterface
                             'end' => $periodEnd->format('Y-m-d'),
                             'days' => $joursP,
                             'rate' => $dailyRate,
-                            'taux' => $taux
+                            'taux' => $taux,
+                            'age' => $segmentAge
                         ];
 
                         $joursDansArret += $joursP;
@@ -452,7 +454,8 @@ class AmountCalculationService implements AmountCalculationInterface
                         'end' => $yearData['end'],
                         'days' => $yearData['days'],
                         'rate' => $dailyRate,
-                        'taux' => $taux
+                        'taux' => $taux,
+                        'age' => $segmentAge
                     ];
                 }
             }
