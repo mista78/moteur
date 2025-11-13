@@ -611,7 +611,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 
 	/**
 	 * Determine class for a specific year based on revenue
-	 * For year N, uses revenue from year N-2
+	 * For year N, uses revenue from year N-2 and PASS from year N
 	 *
 	 * @param int $year The year for which to determine class
 	 * @param array $data Input data with revenue information
@@ -624,15 +624,21 @@ class AmountCalculationService implements AmountCalculationInterface {
 			return $fallbackClasse;
 		}
 
+		// Set up PASS values by year if provided
+		if (isset($data['pass_par_annee']) && is_array($data['pass_par_annee'])) {
+			$this->tauxService->setPassValuesByYear($data['pass_par_annee']);
+		} elseif (isset($data['pass_value'])) {
+			$this->tauxService->setPassValue((float)$data['pass_value']);
+		}
+
 		// Check if per-year revenues are provided
 		if (isset($data['revenus_par_annee']) && is_array($data['revenus_par_annee'])) {
 			$yearNMoins2 = $year - 2;
 			if (isset($data['revenus_par_annee'][$yearNMoins2])) {
 				$revenuNMoins2 = (float)$data['revenus_par_annee'][$yearNMoins2];
 				$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
-				// Create a date in year N for proper date_ouverture_droits
-				$dateOuvertureDroits = $year . '-01-01';
-				return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+				// Pass year to use year-specific PASS value
+				return $this->tauxService->determineClasse($revenuNMoins2, null, $taxeOffice, $year);
 			}
 		}
 
@@ -640,8 +646,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 		if (isset($data['revenu_n_moins_2'])) {
 			$revenuNMoins2 = (float)$data['revenu_n_moins_2'];
 			$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
-			$dateOuvertureDroits = $data['date_ouverture_droits'] ?? ($year . '-01-01');
-			return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
+			$dateOuvertureDroits = $data['date_ouverture_droits'] ?? null;
+			// Pass year to use year-specific PASS value
+			return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice, $year);
 		}
 
 		// Fallback to provided class or default to A

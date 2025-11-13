@@ -12,11 +12,38 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 
 	private ?float $passValue = null;
 
+	private array $passValuesByYear = [];
+
 	/**
+	 * Set a single PASS value for all years
 	 * @return void
 	 */
 	public function setPassValue(float $value): void {
 		$this->passValue = $value;
+	}
+
+	/**
+	 * Set PASS values by year
+	 * @param array $passValues Array with year => pass_value mapping
+	 * @return void
+	 */
+	public function setPassValuesByYear(array $passValues): void {
+		$this->passValuesByYear = $passValues;
+	}
+
+	/**
+	 * Get PASS value for a specific year
+	 * @param int $year The year for which to get PASS
+	 * @return float The PASS value
+	 */
+	private function getPassForYear(int $year): float {
+		// Check if per-year PASS values are available
+		if (!empty($this->passValuesByYear) && isset($this->passValuesByYear[$year])) {
+			return (float)$this->passValuesByYear[$year];
+		}
+
+		// Fall back to single PASS value or default
+		return $this->passValue ?? 47000;
 	}
 
 	public function determineTauxNumber(
@@ -71,7 +98,8 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 	public function determineClasse(
 		?float $revenuNMoins2 = null,
 		?string $dateOuvertureDroits = null,
-		bool $taxeOffice = false
+		bool $taxeOffice = false,
+		?int $year = null
 	): string {
 		// Si taxé d'office, toujours classe A
 		if ($taxeOffice) {
@@ -83,13 +111,15 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 			return 'A';
 		}
 
-		// Récupérer le PASS de l'année N-2
-		if ($dateOuvertureDroits) {
-			$anneeNMoins2 = $this->getAnneeNMoins2($dateOuvertureDroits);
-			// Utiliser le PASS configuré ou une valeur par défaut
-			$pass = $this->passValue ?? 47000; // Valeur par défaut si non configuré
+		// Récupérer le PASS de l'année appropriée
+		// If year is provided, use it; otherwise use year from dateOuvertureDroits or current year
+		if ($year !== null) {
+			$pass = $this->getPassForYear($year);
+		} elseif ($dateOuvertureDroits) {
+			$yearFromDate = (int)(new DateTime($dateOuvertureDroits))->format('Y');
+			$pass = $this->getPassForYear($yearFromDate);
 		} else {
-			$pass = $this->passValue ?? 47000;
+			$pass = $this->getPassForYear((int)date('Y'));
 		}
 
 		// Déterminer la classe selon les seuils
@@ -100,7 +130,7 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 			return 'B';
 		}
 
-			return 'C';
+		return 'C';
 	}
 
 	/**
