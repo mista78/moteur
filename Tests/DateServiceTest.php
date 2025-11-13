@@ -4,7 +4,7 @@ require_once __DIR__ . '/../jest-php.php';
 require_once __DIR__ . '/../Services/DateCalculationInterface.php';
 require_once __DIR__ . '/../Services/DateService.php';
 
-use IJCalculator\Services\DateService;
+use App\IJCalculator\Services\DateService;
 
 describe('DateService', function() {
 

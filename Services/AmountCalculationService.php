@@ -1,6 +1,6 @@
 <?php
 
-namespace IJCalculator\Services;
+namespace App\IJCalculator\Services;
 
 use DateTime;
 
@@ -360,7 +360,8 @@ class AmountCalculationService implements AmountCalculationInterface
                         'days' => $yearData['days'],
                         'rate' => $dailyRate,
                         'taux' => $taux,
-                        'age' => $segmentAge
+                        'age' => $segmentAge,
+                        'classe' => $classe
                     ];
                 } elseif ($segmentAge >= 62 && $segmentAge <= 69) {
                     // Pour 62-69, calculer les périodes par arrêt INDIVIDUEL
@@ -441,7 +442,8 @@ class AmountCalculationService implements AmountCalculationInterface
                             'days' => $joursP,
                             'rate' => $dailyRate,
                             'taux' => $taux,
-                            'age' => $segmentAge
+                            'age' => $segmentAge,
+                            'classe' => $classe
                         ];
 
                         $joursDansArret += $joursP;
@@ -466,7 +468,8 @@ class AmountCalculationService implements AmountCalculationInterface
                         'days' => $yearData['days'],
                         'rate' => $dailyRate,
                         'taux' => $taux,
-                        'age' => $segmentAge
+                        'age' => $segmentAge,
+                        'classe' => $classe
                     ];
                 }
             }
@@ -522,7 +525,8 @@ class AmountCalculationService implements AmountCalculationInterface
                     'period' => $segment['period'],
                     'taux' => $segment['taux'],
                     'daily_rate' => $rate,
-                    'amount' => $rate
+                    'amount' => $rate,
+                    'classe' => $segment['classe']
                 ];
             }
         }

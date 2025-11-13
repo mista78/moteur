@@ -4,7 +4,7 @@ require_once __DIR__ . '/../jest-php.php';
 require_once __DIR__ . '/../Services/TauxDeterminationInterface.php';
 require_once __DIR__ . '/../Services/TauxDeterminationService.php';
 
-use IJCalculator\Services\TauxDeterminationService;
+use App\IJCalculator\Services\TauxDeterminationService;
 
 describe('TauxDeterminationService', function() {
 

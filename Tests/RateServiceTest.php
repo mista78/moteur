@@ -4,7 +4,7 @@ require_once __DIR__ . '/../jest-php.php';
 require_once __DIR__ . '/../Services/RateServiceInterface.php';
 require_once __DIR__ . '/../Services/RateService.php';
 
-use IJCalculator\Services\RateService;
+use App\IJCalculator\Services\RateService;
 
 describe('RateService', function() {
 

@@ -22,7 +22,8 @@
 require_once 'IJCalculator.php';
 require_once 'Services/DetailJourService.php';
 
-use IJCalculator\Services\DetailJourService;
+use App\IJCalculator\IJCalculator;
+use App\IJCalculator\Services\DetailJourService;
 
 echo "=== Test DetailJourService ===\n\n";
 

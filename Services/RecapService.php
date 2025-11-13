@@ -1,6 +1,6 @@
 <?php
 
-namespace IJCalculator\Services;
+namespace App\IJCalculator\Services;
 
 /**
  * Service to generate ij_recap records from calculation results

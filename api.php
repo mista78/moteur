@@ -10,6 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'IJCalculator.php';
 
+use App\IJCalculator\IJCalculator;
+
 $calculator = new IJCalculator('taux.csv');
 
 $endpoint = $_GET['endpoint'] ?? '';

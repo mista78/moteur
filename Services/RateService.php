@@ -1,6 +1,6 @@
 <?php
 
-namespace IJCalculator\Services;
+namespace App\IJCalculator\Services;
 
 /**
  * Implémentation du Service de Taux

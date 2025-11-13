@@ -2,14 +2,14 @@
 
 namespace App\IJCalculator;
 
-// require_once __DIR__ . '/Services/RateServiceInterface.php';
-// require_once __DIR__ . '/Services/RateService.php';
-// require_once __DIR__ . '/Services/DateCalculationInterface.php';
-// require_once __DIR__ . '/Services/DateService.php';
-// require_once __DIR__ . '/Services/TauxDeterminationInterface.php';
-// require_once __DIR__ . '/Services/TauxDeterminationService.php';
-// require_once __DIR__ . '/Services/AmountCalculationInterface.php';
-// require_once __DIR__ . '/Services/AmountCalculationService.php';
+require_once __DIR__ . '/Services/RateServiceInterface.php';
+require_once __DIR__ . '/Services/RateService.php';
+require_once __DIR__ . '/Services/DateCalculationInterface.php';
+require_once __DIR__ . '/Services/DateService.php';
+require_once __DIR__ . '/Services/TauxDeterminationInterface.php';
+require_once __DIR__ . '/Services/TauxDeterminationService.php';
+require_once __DIR__ . '/Services/AmountCalculationInterface.php';
+require_once __DIR__ . '/Services/AmountCalculationService.php';
 
 use App\IJCalculator\Services\AmountCalculationInterface;
 use App\IJCalculator\Services\AmountCalculationService;

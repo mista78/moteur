@@ -3,6 +3,8 @@
 require_once 'jest-php.php';
 require_once 'IJCalculator.php';
 
+use App\IJCalculator\IJCalculator;
+
 // Test cases avec résultats attendus
 $testCases = [
     'mock.json' => [

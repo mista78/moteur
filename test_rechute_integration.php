@@ -9,6 +9,8 @@
 require_once 'jest-php.php';
 require_once 'IJCalculator.php';
 
+use App\IJCalculator\IJCalculator;
+
 echo "\n";
 echo "================================================================================\n";
 echo "                   Rechute (Relapse) Integration Tests                         \n";

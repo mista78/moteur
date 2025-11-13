@@ -7,7 +7,8 @@
 require_once 'IJCalculator.php';
 require_once 'Services/RecapService.php';
 
-use IJCalculator\Services\RecapService;
+use App\IJCalculator\IJCalculator;
+use App\IJCalculator\Services\RecapService;
 
 echo "=== Simple RecapService Class Determination Test ===\n\n";
 

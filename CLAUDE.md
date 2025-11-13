@@ -98,9 +98,23 @@ All services implement interfaces and are located in `/Services/`:
 - `determineTauxNumber()`: Rate number (1-9) from age/quarters/pathology decision tree
 - `determineClasse()`: Contribution class (A/B/C) from N-2 revenue
 
-**AmountCalculationService** (`AmountCalculationInterface.php`) - 630 lines:
+**AmountCalculationService** (`AmountCalculationInterface.php`) - 644 lines:
 - `calculateTotalAmount()`: Main orchestration of entire calculation pipeline
 - Integrates all services, handles multi-period calculations, returns detailed breakdown
+- Auto-determines classe from `revenu_n_moins_2` if not explicitly provided
+
+**RecapService** - 374 lines:
+- `generateRecapRecords()`: Transform calculation results into `ij_recap` table records
+- `generateInsertSQL()` / `generateBatchInsertSQL()`: Generate SQL INSERT statements
+- `validateRecord()`: Validate records before database insertion
+- `setCalculator()`: Enable auto-determination of classe from revenue
+- Groups payments by month/year/taux for database storage
+
+**DetailJourService** - 331 lines:
+- `generateDetailJourRecords()`: Transform daily breakdown into `ij_detail_jour` table records
+- Maps each day of month to columns j1-j31 with amounts in centimes
+- `generateInsertSQL()` / `generateBatchInsertSQL()`: Generate SQL statements
+- One record per month with daily amounts for database storage
 
 ### Critical Business Rules
 
@@ -152,6 +166,13 @@ All services implement interfaces and are located in `/Services/`:
 - Days before date-effet are décompte (90 for new pathology, 14 for rechute)
 - Displayed separately in web interface with yellow highlighting
 - Implementation: `DateService::calculateDecompteDays()` (line 628)
+
+**Backend Class Determination** (Auto-calculation):
+- Classe (A/B/C) can be auto-determined from `revenu_n_moins_2` (N-2 revenue)
+- Business rules: <47K€ = A, 47-141K€ = B, >141K€ = C (based on PASS multiples)
+- Available at API, Calculator, AmountCalculation, and RecapService layers
+- Priority: Explicit classe > Auto-determined from revenue > Null
+- See CLASS_DETERMINATION_SUMMARY.md for complete implementation
 
 ## Data Structures
 
@@ -272,6 +293,12 @@ GET /api.php?endpoint=load-mock
 ```
 Returns mock.json for testing interface
 
+**Determine Classe** (backend class determination):
+```bash
+POST /api.php?endpoint=determine-classe
+```
+Auto-determines contribution class (A/B/C) from `revenu_n_moins_2` and `pass_value`
+
 ## Test Data & Mock Scenarios
 
 28+ integration test scenarios in root directory and `webroot/mocks/`:
@@ -314,11 +341,13 @@ Returns mock.json for testing interface
 ```
 /
 ├── IJCalculator.php           # Main calculator (~690 lines)
-├── Services/                  # SOLID service layer (~1,800 lines)
+├── Services/                  # SOLID service layer (~2,500 lines)
 │   ├── RateService.php / RateServiceInterface.php
 │   ├── DateService.php / DateCalculationInterface.php
 │   ├── TauxDeterminationService.php / TauxDeterminationInterface.php
-│   └── AmountCalculationService.php / AmountCalculationInterface.php
+│   ├── AmountCalculationService.php / AmountCalculationInterface.php
+│   ├── RecapService.php (ij_recap table records generation)
+│   └── DetailJourService.php (ij_detail_jour table records generation)
 ├── Tests/                     # Unit tests (~56 tests)
 │   ├── RateServiceTest.php (13 tests)
 │   ├── DateServiceTest.php (17 tests)
@@ -429,6 +458,44 @@ php test_rechute_simple.php         # Basic verification
 - Within 1 year of previous arret end
 - 15-day threshold (not 91 days)
 
+### Generating Database Records
+
+**For CakePHP integration or direct database insertion**:
+
+1. **Generate ij_recap records** (monthly summary by taux):
+   ```php
+   require_once 'Services/RecapService.php';
+   use IJCalculator\Services\RecapService;
+
+   $recapService = new RecapService();
+   $recapService->setCalculator($calculator);  // Enable auto-determination
+
+   $recapRecords = $recapService->generateRecapRecords($result, $inputData);
+   $sql = $recapService->generateBatchInsertSQL($recapRecords);
+   ```
+
+2. **Generate ij_detail_jour records** (daily amounts j1-j31):
+   ```php
+   require_once 'Services/DetailJourService.php';
+   use IJCalculator\Services\DetailJourService;
+
+   $detailService = new DetailJourService();
+
+   $detailRecords = $detailService->generateDetailJourRecords($result, $inputData);
+   $sql = $detailService->generateBatchInsertSQL($detailRecords);
+   ```
+
+3. **Test database record generation**:
+   ```bash
+   php test_recap_service.php       # Test recap records with mock data
+   php test_detail_jour_service.php # Test detail_jour records
+   ```
+
+**Required input fields**:
+- `adherent_number` (7 characters)
+- `num_sinistre` (integer)
+- `classe` (A/B/C) or `revenu_n_moins_2` (for auto-determination)
+
 ## Important Implementation Details
 
 ### Rate Determination Decision Tree
@@ -475,6 +542,7 @@ php test_rechute_simple.php         # Basic verification
 **Business Rules**:
 - **RATE_RULES.md**: Complete 27-rate system explanation and decision tree
 - **CLASSE_DETERMINATION.md**: Revenue-based class determination (PASS calculation)
+- **CLASS_DETERMINATION_SUMMARY.md**: Backend auto-determination of classe from revenue (NEW)
 - **TRIMESTER_CALCULATION_FIX.md**: Quarter rounding rules with examples
 - **RECHUTE_IMPLEMENTATION_SUMMARY.md**: Relapse detection logic (3 criteria)
 
@@ -487,6 +555,11 @@ php test_rechute_simple.php         # Basic verification
 - **TESTING_SUMMARY.md**: Test coverage strategy (255+ tests)
 - **JEST-PHP-README.md**: Jest-style testing framework for PHP
 - **QUICKSTART.md**: CakePHP installation and setup guide
+
+**Database Services** (NEW):
+- **RECAP_SERVICE_DOCUMENTATION.md**: RecapService usage for ij_recap table
+- **DETAIL_JOUR_SERVICE_DOCUMENTATION.md**: DetailJourService usage for ij_detail_jour table
+- **RECAP_CLASS_DETERMINATION.md**: Auto-determination in RecapService
 
 **UI & Visualization**:
 - **CALENDAR_RECHUTE_DISPLAY.md**: Calendar rechute indicators

@@ -10,10 +10,10 @@ require_once __DIR__ . '/../Services/DateService.php';
 require_once __DIR__ . '/../Services/TauxDeterminationInterface.php';
 require_once __DIR__ . '/../Services/TauxDeterminationService.php';
 
-use IJCalculator\Services\AmountCalculationService;
-use IJCalculator\Services\RateService;
-use IJCalculator\Services\DateService;
-use IJCalculator\Services\TauxDeterminationService;
+use App\IJCalculator\Services\AmountCalculationService;
+use App\IJCalculator\Services\RateService;
+use App\IJCalculator\Services\DateService;
+use App\IJCalculator\Services\TauxDeterminationService;
 
 describe('AmountCalculationService', function() {
 

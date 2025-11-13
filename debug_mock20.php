@@ -4,7 +4,8 @@ require_once 'IJCalculator.php';
 require_once __DIR__ . '/Services/DateCalculationInterface.php';
 require_once __DIR__ . '/Services/DateService.php';
 
-use IJCalculator\Services\DateService;
+use App\IJCalculator\IJCalculator;
+use App\IJCalculator\Services\DateService;
 
 $dateService = new DateService();
 

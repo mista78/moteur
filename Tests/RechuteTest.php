@@ -20,6 +20,8 @@
 require_once dirname(__DIR__) . '/jest-php.php';
 require_once dirname(__DIR__) . '/IJCalculator.php';
 
+use App\IJCalculator\IJCalculator;
+
 describe('Rechute (Relapse) Business Rules', function() {
 
     $calculator = new IJCalculator('taux.csv');
