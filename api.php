@@ -12,7 +12,37 @@ require_once 'IJCalculator.php';
 
 use App\IJCalculator\IJCalculator;
 
-$calculator = new IJCalculator('taux.csv');
+function loadRates(string $csvPath): array
+{
+    $rates = [];
+    if (!file_exists($csvPath)) {
+        throw new RuntimeException("CSV file not found: {$csvPath}");
+    }
+
+    $file = fopen($csvPath, 'r');
+    if ($file === false) {
+        throw new RuntimeException("Unable to open CSV file: {$csvPath}");
+    }
+
+    $headers = fgetcsv($file, 0, ';');
+    if ($headers === false) {
+        fclose($file);
+        throw new RuntimeException("Empty or invalid CSV file");
+    }
+
+    while (($row = fgetcsv($file, 0, ';')) !== false) {
+        $rate = [];
+        foreach ($headers as $index => $header) {
+            $rate[$header] = $row[$index] ?? '';
+        }
+        $rates[] = $rate;
+    }
+    fclose($file);
+
+    return $rates;
+}
+
+$calculator = new IJCalculator(loadRates('taux.csv'));
 
 $endpoint = $_GET['endpoint'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -97,8 +127,8 @@ try {
 
             // Auto-determine class if revenu_n_moins_2 provided but classe is not
             if (isset($input['revenu_n_moins_2']) && !isset($input['classe'])) {
-                $revenuNMoins2 = (float)$input['revenu_n_moins_2'];
-                $taxeOffice = isset($input['taxe_office']) ? (bool)$input['taxe_office'] : false;
+                $revenuNMoins2 = (float) $input['revenu_n_moins_2'];
+                $taxeOffice = isset($input['taxe_office']) ? (bool) $input['taxe_office'] : false;
                 $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
 
                 $input['classe'] = $calculator->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice);
@@ -146,9 +176,9 @@ try {
 
             $input = json_decode(file_get_contents('php://input'), true);
 
-            $revenuNMoins2 = isset($input['revenu_n_moins_2']) ? (float)$input['revenu_n_moins_2'] : null;
+            $revenuNMoins2 = isset($input['revenu_n_moins_2']) ? (float) $input['revenu_n_moins_2'] : null;
             $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
-            $taxeOffice = isset($input['taxe_office']) ? (bool)$input['taxe_office'] : false;
+            $taxeOffice = isset($input['taxe_office']) ? (bool) $input['taxe_office'] : false;
 
             // Set PASS value if provided
             if (isset($input['pass_value'])) {
@@ -238,10 +268,14 @@ try {
                     $config = [];
 
                     // Extract simple values
-                    if (preg_match("/'statut'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['statut'] = $m[1];
-                    if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m)) $config['classe'] = strtoupper($m[1]);
-                    if (preg_match("/'option'\s*=>\s*(\d+)/", $configStr, $m)) $config['option'] = (float)$m[1];
-                    if (preg_match("/'pass_value'\s*=>\s*(\d+)/", $configStr, $m)) $config['pass_value'] = (int)$m[1];
+                    if (preg_match("/'statut'\s*=>\s*'([^']*)'/", $configStr, $m))
+                        $config['statut'] = $m[1];
+                    if (preg_match("/'classe'\s*=>\s*'([^']*)'/", $configStr, $m))
+                        $config['classe'] = strtoupper($m[1]);
+                    if (preg_match("/'option'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['option'] = (float) $m[1];
+                    if (preg_match("/'pass_value'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['pass_value'] = (int) $m[1];
                     if (preg_match("/'birth_date'\s*=>\s*null/", $configStr)) {
                         $config['birth_date'] = null;
                     } elseif (preg_match("/'birth_date'\s*=>\s*[\"']([^\"']*)[\"']/", $configStr, $m)) {
@@ -257,13 +291,20 @@ try {
                     } elseif (preg_match("/'affiliation_date'\s*=>\s*[\"']([^\"']*)[\"']/", $configStr, $m)) {
                         $config['affiliation_date'] = $m[1];
                     }
-                    if (preg_match("/'nb_trimestres'\s*=>\s*(\d+)/", $configStr, $m)) $config['nb_trimestres'] = (int)$m[1];
-                    if (preg_match("/'previous_cumul_days'\s*=>\s*(\d+)/", $configStr, $m)) $config['previous_cumul_days'] = (int)$m[1];
-                    if (preg_match("/'prorata'\s*=>\s*([\d.]+)/", $configStr, $m)) $config['prorata'] = (float)$m[1];
-                    if (preg_match("/'patho_anterior'\s*=>\s*(\d+)/", $configStr, $m)) $config['patho_anterior'] = (int)$m[1];
-                    if (preg_match("/'expected'\s*=>\s*([\d.]+)/", $configStr, $m)) $config['expected'] = (float)$m[1];
-                    if (preg_match("/'nbe_jours'\s*=>\s*(\d+)/", $configStr, $m)) $config['nbe_jours'] = (int)$m[1];
-                    if (preg_match("/['\"]forced_rate['\"]\s*=>\s*([\d.]+)/", $configStr, $m)) $config['forced_rate'] = (float)$m[1];
+                    if (preg_match("/'nb_trimestres'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['nb_trimestres'] = (int) $m[1];
+                    if (preg_match("/'previous_cumul_days'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['previous_cumul_days'] = (int) $m[1];
+                    if (preg_match("/'prorata'\s*=>\s*([\d.]+)/", $configStr, $m))
+                        $config['prorata'] = (float) $m[1];
+                    if (preg_match("/'patho_anterior'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['patho_anterior'] = (int) $m[1];
+                    if (preg_match("/'expected'\s*=>\s*([\d.]+)/", $configStr, $m))
+                        $config['expected'] = (float) $m[1];
+                    if (preg_match("/'nbe_jours'\s*=>\s*(\d+)/", $configStr, $m))
+                        $config['nbe_jours'] = (int) $m[1];
+                    if (preg_match("/['\"]forced_rate['\"]\s*=>\s*([\d.]+)/", $configStr, $m))
+                        $config['forced_rate'] = (float) $m[1];
 
                     $testConfig = $config;
                 }
