@@ -429,11 +429,19 @@ class DateService implements DateCalculationInterface {
 					}
 
 					// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
-					$dates = date('Y-m-d', max([
+					$calculatedDate = date('Y-m-d', max([
 						strtotime($dateDeb->format('Y-m-d')),
 						strtotime($dateDT ?? '1970-01-01'),
 						strtotime($dateCotis ?? '1970-01-01'),
 					]));
+
+					// Vérifier si la date-effet est dans la période de l'arrêt
+					// Si date-effet > date fin arrêt, ne pas ouvrir les droits (date-effet = null)
+					if ($calculatedDate > $endDate->format('Y-m-d')) {
+						$dates = null;
+					} else {
+						$dates = $calculatedDate;
+					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
 					$arretDroits = 0;
@@ -708,7 +716,21 @@ class DateService implements DateCalculationInterface {
 	 * @return int Nombre de jours de décompte
 	 */
 	private function calculateDecompteDays(array $arret): int {
-		// Si pas de date d'effet, tous les jours sont en décompte
+		// Si c'est une rechute, pas de décompte (rechute-line != 0 ou is_rechute = true)
+		$isRechute = false;
+		if (isset($arret['rechute-line']) && $arret['rechute-line'] != 0) {
+			$isRechute = true;
+		}
+		if (isset($arret['is_rechute']) && $arret['is_rechute'] === true) {
+			$isRechute = true;
+		}
+
+		// Pour les rechutes, pas de décompte
+		if ($isRechute) {
+			return 0;
+		}
+
+		// Si pas de date d'effet, tous les jours sont en décompte (pour non-rechute)
 		if (!isset($arret['date-effet']) || empty($arret['date-effet'])) {
 			if (isset($arret['arret_diff'])) {
 				return $arret['arret_diff'];
