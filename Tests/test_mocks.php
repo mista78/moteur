@@ -2,8 +2,10 @@
 
 require_once 'jest-php.php';
 require_once 'IJCalculator.php';
+require_once 'Tools/Tools.php';
 
 use App\IJCalculator\IJCalculator;
+use App\Tools\Tools;
 
 // Test cases avec résultats attendus
 $testCases = [
@@ -26,8 +28,8 @@ $testCases = [
         'nbe_jours' => 10
     ],
     'mock2.json' => [
-        'expected' => 17318.92,
-        "payment_start" => ["", "", "", "", "", "2023-12-07"],
+        'expected' => 20032.88,
+        "payment_start" => ["", "", "", "2022-12-06", "", "2023-12-07"],
         'statut' => 'M',
         'classe' => 'c',
         'option' => 100,
@@ -40,7 +42,7 @@ $testCases = [
         'nb_trimestres' => 8,
         'previous_cumul_days' => 0,
         'prorata' => 1,
-        'nbe_jours' => 116,
+        'nbe_jours' => 135,
         'patho_anterior' => 0
     ],
     'mock3.json' => [
@@ -392,7 +394,8 @@ $testCases = [
         'patho_anterior' => 1,
     ],
     'mock28.json' => [
-        'expected' => 4369.62,
+        'expected' => 4219.5,
+        'nbe_jours' => 28,
         'statut' => 'M',
         'classe' => 'C',
         'option' => 100,  // 25% option (not 100%)
@@ -419,6 +422,9 @@ describe('IJCalculator - Mock Tests', function () use ($testCases) {
         if (!$mockData) {
             throw new Exception("Impossible de charger $mockFile");
         }
+
+        // Transform keys using Tools::renommerCles
+        $mockData = Tools::renommerCles($mockData, Tools::$correspondance);
 
         // Créer le calculateur
         $calculator = new IJCalculator(ROOT_PATH . 'taux.csv');

@@ -10,6 +10,11 @@ use DateTime;
  */
 class DateService implements DateCalculationInterface {
 
+	/**
+	 * Store the merged arrêts for front-end access
+	 */
+	private array $mergedArrets = [];
+
 	public function calculateAge(string $currentDate, string $birthDate): int {
 		$current = new DateTime($currentDate);
 		$birth = new DateTime($birthDate);
@@ -242,8 +247,17 @@ class DateService implements DateCalculationInterface {
 		return $currentStart <= $oneYearAfterLast;
 	}
 
+	/**
+	 * Get merged arrêts list for front-end display
+	 */
+	public function getMergedArrets(): array {
+		return $this->mergedArrets;
+	}
+
 	public function calculateDateEffet(array $arrets, ?string $birthDate = null, int $previousCumulDays = 0): array {
 		$arrets = $this->mergeProlongations($arrets);
+		// Store merged list for front-end access
+		$this->mergedArrets = $arrets;
 
 		static $dateDT;
 		static $dateCotis;
