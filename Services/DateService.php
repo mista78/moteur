@@ -180,14 +180,19 @@ class DateService implements DateCalculationInterface {
 		});
 
 		$merged = [];
-		foreach ($arrets as $arret) {
+		foreach ($arrets as $index => $arret) {
 			if (empty($merged)) {
+				// First arrêt - mark as not prolongation
+				$arret['is_prolongation'] = false;
+				$arret['prolongation_count'] = 0;
+				$arret['prolongation_of'] = null;
 				$merged[] = $arret;
 
 				continue;
 			}
 
-			$last = &$merged[count($merged) - 1];
+			$lastIndex = count($merged) - 1;
+			$last = &$merged[$lastIndex];
 			$lastEnd = new DateTime($last['arret-to-line']);
 			$currentStart = new DateTime($arret['arret-from-line']);
 
@@ -195,8 +200,31 @@ class DateService implements DateCalculationInterface {
 			$nextBusinessDay = $this->addOneBusinessDay($lastEnd);
 
 			if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+				// This is a prolongation - merge it
+				$originalStart = $last['arret-from-line'];
 				$last['arret-to-line'] = $arret['arret-to-line'];
+
+				// Mark that this arrêt has prolongations
+				if (!isset($last['prolongation_count'])) {
+					$last['prolongation_count'] = 0;
+				}
+				$last['prolongation_count']++;
+				$last['has_prolongations'] = true;
+
+				// Store the merged arrêt info (for tracking)
+				if (!isset($last['merged_arrets'])) {
+					$last['merged_arrets'] = [];
+				}
+				$last['merged_arrets'][] = [
+					'original_index' => $index,
+					'from' => $arret['arret-from-line'],
+					'to' => $arret['arret-to-line']
+				];
 			} else {
+				// Not consecutive - add as new arrêt
+				$arret['is_prolongation'] = false;
+				$arret['prolongation_count'] = 0;
+				$arret['prolongation_of'] = null;
 				$merged[] = $arret;
 			}
 		}

@@ -50,6 +50,21 @@ echo "Total arrêts: " . count($merged) . "\n\n";
 foreach ($merged as $i => $arret) {
     $id = $arret['id'] ?? 'Merged';
     echo "[$i] {$id}: {$arret['arret-from-line']} to {$arret['arret-to-line']}\n";
+
+    // Show merge flags
+    if (isset($arret['has_prolongations']) && $arret['has_prolongations']) {
+        echo "     ✅ has_prolongations: true\n";
+        echo "     ✅ prolongation_count: {$arret['prolongation_count']}\n";
+
+        if (isset($arret['merged_arrets'])) {
+            echo "     ✅ merged_arrets:\n";
+            foreach ($arret['merged_arrets'] as $merged_info) {
+                echo "        - Index {$merged_info['original_index']}: {$merged_info['from']} to {$merged_info['to']}\n";
+            }
+        }
+    } else {
+        echo "     ⚪ No prolongations\n";
+    }
 }
 
 echo "\n=== EXPLANATION ===\n";

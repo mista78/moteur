@@ -61,6 +61,16 @@ echo "\n=== ARRETS_MERGED (for front-end display) ===\n";
 echo "Count: " . count($result['arrets_merged']) . "\n";
 foreach ($result['arrets_merged'] as $i => $arret) {
     echo "[$i] {$arret['arret-from-line']} to {$arret['arret-to-line']}\n";
+
+    // Show merge flags
+    if (isset($arret['has_prolongations']) && $arret['has_prolongations']) {
+        echo "     ✅ Has {$arret['prolongation_count']} prolongation(s) merged\n";
+        if (isset($arret['merged_arrets'])) {
+            foreach ($arret['merged_arrets'] as $merged) {
+                echo "        - Merged: {$merged['from']} to {$merged['to']}\n";
+            }
+        }
+    }
 }
 
 echo "\n=== CALCULATION RESULT ===\n";
