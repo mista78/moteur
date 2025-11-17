@@ -26,16 +26,23 @@ class ArretService {
 		$numSinistre = $inputData['num_sinistre'];
 		$attestationDate = $inputData['attestation_date'] ?? null;
 
-		// Use merged arrêts if available, otherwise use processed arrêts
-		$arrets = $calculationResult['arrets_merged'] ?? $calculationResult['arrets'];
+		// Use payment_details for accurate payment information
+		$paymentDetails = $calculationResult['payment_details'] ?? [];
 
-		foreach ($arrets as $index => $arret) {
+		foreach ($paymentDetails as $index => $paymentDetail) {
+			// Get the corresponding arrêt data
+			$arret = $calculationResult['arrets'][$index] ?? [];
+
+			// Merge payment details with arrêt data
+			$mergedData = array_merge($arret, $paymentDetail);
+
 			$record = $this->transformArretToDbFormat(
-				$arret,
+				$mergedData,
 				$adherentNumber,
 				$numSinistre,
 				$attestationDate,
-				$index
+				$index,
+				$paymentDetail
 			);
 
 			$records[] = $record;
@@ -52,7 +59,8 @@ class ArretService {
 		string $adherentNumber,
 		int $numSinistre,
 		?string $attestationDate,
-		int $index
+		int $index,
+		?array $paymentDetail = null
 	): array {
 		// Handle DT_excused logic (inverted from dt-line)
 		// dt-line = 1 means NOT excused (penalty applies)
@@ -76,8 +84,24 @@ class ArretService {
 			}
 		}
 
-		// Determine first_day (1 if first arrêt, 0 otherwise)
-		$firstDay = ($index === 0) ? 1 : 0;
+		// Determine first_day based on payment_details
+		// first_day = 1 if first day of arrêt is paid (no décompte)
+		// first_day = 0 if first day is excused (décompte exists)
+		$firstDay = 0;
+		if ($paymentDetail !== null) {
+			$paymentStart = $paymentDetail['payment_start'] ?? null;
+			$arretFrom = $arret['arret-from-line'] ?? $arret['arret_from'] ?? null;
+
+			// If payment starts on same day as arrêt, first day is paid
+			if ($paymentStart && $arretFrom && $paymentStart === $arretFrom) {
+				$firstDay = 1;
+			}
+
+			// If no decompte days, first day is paid
+			if (isset($paymentDetail['decompte_days']) && $paymentDetail['decompte_days'] == 0) {
+				$firstDay = 1;
+			}
+		}
 
 		// Get taux from arret data
 		$taux = null;
