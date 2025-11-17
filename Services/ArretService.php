@@ -417,18 +417,43 @@ class ArretService {
 	 * This calculates date_effet internally
 	 *
 	 * @param array $arrets Array of arrêts
-	 * @param array $inputData Input data with adherent_number, num_sinistre, etc.
+	 * @param array $inputData Optional input data (adherent_number, num_sinistre can be in arrêts)
 	 * @return array Array of ij_arret records
 	 */
-	public function generateArretRecordsFromList(array $arrets, array $inputData): array {
-		// Validate required input
-		$this->validateInputData($inputData);
+	public function generateArretRecordsFromList(array $arrets, array $inputData = []): array {
+		// Extract common data from first arrêt if not provided in inputData
+		$firstArret = !empty($arrets) ? $arrets[0] : [];
 
-		$adherentNumber = $inputData['adherent_number'];
-		$numSinistre = $inputData['num_sinistre'];
-		$attestationDate = $inputData['attestation_date'] ?? null;
-		$birthDate = $inputData['birth_date'] ?? null;
+		$adherentNumber = $inputData['adherent_number']
+			?? $firstArret['adherent_number']
+			?? $firstArret['num_adherent']
+			?? null;
+
+		$numSinistre = $inputData['num_sinistre']
+			?? $firstArret['num_sinistre']
+			?? $firstArret['sinistre_id']
+			?? null;
+
+		$attestationDate = $inputData['attestation_date']
+			?? $firstArret['attestation_date']
+			?? $firstArret['date_dern_attestation']
+			?? null;
+
+		$birthDate = $inputData['birth_date']
+			?? $firstArret['birth_date']
+			?? null;
+
 		$previousCumulDays = $inputData['previous_cumul_days'] ?? 0;
+
+		// Validate only if not found in arrêts
+		if (!$adherentNumber || !$numSinistre) {
+			// Try to validate from inputData if provided
+			if (!empty($inputData)) {
+				$this->validateInputData($inputData);
+				$adherentNumber = $inputData['adherent_number'];
+				$numSinistre = $inputData['num_sinistre'];
+			}
+		}
 
 		// Calculate date-effet for arrêts
 		$arretsWithDateEffet = $this->calculateDateEffetForArrets(
@@ -440,6 +465,10 @@ class ArretService {
 		// Generate records
 		$records = [];
 		foreach ($arretsWithDateEffet as $index => $arret) {
+			// Get adherent_number and num_sinistre from arrêt itself if available
+			$arretAdherent = $arret['adherent_number'] ?? $arret['num_adherent'] ?? $adherentNumber;
+			$arretSinistre = $arret['num_sinistre'] ?? $arret['sinistre_id'] ?? $numSinistre;
+
 			// Create a mock payment_detail from calculated data
 			$paymentDetail = [
 				'arret_from' => $arret['arret-from-line'] ?? null,
@@ -454,8 +483,8 @@ class ArretService {
 
 			$record = $this->transformArretToDbFormat(
 				$mergedData,
-				$adherentNumber,
-				$numSinistre,
+				$arretAdherent,
+				$arretSinistre,
 				$attestationDate,
 				$index,
 				$paymentDetail
