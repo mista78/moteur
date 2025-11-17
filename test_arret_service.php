@@ -68,6 +68,7 @@ foreach ($arretRecords as $i => $record) {
     echo "  date_end: " . ($record['date_end'] ?? 'NULL') . "\n";
     echo "  date_prolongation: " . ($record['date_prolongation'] ?? 'NULL') . "\n";
     echo "  first_day: " . ($record['first_day']) . "\n";
+    echo "  decompte_days: " . ($record['decompte_days'] ?? 0) . "\n";
     echo "  date_declaration: " . ($record['date_declaration'] ?? 'NULL') . "\n";
     echo "  DT_excused: " . ($record['DT_excused'] ?? 'NULL') . "\n";
     echo "  valid_med_controleur: " . ($record['valid_med_controleur'] ?? 'NULL') . "\n";

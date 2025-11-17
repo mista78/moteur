@@ -123,6 +123,12 @@ class ArretService {
 			$dateDebDroit = null;
 		}
 
+		// Get decompte_days from payment_details
+		$decompteDays = 0;
+		if ($paymentDetail !== null && isset($paymentDetail['decompte_days'])) {
+			$decompteDays = (int)$paymentDetail['decompte_days'];
+		}
+
 		return [
 			'adherent_number' => $adherentNumber,
 			'code_pathologie' => $codePathologie,
@@ -131,6 +137,7 @@ class ArretService {
 			'date_end' => $this->normalizeDate($arret['arret-to-line'] ?? null),
 			'date_prolongation' => $this->normalizeDate($dateProlongation),
 			'first_day' => $firstDay,
+			'decompte_days' => $decompteDays,
 			'date_declaration' => $this->normalizeDate($arret['declaration-date-line'] ?? $arret['date_declaration'] ?? null),
 			'DT_excused' => $dtExcused,
 			'valid_med_controleur' => isset($arret['valid_med_controleur']) ? (int)$arret['valid_med_controleur'] : null,

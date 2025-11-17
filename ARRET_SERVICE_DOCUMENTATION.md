@@ -44,7 +44,8 @@ CREATE TABLE `ij_arret` (
 | `date_start` | `arret-from-line` | Arrêt start date |
 | `date_end` | `arret-to-line` | Arrêt end date |
 | `date_prolongation` | Calculated from `merged_arrets` | Last merged arrêt's end date |
-| `first_day` | Calculated | 1 for first arrêt, 0 for others |
+| `first_day` | Calculated from `payment_details` | 1 = paid, 0 = excused |
+| `decompte_days` | From `payment_details` | Number of non-paid days |
 | `date_declaration` | `declaration-date-line` | Declaration date |
 | `DT_excused` | Inverted from `dt-line` | 1 = excused, 0 = not excused |
 | `valid_med_controleur` | `valid_med_controleur` | Medical controller validation |
