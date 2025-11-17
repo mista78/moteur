@@ -31,9 +31,7 @@ echo "════════════════════════�
 
 // Calculate date-effet for arrêts (without full calculation)
 $arretsWithDateEffet = $arretService->calculateDateEffetForArrets(
-    $mockData,
-    '1958-06-03',  // birth_date
-    0              // previous_cumul_days
+    $mockData            // previous_cumul_days
 );
 
 echo "✅ Date-effet calculated for " . count($arretsWithDateEffet) . " arrêts\n\n";

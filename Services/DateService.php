@@ -473,6 +473,10 @@ class DateService implements DateCalculationInterface {
 				}
 			}
 			$currentData['date-effet'] = $dates ?: null;
+
+			// Calculate decompte_days (non-paid days before date-effet)
+			$currentData['decompte_days'] = $this->calculateDecompteDays($currentData);
+
 			$nbJours = $newNbJours;
 			$increment++;
 
