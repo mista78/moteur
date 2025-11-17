@@ -2,6 +2,9 @@
 
 namespace App\IJCalculator\Services;
 
+use DateTime;
+use RuntimeException;
+
 /**
  * Implémentation du Service de Taux
  * Gère toutes les recherches et calculs de taux
@@ -15,7 +18,7 @@ class RateService implements RateServiceInterface {
 	/**
 	 * Constructor - supports both legacy CSV path (string) and new array format
 	 *
-	 * @param string|array $csvPathOrRates CSV file path (string) or rates array
+	 * @param array|string $csvPathOrRates CSV file path (string) or rates array
 	 */
 	public function __construct($csvPathOrRates = []) {
 		if (is_string($csvPathOrRates)) {
@@ -48,18 +51,19 @@ class RateService implements RateServiceInterface {
 	 */
 	private function loadRatesFromCsv(string $csvPath): void {
 		if (!file_exists($csvPath)) {
-			throw new \RuntimeException("CSV file not found: {$csvPath}");
+			throw new RuntimeException("CSV file not found: {$csvPath}");
 		}
 
 		$file = fopen($csvPath, 'r');
 		if ($file === false) {
-			throw new \RuntimeException("Unable to open CSV file: {$csvPath}");
+			throw new RuntimeException("Unable to open CSV file: {$csvPath}");
 		}
 
 		$headers = fgetcsv($file, 0, ';');
 		if ($headers === false) {
 			fclose($file);
-			throw new \RuntimeException("Empty or invalid CSV file");
+
+			throw new RuntimeException('Empty or invalid CSV file');
 		}
 
 		$rates = [];
@@ -70,7 +74,7 @@ class RateService implements RateServiceInterface {
 
 				// Convert date strings to DateTime objects
 				if ($header === 'date_start' || $header === 'date_end') {
-					$rate[$header] = new \DateTime($value);
+					$rate[$header] = new DateTime($value);
 				} else {
 					$rate[$header] = $value;
 				}

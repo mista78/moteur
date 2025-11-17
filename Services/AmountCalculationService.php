@@ -146,7 +146,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 				$currentDate,
 				$birthDate,
 				$historicalReducedRate,
-				$data
+				$data,
 			);
 			$amount = $calculationResult['montant'];
 			$paymentDetails = $calculationResult['payment_details'];
@@ -637,6 +637,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 			if (isset($data['revenus_par_annee'][$yearNMoins2])) {
 				$revenuNMoins2 = (float)$data['revenus_par_annee'][$yearNMoins2];
 				$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
+
 				// Pass year to use year-specific PASS value
 				return $this->tauxService->determineClasse($revenuNMoins2, null, $taxeOffice, $year);
 			}
@@ -647,6 +648,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 			$revenuNMoins2 = (float)$data['revenu_n_moins_2'];
 			$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
 			$dateOuvertureDroits = $data['date_ouverture_droits'] ?? null;
+
 			// Pass year to use year-specific PASS value
 			return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice, $year);
 		}
