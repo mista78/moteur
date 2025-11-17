@@ -402,6 +402,15 @@ class ArretService {
 	): array {
 		$dateService = $this->getDateService();
 
+		// Remove any existing date-effet related fields to force fresh calculation
+		// This ensures we always recalculate instead of using database values
+		foreach ($arrets as $index => &$arret) {
+			unset($arret['ouverture-date-line']);
+			unset($arret['date_deb_dr_force']);
+			unset($arret['date-effet']);
+		}
+		unset($arret); // Break reference
+
 		// Calculate date-effet using DateService
 		$arretsWithDateEffet = $dateService->calculateDateEffet(
 			$arrets,
