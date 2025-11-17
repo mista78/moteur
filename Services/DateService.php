@@ -234,18 +234,14 @@ class DateService implements DateCalculationInterface {
 
 	/**
 	 * Déterminer automatiquement si un arrêt est une rechute
-	 * Règle: Si rechute-line est déjà défini (forcé par commission), le respecter.
-	 * Sinon, calculer automatiquement: rechute si date début < (date fin dernier arrêt + 1 an)
-	 * et que l'arrêt n'est pas une prolongation (consécutif)
-	 * ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
+	 * Règle: calculer automatiquement basé sur les business rules:
+	 * - Rechute si date début < (date fin dernier arrêt + 1 an)
+	 * - ET que l'arrêt n'est pas une prolongation (consécutif)
+	 * - ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
+	 *
+	 * N'utilise PAS le champ rechute-line de l'input - calcul automatique uniquement
 	 */
 	private function isRechute(array $currentArret, ?array $previousArret): bool {
-		// Si rechute-line est explicitement défini (forcé par commission), le respecter
-		// Note: rechute-line peut être 1 (rechute) ou un nombre > 1 (ex: 15 pour délai de 15 jours)
-		if (isset($currentArret['rechute-line']) && $currentArret['rechute-line'] !== null && $currentArret['rechute-line'] !== '') {
-			return (int)$currentArret['rechute-line'] > 0;
-		}
-
 		// Pas de précédent arrêt → pas une rechute
 		if (!$previousArret) {
 			return false;
@@ -380,7 +376,7 @@ class DateService implements DateCalculationInterface {
 					$arretDroits++;
 				}
 			} elseif ($increment > 0) {
-				// Déterminer si c'est une rechute (forcée via rechute-line OU automatique < 1 an)
+				// Déterminer si c'est une rechute (automatique selon business rules)
 				$previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
 				$siRechute = $this->isRechute($currentData, $previousArret);
 
@@ -716,17 +712,9 @@ class DateService implements DateCalculationInterface {
 	 * @return int Nombre de jours de décompte
 	 */
 	private function calculateDecompteDays(array $arret): int {
-		// Si c'est une rechute, pas de décompte (rechute-line != 0 ou is_rechute = true)
-		$isRechute = false;
-		if (isset($arret['rechute-line']) && $arret['rechute-line'] != 0) {
-			$isRechute = true;
-		}
+		// Si c'est une rechute (auto-calculée), pas de décompte
+		// N'utilise PAS rechute-line de l'input, seulement is_rechute auto-calculée
 		if (isset($arret['is_rechute']) && $arret['is_rechute'] === true) {
-			$isRechute = true;
-		}
-
-		// Pour les rechutes, pas de décompte
-		if ($isRechute) {
 			return 0;
 		}
 
