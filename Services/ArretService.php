@@ -10,6 +10,28 @@ use DateTime;
 class ArretService {
 
 	/**
+	 * DateService instance for date calculations
+	 */
+	private ?DateCalculationInterface $dateService = null;
+
+	/**
+	 * Set DateService instance
+	 */
+	public function setDateService(DateCalculationInterface $dateService): void {
+		$this->dateService = $dateService;
+	}
+
+	/**
+	 * Get or create DateService instance
+	 */
+	private function getDateService(): DateCalculationInterface {
+		if ($this->dateService === null) {
+			$this->dateService = new DateService();
+		}
+		return $this->dateService;
+	}
+
+	/**
 	 * Generate ij_arret records from calculation result
 	 *
 	 * @param array $calculationResult Result from IJCalculator->calculateAmount()
@@ -360,6 +382,86 @@ class ArretService {
 					$records[] = $originalRecord;
 				}
 			}
+		}
+
+		return $records;
+	}
+
+	/**
+	 * Calculate date_effet for arrêts without full calculation
+	 *
+	 * @param array $arrets Array of arrêts to process
+	 * @param string|null $birthDate Birth date for age calculation (optional)
+	 * @param int $previousCumulDays Previous cumulative days (default: 0)
+	 * @return array Arrêts with date-effet calculated
+	 */
+	public function calculateDateEffetForArrets(
+		array $arrets,
+		?string $birthDate = null,
+		int $previousCumulDays = 0
+	): array {
+		$dateService = $this->getDateService();
+
+		// Calculate date-effet using DateService
+		$arretsWithDateEffet = $dateService->calculateDateEffet(
+			$arrets,
+			$birthDate,
+			$previousCumulDays
+		);
+
+		return $arretsWithDateEffet;
+	}
+
+	/**
+	 * Generate ij_arret records from arrêts list only (without full calculation)
+	 * This calculates date_effet internally
+	 *
+	 * @param array $arrets Array of arrêts
+	 * @param array $inputData Input data with adherent_number, num_sinistre, etc.
+	 * @return array Array of ij_arret records
+	 */
+	public function generateArretRecordsFromList(array $arrets, array $inputData): array {
+		// Validate required input
+		$this->validateInputData($inputData);
+
+		$adherentNumber = $inputData['adherent_number'];
+		$numSinistre = $inputData['num_sinistre'];
+		$attestationDate = $inputData['attestation_date'] ?? null;
+		$birthDate = $inputData['birth_date'] ?? null;
+		$previousCumulDays = $inputData['previous_cumul_days'] ?? 0;
+
+		// Calculate date-effet for arrêts
+		$arretsWithDateEffet = $this->calculateDateEffetForArrets(
+			$arrets,
+			$birthDate,
+			$previousCumulDays
+		);
+
+		// Generate records
+		$records = [];
+		foreach ($arretsWithDateEffet as $index => $arret) {
+			// Create a mock payment_detail from calculated data
+			$paymentDetail = [
+				'arret_from' => $arret['arret-from-line'] ?? null,
+				'arret_to' => $arret['arret-to-line'] ?? null,
+				'payment_start' => $arret['payment_start'] ?? $arret['date-effet'] ?? null,
+				'payment_end' => null,
+				'decompte_days' => $arret['decompte_days'] ?? 0,
+				'payable_days' => $arret['payable_days'] ?? 0,
+			];
+
+			$mergedData = array_merge($arret, $paymentDetail);
+
+			$record = $this->transformArretToDbFormat(
+				$mergedData,
+				$adherentNumber,
+				$numSinistre,
+				$attestationDate,
+				$index,
+				$paymentDetail
+			);
+
+			$records[] = $record;
 		}
 
 		return $records;
