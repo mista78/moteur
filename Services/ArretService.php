@@ -129,6 +129,14 @@ class ArretService {
 			$decompteDays = (int)$paymentDetail['decompte_days'];
 		}
 
+		// Get rechute status
+		$rechute = 0;
+		if (isset($arret['rechute-line'])) {
+			$rechute = (int)$arret['rechute-line'];
+		} elseif (isset($arret['is_rechute'])) {
+			$rechute = $arret['is_rechute'] ? 1 : 0;
+		}
+
 		return [
 			'adherent_number' => $adherentNumber,
 			'code_pathologie' => $codePathologie,
@@ -138,6 +146,7 @@ class ArretService {
 			'date_prolongation' => $this->normalizeDate($dateProlongation),
 			'first_day' => $firstDay,
 			'decompte_days' => $decompteDays,
+			'rechute' => $rechute,
 			'date_declaration' => $this->normalizeDate($arret['declaration-date-line'] ?? $arret['date_declaration'] ?? null),
 			'DT_excused' => $dtExcused,
 			'valid_med_controleur' => isset($arret['valid_med_controleur']) ? (int)$arret['valid_med_controleur'] : null,

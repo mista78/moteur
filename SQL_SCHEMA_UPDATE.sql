@@ -1,11 +1,16 @@
 -- SQL Schema Update for ij_arret table
--- Add decompte_days field to track non-paid days before payment starts
+-- Add decompte_days and rechute fields
 
--- Option 1: Add column if it doesn't exist (MySQL 5.7+)
+-- Option 1: Add columns if they don't exist (MySQL 5.7+)
 ALTER TABLE `ij_arret`
 ADD COLUMN IF NOT EXISTS `decompte_days` int(11) DEFAULT 0
 COMMENT 'Number of non-paid days before payment starts (décompte period)'
 AFTER `first_day`;
+
+ALTER TABLE `ij_arret`
+ADD COLUMN IF NOT EXISTS `rechute` tinyint(4) DEFAULT 0
+COMMENT 'Rechute status: 0 = new pathology, 1 = rechute'
+AFTER `decompte_days`;
 
 -- Option 2: Add column (for older MySQL versions)
 -- Check if column exists first, then run:
@@ -26,6 +31,7 @@ AFTER `first_day`;
 --   `date_prolongation` date DEFAULT NULL,
 --   `first_day` tinyint(4) DEFAULT NULL COMMENT '1 = first day paid, 0 = first day excused',
 --   `decompte_days` int(11) DEFAULT 0 COMMENT 'Number of non-paid days before payment starts',
+--   `rechute` tinyint(4) DEFAULT 0 COMMENT 'Rechute status: 0 = new pathology, 1 = rechute',
 --   `date_declaration` date DEFAULT NULL,
 --   `DT_excused` tinyint(4) DEFAULT NULL,
 --   `valid_med_controleur` tinyint(4) DEFAULT NULL,

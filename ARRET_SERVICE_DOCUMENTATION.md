@@ -297,7 +297,8 @@ throw new InvalidArgumentException("code_pathologie is required for ij_arret rec
     'date_start' => '2024-01-02',
     'date_end' => '2024-01-25',
     'date_prolongation' => '2024-01-25',  // From merged_arrets
-    'first_day' => 1,
+    'first_day' => 0,                      // 0 = first day excused
+    'decompte_days' => 12,                 // 12 non-paid days
     'date_declaration' => '2024-01-02',
     'DT_excused' => 1,
     'valid_med_controleur' => 1,
@@ -318,7 +319,7 @@ throw new InvalidArgumentException("code_pathologie is required for ij_arret rec
 INSERT INTO `ij_arret` (
     `adherent_number`, `code_pathologie`, `num_sinistre`,
     `date_start`, `date_end`, `date_prolongation`,
-    `first_day`, `date_declaration`, `DT_excused`,
+    `first_day`, `decompte_days`, `date_declaration`, `DT_excused`,
     `valid_med_controleur`, `cco_a_jour`,
     `date_dern_attestation`, `date_deb_droit`,
     `date_deb_dr_force`, `taux`, `NOARRET`,
@@ -326,7 +327,7 @@ INSERT INTO `ij_arret` (
 ) VALUES (
     '1234567', 'A', 12345,
     '2024-01-02', '2024-01-25', '2024-01-25',
-    1, '2024-01-02', 1,
+    0, 12, '2024-01-02', 1,
     1, 1,
     '2024-06-12', '2024-04-01',
     NULL, 1, NULL,
