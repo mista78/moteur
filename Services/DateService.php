@@ -295,7 +295,7 @@ class DateService implements DateCalculationInterface {
 		$increment = 0;
 		// dd($arrets);
 		while (true) {
-			$dates = '';
+			$dates = null;
 			$lessDate = 0;
 			$currentData = &$arrets[$increment];
 
@@ -472,7 +472,7 @@ class DateService implements DateCalculationInterface {
 					}
 				}
 			}
-			$currentData['date-effet'] = $dates;
+			$currentData['date-effet'] = $dates ?: null;
 			$nbJours = $newNbJours;
 			$increment++;
 
