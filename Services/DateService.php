@@ -260,6 +260,7 @@ class DateService implements DateCalculationInterface {
 			// Si valid_med_controleur != 1, pas de date d'effet
 			if (isset($currentData['valid_med_controleur']) && $currentData['valid_med_controleur'] != 1) {
 				$currentData['date-effet'] = null;
+				$currentData['decompte_days'] = 0; // Invalid, no decompte applicable
 				$increment++;
 				if (count($arrets) === $increment) {
 					break;
@@ -278,6 +279,7 @@ class DateService implements DateCalculationInterface {
 			// Si date_deb_droit existe et n'est pas 0000-00-00, l'utiliser comme date-effet
 			if (isset($currentData['ouverture-date-line']) && !empty($currentData['ouverture-date-line']) && $currentData['ouverture-date-line'] !== '0000-00-00') {
 				$currentData['date-effet'] = $currentData['ouverture-date-line'];
+				$currentData['decompte_days'] = 0; // Rights already opened
 				$nbJours = $newNbJours;
 				$arretDroits++; // Mark that rights have been opened for this arret
 				$increment++;
@@ -291,6 +293,7 @@ class DateService implements DateCalculationInterface {
 			// Si la date est forcée, ignorer le calcul
 			if (isset($currentData['date_deb_dr_force'])) {
 				$currentData['date-effet'] = $currentData['date_deb_dr_force'];
+				$currentData['decompte_days'] = 0; // Rights forced open
 				$nbJours = $newNbJours;
 				$arretDroits++; // Mark that rights have been opened for this arret
 				$increment++;
@@ -305,7 +308,6 @@ class DateService implements DateCalculationInterface {
 			if ($arretDroits === 0) {
 				// Premier arrêt ou nouvelle pathologie, pas une rechute
 				$currentData['is_rechute'] = false;
-				$currentData['decompte_days'] = 90; // 90 jours de décompte pour nouvelle pathologie
 
 				$lessDate = 90 - ($newNbJours - $arret_diff);
 				$dateDeb = clone $startDate;
@@ -337,6 +339,10 @@ class DateService implements DateCalculationInterface {
 						strtotime($dateCotis ?? '1970-01-01'),
 					]));
 					$arretDroits++;
+					$currentData['decompte_days'] = 0; // Rights opened
+				} else {
+					// Remaining days before threshold
+					$currentData['decompte_days'] = 90 - $newNbJours;
 				}
 			} elseif ($increment > 0) {
 				// Déterminer si c'est une rechute (forcée via rechute-line OU automatique < 1 an)
@@ -361,9 +367,6 @@ class DateService implements DateCalculationInterface {
 				// Rechute: droits au 15ème jour (règle des 15 jours pour rechute)
 				// Note: Si MC veut forcer au jour 1, utiliser le champ date-effet qui sera traité plus haut
 				if ($siRechute) {
-					// 14 jours de décompte pour rechute (droits ouvrent au 15ème jour)
-					$currentData['decompte_days'] = 14;
-
 					// Date de base: 15ème jour d'arrêt
 					$dateDeb = clone $startDate;
 					$dateDeb->modify('+14 days');
@@ -390,18 +393,24 @@ class DateService implements DateCalculationInterface {
 						$dateCotis = $cotisDate->format('Y-m-d');
 					}
 
-					// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
-					$dates = date('Y-m-d', max([
-						strtotime($dateDeb->format('Y-m-d')),
-						strtotime($dateDT ?? '1970-01-01'),
-						strtotime($dateCotis ?? '1970-01-01'),
-					]));
+					// Check if threshold reached (15 days)
+					if ($arret_diff >= 15) {
+						// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
+						$dates = date('Y-m-d', max([
+							strtotime($dateDeb->format('Y-m-d')),
+							strtotime($dateDT ?? '1970-01-01'),
+							strtotime($dateCotis ?? '1970-01-01'),
+						]));
+						$currentData['decompte_days'] = 0; // Rights opened
+					} else {
+						// Remaining days before threshold
+						$currentData['decompte_days'] = 15 - $arret_diff;
+					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
 					$arretDroits = 0;
 					$nbJours = 0; // Reset pour nouvelle pathologie
 					$newNbJours = $arret_diff; // Seulement les jours de cet arrêt
-					$currentData['decompte_days'] = 90; // 90 jours de décompte pour nouvelle pathologie
 
 					$lessDate = 90 - $arret_diff;
 					$dateDeb = clone $startDate;
@@ -432,6 +441,10 @@ class DateService implements DateCalculationInterface {
 							strtotime($dateCotis ?? '1970-01-01'),
 						]));
 						$arretDroits++;
+						$currentData['decompte_days'] = 0; // Rights opened
+					} else {
+						// Remaining days before threshold
+						$currentData['decompte_days'] = 90 - $newNbJours;
 					}
 				}
 			}
