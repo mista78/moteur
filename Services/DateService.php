@@ -403,14 +403,16 @@ class DateService implements DateCalculationInterface {
 					$arretEndTimestamp = strtotime($endDate->format('Y-m-d'));
 
 					if ($arretEndTimestamp >= $dateEffetTimestamp) {
-						// Arret reaches or passes date-effet
+						// Arret reaches or passes date-effet - valid rechute
 						$dates = $dateEffetCalculated;
-						$currentData['decompte_days'] = 0;
+						$currentData['decompte_days'] = 0; // All rechute decompte is 0
 					} else {
-						// Arret ends before date-effet, threshold not reached
+						// Arret ends before date-effet - NOT a valid rechute
+						// Treat as non-rechute (date-effet empty, no rights opened)
 						$dates = ''; // date-effet is empty
-						$remainingDays = ($dateEffetTimestamp - strtotime($startDate->format('Y-m-d'))) / 86400 - $arret_diff;
-						$currentData['decompte_days'] = max(0, (int)$remainingDays);
+						$currentData['is_rechute'] = false; // Not a valid rechute
+						$currentData['decompte_days'] = 0; // No decompte for failed rechute
+						unset($currentData['rechute_of_arret_index']); // Remove rechute reference
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
