@@ -1044,11 +1044,33 @@ function displayFullResults(data) {
     if (data.payment_details && data.payment_details.length > 0) {
         html += '<h3 style="margin-top: 20px; color: #667eea;">Détail des paiements par arrêt</h3>';
         html += '<table>';
-        html += '<tr><th>N°</th><th>Début arrêt</th><th>Fin arrêt</th><th>Durée</th><th>Décompte<br>(non payé)</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
+        html += '<tr><th>N°</th><th>Type</th><th>Début arrêt</th><th>Fin arrêt</th><th>Durée</th><th>Décompte<br>(non payé)</th><th>Date effet</th><th>Attestation</th><th>Début paiem.</th><th>Fin paiem.</th><th>Jours payés</th><th>Taux</th><th>Taux/Jour</th><th>Montant</th><th>Statut</th></tr>';
 
-        data.payment_details.forEach((detail) => {
+        data.payment_details.forEach((detail, index) => {
             html += '<tr>';
             html += `<td>${detail.arret_index + 1}</td>`;
+
+            // Add rechute type indicator
+            let typeLabel = '';
+            let typeStyle = '';
+            if (detail.is_rechute === true) {
+                // Show which arret this is a rechute of
+                if (detail.rechute_of_arret_index !== undefined && detail.rechute_of_arret_index !== null) {
+                    const sourceArretNum = detail.rechute_of_arret_index + 1;
+                    typeLabel = `🔄 Rechute #${sourceArretNum}`;
+                } else {
+                    typeLabel = '🔄 Rechute';
+                }
+                typeStyle = 'background-color: #fff3cd; color: #856404; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+            } else if (detail.is_rechute === false && index > 0) {
+                typeLabel = '🆕 Nouvelle';
+                typeStyle = 'background-color: #d4edda; color: #155724; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+            } else if (index === 0) {
+                typeLabel = '1ère';
+                typeStyle = 'color: #666; font-size: 12px;';
+            }
+            html += `<td style="text-align: center;"><span style="${typeStyle}">${typeLabel}</span></td>`;
+
             html += `<td>${detail.arret_from}</td>`;
             html += `<td>${detail.arret_to}</td>`;
             html += `<td>${detail.arret_diff || '-'}j</td>`;

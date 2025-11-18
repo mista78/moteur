@@ -109,8 +109,20 @@ class RateService implements RateServiceInterface {
 		$dateTimestamp = strtotime($date);
 
 		foreach ($this->rates as $rate) {
-			$startTimestamp = strtotime($rate['date_start']->format('Y-m-d'));
-			$endTimestamp = strtotime($rate['date_end']->format('Y-m-d'));
+			// Handle both DateTime objects and string dates
+			$dateStart = $rate['date_start'];
+			$dateEnd = $rate['date_end'];
+
+			// Convert DateTime to string if needed
+			if ($dateStart instanceof \DateTimeInterface) {
+				$dateStart = $dateStart->format('Y-m-d');
+			}
+			if ($dateEnd instanceof \DateTimeInterface) {
+				$dateEnd = $dateEnd->format('Y-m-d');
+			}
+
+			$startTimestamp = strtotime($dateStart);
+			$endTimestamp = strtotime($dateEnd);
 
 			if ($dateTimestamp >= $startTimestamp && $dateTimestamp <= $endTimestamp) {
 				return $rate;

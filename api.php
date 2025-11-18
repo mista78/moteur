@@ -9,8 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'IJCalculator.php';
+require_once 'Services/DateNormalizer.php';
 
 use App\IJCalculator\IJCalculator;
+use App\IJCalculator\Services\DateNormalizer;
 
 function loadRates(string $csvPath): array
 {
@@ -60,6 +62,9 @@ try {
                 throw new Exception('Missing or invalid arrets parameter');
             }
 
+            // Normalize all dates (handles DateTime objects, various string formats)
+            $input = DateNormalizer::normalize($input);
+
             $arrets = $input['arrets'];
             $birthDate = $input['birth_date'] ?? null;
             $previousCumulDays = $input['previous_cumul_days'] ?? 0;
@@ -82,6 +87,9 @@ try {
             if (!isset($input['arrets']) || !is_array($input['arrets'])) {
                 throw new Exception('Missing or invalid arrets parameter');
             }
+
+            // Normalize all dates (handles DateTime objects, various string formats)
+            $input = DateNormalizer::normalize($input);
 
             $arrets = $input['arrets'];
             $previousCumulDays = $input['previous_cumul_days'] ?? 0;
@@ -119,6 +127,9 @@ try {
             if (!isset($input['arrets']) || !is_array($input['arrets'])) {
                 throw new Exception('Missing or invalid arrets parameter');
             }
+
+            // Normalize all dates (handles DateTime objects, various string formats)
+            $input = DateNormalizer::normalize($input);
 
             // Set PASS value if provided
             if (isset($input['pass_value'])) {
@@ -176,6 +187,9 @@ try {
 
             $input = json_decode(file_get_contents('php://input'), true);
 
+            // Normalize all dates (handles DateTime objects, various string formats)
+            $input = DateNormalizer::normalize($input);
+
             $revenuNMoins2 = isset($input['revenu_n_moins_2']) ? (float) $input['revenu_n_moins_2'] : null;
             $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
             $taxeOffice = isset($input['taxe_office']) ? (bool) $input['taxe_office'] : false;
@@ -209,6 +223,33 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $mockFiles
+            ]);
+            break;
+
+        case 'calculate-arrets-date-effet':
+            if ($method !== 'POST') {
+                throw new Exception('Method not allowed');
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!isset($input['arrets']) || !is_array($input['arrets'])) {
+                throw new Exception('Missing or invalid arrets parameter');
+            }
+
+            // Normalize all dates (handles DateTime objects, various string formats)
+            $input = DateNormalizer::normalize($input);
+
+            $arrets = $input['arrets'];
+            $birthDate = $input['birth_date'] ?? null;
+            $previousCumulDays = $input['previous_cumul_days'] ?? 0;
+
+            // Calculate date-effet for all arrets
+            $arretsWithDateEffet = $calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $arretsWithDateEffet
             ]);
             break;
 

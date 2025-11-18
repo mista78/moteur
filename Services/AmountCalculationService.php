@@ -563,7 +563,12 @@ class AmountCalculationService implements AmountCalculationInterface {
 			$rateData = $this->rateService->getRateForDate($current->format('Y-m-d'));
 
 			if ($rateData) {
-				$periodEnd = new DateTime($rateData['date_end']->format('Y-m-d'));
+				// Handle both DateTime objects and string dates
+			$dateEnd = $rateData['date_end'];
+			if ($dateEnd instanceof \DateTimeInterface) {
+				$dateEnd = $dateEnd->format('Y-m-d');
+			}
+			$periodEnd = new DateTime($dateEnd);
 			} else {
 				$periodEnd = new DateTime("$year-12-31");
 			}
