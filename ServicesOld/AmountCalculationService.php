@@ -31,7 +31,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 	 */
 	public function calculateAmount(array $data): array {
 		$arrets = $data['arrets'];
-		$classe = strtoupper($data['classe']);
+
+		// Keep original classe for fallback, but class will be determined per rate_breakdown
+		$classe = isset($data['classe']) ? strtoupper($data['classe']) : null;
 		$statut = strtoupper($data['statut']);
 		$option = $data['option'] ?? '0,25';
 		$birthDate = $data['birth_date'];
@@ -40,7 +42,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 		$affiliationDate = $data['affiliation_date'] ?? null;
 		$nbTrimestres = $data['nb_trimestres'] ?? 0;
 		$pathoAnterior = $data['patho_anterior'] ?? false;
-		$attestationDate = $data['date_dern_attestation'] ?? null;
+		$attestationDate = $data['attestation_date'] ?? null;
 		$lastPaymentDate = $data['last_payment_date'] ?? null;
 		$forcedRate = $data['forced_rate'] ?? null;
 		$prorata = $data['prorata'] ?? 1;
@@ -144,6 +146,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 				$currentDate,
 				$birthDate,
 				$historicalReducedRate,
+				$data,
 			);
 			$amount = $calculationResult['montant'];
 			$paymentDetails = $calculationResult['payment_details'];
@@ -287,7 +290,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 		int $nbJours,
 		int $cumulJoursAnciens,
 		int $age,
-		string $classe,
+		?string $classe,
 		string $statut,
 		string|int|float $option,
 		int $year,
@@ -297,8 +300,14 @@ class AmountCalculationService implements AmountCalculationInterface {
 		?string $affiliationDate = null,
 		?string $currentDate = null,
 		?string $birthDate = null,
-		?int $historicalReducedRate = null
+		?int $historicalReducedRate = null,
+		?array $data = []
 	): array {
+		// Defensive: ensure $data is an array
+		if ($data === null) {
+			$data = [];
+		}
+
 		$montant = 0;
 
 		// Ajouter les informations de taux à chaque détail de paiement
@@ -338,10 +347,13 @@ class AmountCalculationService implements AmountCalculationInterface {
 					$periodNbTrimestres = $this->dateService->calculateTrimesters($affiliationDate, $firstArretDate);
 				}
 
+				// Determine class for this specific year based on revenue
+				$segmentClasse = $this->determineClasseForYear($yearData['year'], $data, $classe);
+
 				if ($segmentAge < 62) {
 					// Âge < 62 : taux unique basé sur les trimestres
 					$taux = $this->tauxService->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
-					$dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null);
+					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null);
 					$arretMontant += $yearData['days'] * $dailyRate;
 					$trimester = $this->dateService->getTrimesterFromDate($yearData['start']);
 
@@ -356,7 +368,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 						'days' => $yearData['days'],
 						'rate' => $dailyRate,
 						'taux' => $taux,
-						'segmentAge' => $segmentAge,
+						'age' => $segmentAge,
+						'classe' => $segmentClasse,
+						'revenu_medecin' => $this->getRevenuForYear($yearData['year'], $data),
 					];
 				} elseif ($segmentAge >= 62 && $segmentAge <= 69) {
 					// Pour 62-69, calculer les périodes par arrêt INDIVIDUEL
@@ -422,7 +436,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 						$periodEnd->modify('+' . ($joursP - 1) . ' days');
 
 						// For taux 4-6 (period 3), pass $usePeriode2 to determine tier
-						$dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $periodStart->format('Y-m-d'), $segmentAge, $usePeriode2);
+						$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $periodStart->format('Y-m-d'), $segmentAge, $usePeriode2);
 						$arretMontant += $joursP * $dailyRate;
 						$trimester = $this->dateService->getTrimesterFromDate($periodStart->format('Y-m-d'));
 
@@ -437,7 +451,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 							'days' => $joursP,
 							'rate' => $dailyRate,
 							'taux' => $taux,
-							'segmentAge' => $segmentAge,
+							'age' => $segmentAge,
+							'classe' => $segmentClasse,
+							'revenu_medecin' => $this->getRevenuForYear($yearData['year'], $data),
 						];
 
 						$joursDansArret += $joursP;
@@ -447,7 +463,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 				} else { // segmentAge >= 70
 					// Age >= 70: reduced rate (taux 4, 5 or 6)
 					$taux = $this->tauxService->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
-					$dailyRate = $this->rateService->getDailyRate($statut, $classe, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
+					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
 					$arretMontant += $yearData['days'] * $dailyRate;
 					$trimester = $this->dateService->getTrimesterFromDate($yearData['start']);
 
@@ -462,7 +478,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 						'days' => $yearData['days'],
 						'rate' => $dailyRate,
 						'taux' => $taux,
-						'segmentAge' => $segmentAge,
+						'age' => $segmentAge,
+						'classe' => $segmentClasse,
+						'revenu_medecin' => $this->getRevenuForYear($yearData['year'], $data),
 					];
 				}
 			}
@@ -517,6 +535,8 @@ class AmountCalculationService implements AmountCalculationInterface {
 					'taux' => $segment['taux'],
 					'daily_rate' => $rate,
 					'amount' => $rate,
+					'classe' => $segment['classe'],
+					'revenu_medecin' => $segment['revenu_medecin'] ?? null,
 				];
 			}
 		}
@@ -541,6 +561,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 
 			// Get rate period for current date
 			$rateData = $this->rateService->getRateForDate($current->format('Y-m-d'));
+
 			if ($rateData) {
 				$periodEnd = new DateTime($rateData['date_end']->format('Y-m-d'));
 			} else {
@@ -589,6 +610,79 @@ class AmountCalculationService implements AmountCalculationInterface {
 	}
 
 	/**
+	 * Determine class for a specific year based on revenue
+	 * For year N, uses revenue from year N-2 and PASS from year N
+	 *
+	 * @param int $year The year for which to determine class
+	 * @param array $data Input data with revenue information
+	 * @param string|null $fallbackClasse Fallback class if determination not possible
+	 * @return string The determined class (A/B/C)
+	 */
+	private function determineClasseForYear(int $year, array $data, ?string $fallbackClasse): string {
+		// If explicit class provided, use it (unless per-year revenues available)
+		if ($fallbackClasse && !isset($data['revenu_n_moins_2']) && !isset($data['revenus_par_annee'])) {
+			return $fallbackClasse;
+		}
+
+		// Set up PASS values by year if provided
+		if (isset($data['pass_par_annee']) && is_array($data['pass_par_annee'])) {
+			$this->tauxService->setPassValuesByYear($data['pass_par_annee']);
+		} elseif (isset($data['pass_value'])) {
+			$this->tauxService->setPassValue((float)$data['pass_value']);
+		}
+
+		// Check if per-year revenues are provided
+		if (isset($data['revenus_par_annee']) && is_array($data['revenus_par_annee'])) {
+			$yearNMoins2 = $year - 2;
+			if (isset($data['revenus_par_annee'][$yearNMoins2])) {
+				$revenuNMoins2 = (float)$data['revenus_par_annee'][$yearNMoins2];
+				$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
+
+				// Pass year to use year-specific PASS value
+				return $this->tauxService->determineClasse($revenuNMoins2, null, $taxeOffice, $year);
+			}
+		}
+
+		// Use single revenu_n_moins_2 if provided
+		if (isset($data['revenu_n_moins_2'])) {
+			$revenuNMoins2 = (float)$data['revenu_n_moins_2'];
+			$taxeOffice = isset($data['taxe_office']) ? (bool)$data['taxe_office'] : false;
+			$dateOuvertureDroits = $data['date_ouverture_droits'] ?? null;
+
+			// Pass year to use year-specific PASS value
+			return $this->tauxService->determineClasse($revenuNMoins2, $dateOuvertureDroits, $taxeOffice, $year);
+		}
+
+		// Fallback to provided class or default to A
+		return $fallbackClasse ?? 'A';
+	}
+
+	/**
+	 * Get the revenue (N-2) for a specific year
+	 *
+	 * @param int $year The year for which to get revenue
+	 * @param array $data Input data with revenue information
+	 * @return float|null The revenue or null if not available
+	 */
+	private function getRevenuForYear(int $year, array $data): ?float {
+		$yearNMoins2 = $year - 2;
+
+		// Check per-year revenues first
+		if (isset($data['revenus_par_annee']) && is_array($data['revenus_par_annee'])) {
+			if (isset($data['revenus_par_annee'][$yearNMoins2])) {
+				return (float)$data['revenus_par_annee'][$yearNMoins2];
+			}
+		}
+
+		// Use single revenu_n_moins_2 if provided
+		if (isset($data['revenu_n_moins_2'])) {
+			return (float)$data['revenu_n_moins_2'];
+		}
+
+		return null;
+	}
+
+	/**
 	 * Truncate payment details to respect the day limit (for age restrictions)
 	 *
 	 * @param array $paymentDetails Payment details array
@@ -598,6 +692,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 	private function truncatePaymentDetails(array $paymentDetails, int $maxDays): array {
 		$truncatedDetails = [];
 		$daysCounted = 0;
+
 		foreach ($paymentDetails as $detail) {
 			if ($daysCounted >= $maxDays) {
 				break;

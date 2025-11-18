@@ -10,6 +10,18 @@ use DateTime;
  */
 class RecapService {
 
+	private $calculator;
+
+	/**
+	 * Set the calculator instance for class determination
+	 *
+	 * @param mixed $calculator IJCalculator instance
+	 * @return void
+	 */
+	public function setCalculator($calculator): void {
+		$this->calculator = $calculator;
+	}
+
 	/**
 	 * Generate ij_recap records from calculation results
 	 *
@@ -23,19 +35,8 @@ class RecapService {
 		// Extract common data from input
 		$adherentNumber = $inputData['adherent_number'] ?? null;
 		$numSinistre = $inputData['num_sinistre'] ?? null;
-		$classe = $inputData['classe'] ?? null;
 		$age = $calculationResult['age'] ?? null;
 		$nbTrimestres = $calculationResult['nb_trimestres'] ?? $inputData['nb_trimestres'] ?? null;
-
-		// Get revenue reference if available
-		$revenuRef = null;
-		if (isset($inputData['revenu_n_moins_2'])) {
-			$revenuRef = (int)$inputData['revenu_n_moins_2'];
-		} elseif (isset($inputData['pass_value']) && $classe === 'A') {
-			$revenuRef = (int)$inputData['pass_value'];
-		} elseif (isset($inputData['pass_value']) && $classe === 'C') {
-			$revenuRef = (int)($inputData['pass_value'] * 3);
-		}
 
 		// Process each payment detail (each arret)
 		if (isset($calculationResult['payment_details']) && is_array($calculationResult['payment_details'])) {
@@ -45,6 +46,15 @@ class RecapService {
 				// Process each rate breakdown period
 				if (isset($detail['rate_breakdown']) && is_array($detail['rate_breakdown'])) {
 					foreach ($detail['rate_breakdown'] as $rateBreakdown) {
+						// Get class from rate_breakdown (determined per-year in AmountCalculationService)
+						$breakdownClasse = $rateBreakdown['classe'] ?? 'A';
+
+						// Get revenue for this specific rate_breakdown
+						$revenuRef = null;
+						if (isset($rateBreakdown['revenu_medecin'])) {
+							$revenuRef = (int)$rateBreakdown['revenu_medecin'];
+						}
+
 						// Split rate_breakdown by month
 						$monthlyBreakdowns = $this->splitByMonth($rateBreakdown);
 
@@ -65,13 +75,13 @@ class RecapService {
 								'num_taux' => $rateBreakdown['taux'] ?? null,
 								'MT_journalier' => $this->convertToIntCents($rateBreakdown['rate'] ?? 0),
 
-								// Financial information
+								// Financial information - Use class from rate_breakdown
 								'MT_revenu_ref' => $revenuRef,
-								'classe' => $classe,
+								'classe' => $breakdownClasse,
 
 								// Personal information
-								'personne_age' => $rateBreakdown['segmentAge'] ?? $age,
-								'nb_trimestre' => $rateBreakdown['nb_trimestres'],
+								'personne_age' => $rateBreakdown['age'] ?? $age,
+								'nb_trimestre' => $rateBreakdown['nb_trimestres'] ?? $nbTrimestres,
 							];
 
 							$records[] = $record;

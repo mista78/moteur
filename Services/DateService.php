@@ -10,11 +10,6 @@ use DateTime;
  */
 class DateService implements DateCalculationInterface {
 
-	/**
-	 * Store the merged arrêts for front-end access
-	 */
-	private array $mergedArrets = [];
-
 	public function calculateAge(string $currentDate, string $birthDate): int {
 		$current = new DateTime($currentDate);
 		$birth = new DateTime($birthDate);
@@ -180,19 +175,14 @@ class DateService implements DateCalculationInterface {
 		});
 
 		$merged = [];
-		foreach ($arrets as $index => $arret) {
+		foreach ($arrets as $arret) {
 			if (empty($merged)) {
-				// First arrêt - mark as not prolongation
-				$arret['is_prolongation'] = false;
-				$arret['prolongation_count'] = 0;
-				$arret['prolongation_of'] = null;
 				$merged[] = $arret;
 
 				continue;
 			}
 
-			$lastIndex = count($merged) - 1;
-			$last = &$merged[$lastIndex];
+			$last = &$merged[count($merged) - 1];
 			$lastEnd = new DateTime($last['arret-to-line']);
 			$currentStart = new DateTime($arret['arret-from-line']);
 
@@ -200,31 +190,8 @@ class DateService implements DateCalculationInterface {
 			$nextBusinessDay = $this->addOneBusinessDay($lastEnd);
 
 			if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
-				// This is a prolongation - merge it
-				$originalStart = $last['arret-from-line'];
 				$last['arret-to-line'] = $arret['arret-to-line'];
-
-				// Mark that this arrêt has prolongations
-				if (!isset($last['prolongation_count'])) {
-					$last['prolongation_count'] = 0;
-				}
-				$last['prolongation_count']++;
-				$last['has_prolongations'] = true;
-
-				// Store the merged arrêt info (for tracking)
-				if (!isset($last['merged_arrets'])) {
-					$last['merged_arrets'] = [];
-				}
-				$last['merged_arrets'][] = [
-					'original_index' => $index,
-					'from' => $arret['arret-from-line'],
-					'to' => $arret['arret-to-line']
-				];
 			} else {
-				// Not consecutive - add as new arrêt
-				$arret['is_prolongation'] = false;
-				$arret['prolongation_count'] = 0;
-				$arret['prolongation_of'] = null;
 				$merged[] = $arret;
 			}
 		}
@@ -234,14 +201,18 @@ class DateService implements DateCalculationInterface {
 
 	/**
 	 * Déterminer automatiquement si un arrêt est une rechute
-	 * Règle: calculer automatiquement basé sur les business rules:
-	 * - Rechute si date début < (date fin dernier arrêt + 1 an)
-	 * - ET que l'arrêt n'est pas une prolongation (consécutif)
-	 * - ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
-	 *
-	 * N'utilise PAS le champ rechute-line de l'input - calcul automatique uniquement
+	 * Règle: Si rechute-line est déjà défini (forcé par commission), le respecter.
+	 * Sinon, calculer automatiquement: rechute si date début < (date fin dernier arrêt + 1 an)
+	 * et que l'arrêt n'est pas une prolongation (consécutif)
+	 * ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
 	 */
 	private function isRechute(array $currentArret, ?array $previousArret): bool {
+		// Si rechute-line est explicitement défini (forcé par commission), le respecter
+		// Note: rechute-line peut être 1 (rechute) ou un nombre > 1 (ex: 15 pour délai de 15 jours)
+		if (isset($currentArret['rechute-line']) && $currentArret['rechute-line'] !== null && $currentArret['rechute-line'] !== '') {
+			return (int)$currentArret['rechute-line'] > 0;
+		}
+
 		// Pas de précédent arrêt → pas une rechute
 		if (!$previousArret) {
 			return false;
@@ -271,17 +242,8 @@ class DateService implements DateCalculationInterface {
 		return $currentStart <= $oneYearAfterLast;
 	}
 
-	/**
-	 * Get merged arrêts list for front-end display
-	 */
-	public function getMergedArrets(): array {
-		return $this->mergedArrets;
-	}
-
 	public function calculateDateEffet(array $arrets, ?string $birthDate = null, int $previousCumulDays = 0): array {
 		$arrets = $this->mergeProlongations($arrets);
-		// Store merged list for front-end access
-		$this->mergedArrets = $arrets;
 
 		static $dateDT;
 		static $dateCotis;
@@ -291,7 +253,7 @@ class DateService implements DateCalculationInterface {
 		$increment = 0;
 		// dd($arrets);
 		while (true) {
-			$dates = null;
+			$dates = '';
 			$lessDate = 0;
 			$currentData = &$arrets[$increment];
 
@@ -376,7 +338,7 @@ class DateService implements DateCalculationInterface {
 					$arretDroits++;
 				}
 			} elseif ($increment > 0) {
-				// Déterminer si c'est une rechute (automatique selon business rules)
+				// Déterminer si c'est une rechute (forcée via rechute-line OU automatique < 1 an)
 				$previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
 				$siRechute = $this->isRechute($currentData, $previousArret);
 
@@ -425,19 +387,11 @@ class DateService implements DateCalculationInterface {
 					}
 
 					// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
-					$calculatedDate = date('Y-m-d', max([
+					$dates = date('Y-m-d', max([
 						strtotime($dateDeb->format('Y-m-d')),
 						strtotime($dateDT ?? '1970-01-01'),
 						strtotime($dateCotis ?? '1970-01-01'),
 					]));
-
-					// Vérifier si la date-effet est dans la période de l'arrêt
-					// Si date-effet > date fin arrêt, ne pas ouvrir les droits (date-effet = null)
-					if ($calculatedDate > $endDate->format('Y-m-d')) {
-						$dates = null;
-					} else {
-						$dates = $calculatedDate;
-					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
 					$arretDroits = 0;
@@ -476,11 +430,7 @@ class DateService implements DateCalculationInterface {
 					}
 				}
 			}
-			$currentData['date-effet'] = $dates ?: null;
-
-			// Calculate decompte_days (non-paid days before date-effet)
-			$currentData['decompte_days'] = $this->calculateDecompteDays($currentData);
-
+			$currentData['date-effet'] = $dates;
 			$nbJours = $newNbJours;
 			$increment++;
 
@@ -712,13 +662,7 @@ class DateService implements DateCalculationInterface {
 	 * @return int Nombre de jours de décompte
 	 */
 	private function calculateDecompteDays(array $arret): int {
-		// Si c'est une rechute (auto-calculée), pas de décompte
-		// N'utilise PAS rechute-line de l'input, seulement is_rechute auto-calculée
-		if (isset($arret['is_rechute']) && $arret['is_rechute'] === true) {
-			return 0;
-		}
-
-		// Si pas de date d'effet, tous les jours sont en décompte (pour non-rechute)
+		// Si pas de date d'effet, tous les jours sont en décompte
 		if (!isset($arret['date-effet']) || empty($arret['date-effet'])) {
 			if (isset($arret['arret_diff'])) {
 				return $arret['arret_diff'];

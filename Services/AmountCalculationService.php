@@ -207,7 +207,6 @@ class AmountCalculationService implements AmountCalculationInterface {
 			'nb_jours' => $nbJours,
 			'montant' => round($amount, 2),
 			'arrets' => $arrets,
-			'arrets_merged' => $this->dateService->getMergedArrets(),
 			'payment_details' => $paymentDetails,
 			'end_payment_dates' => $endDates,
 			'total_cumul_days' => $previousCumulDays + $totalArretDays,

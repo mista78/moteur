@@ -2,6 +2,9 @@
 
 namespace App\IJCalculator\Services;
 
+use DateTime;
+use RuntimeException;
+
 /**
  * Implémentation du Service de Taux
  * Gère toutes les recherches et calculs de taux
@@ -12,8 +15,19 @@ class RateService implements RateServiceInterface {
 
 	private ?float $passValue = null;
 
-	public function __construct(array $csvPath = []) {
-		$this->loadRates($csvPath);
+	/**
+	 * Constructor - supports both legacy CSV path (string) and new array format
+	 *
+	 * @param array|string $csvPathOrRates CSV file path (string) or rates array
+	 */
+	public function __construct($csvPathOrRates = []) {
+		if (is_string($csvPathOrRates)) {
+			// Legacy support: load from CSV file path
+			$this->loadRatesFromCsv($csvPathOrRates);
+		} elseif (is_array($csvPathOrRates)) {
+			// New format: directly use rates array
+			$this->loadRates($csvPathOrRates);
+		}
 	}
 
 	/**
@@ -24,16 +38,64 @@ class RateService implements RateServiceInterface {
 	}
 
 	/**
+	 * Load rates from array (new format)
 	 * @return void
 	 */
 	private function loadRates(array $rates): void {
 		$this->rates = $rates;
 	}
 
+	/**
+	 * Load rates from CSV file path (legacy format)
+	 * @return void
+	 */
+	private function loadRatesFromCsv(string $csvPath): void {
+		if (!file_exists($csvPath)) {
+			throw new RuntimeException("CSV file not found: {$csvPath}");
+		}
+
+		$file = fopen($csvPath, 'r');
+		if ($file === false) {
+			throw new RuntimeException("Unable to open CSV file: {$csvPath}");
+		}
+
+		$headers = fgetcsv($file, 0, ';');
+		if ($headers === false) {
+			fclose($file);
+
+			throw new RuntimeException('Empty or invalid CSV file');
+		}
+
+		$rates = [];
+		while (($row = fgetcsv($file, 0, ';')) !== false) {
+			$rate = [];
+			foreach ($headers as $index => $header) {
+				$value = $row[$index] ?? '';
+
+				// Convert date strings to DateTime objects
+				if ($header === 'date_start' || $header === 'date_end') {
+					$rate[$header] = new DateTime($value);
+				} else {
+					$rate[$header] = $value;
+				}
+			}
+			$rates[] = $rate;
+		}
+		fclose($file);
+
+		$this->loadRates($rates);
+	}
+
 	public function getRateForYear(int $year): ?array {
 		foreach ($this->rates as $rate) {
-			$startYear = (int)date('Y', strtotime($rate['date_start']));
-			$endYear = (int)date('Y', strtotime($rate['date_end']));
+			// Handle both DateTime objects and string dates
+			if ($rate['date_start'] instanceof \DateTime) {
+				$startYear = (int)$rate['date_start']->format('Y');
+				$endYear = (int)$rate['date_end']->format('Y');
+			} else {
+				$startYear = (int)date('Y', strtotime($rate['date_start']));
+				$endYear = (int)date('Y', strtotime($rate['date_end']));
+			}
 
 			if ($year >= $startYear && $year <= $endYear) {
 				return $rate;
