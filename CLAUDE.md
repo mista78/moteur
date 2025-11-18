@@ -88,7 +88,7 @@ All services implement interfaces and are located in `/Services/`:
 **DateService** (`DateCalculationInterface.php`) - 685 lines:
 - `calculateAge()`: Age calculation at specific date
 - `calculateTrimesters()`: Affiliation quarters with Q1-Q4 rounding rules
-- `mergeProlongations()`: Merge consecutive work stoppages
+- `mergeProlongations()`: Merge consecutive work stoppages, tracks merged indices
 - `calculateDateEffet()`: Rights opening dates (90-day rule, 15-day for rechute)
 - `calculatePayableDays()`: Payable days per period considering attestation dates
 - `calculateDecompteDays()`: Non-paid days before date-effet (décompte feature)
@@ -556,10 +556,11 @@ php test_rechute_simple.php         # Basic verification
 - **JEST-PHP-README.md**: Jest-style testing framework for PHP
 - **QUICKSTART.md**: CakePHP installation and setup guide
 
-**Database Services** (NEW):
+**Database Services**:
 - **RECAP_SERVICE_DOCUMENTATION.md**: RecapService usage for ij_recap table
 - **DETAIL_JOUR_SERVICE_DOCUMENTATION.md**: DetailJourService usage for ij_detail_jour table
 - **RECAP_CLASS_DETERMINATION.md**: Auto-determination in RecapService
+- **MERGE_TRACKING_DOCUMENTATION.md**: Merge tracking in mergeProlongations (tracks which arrets are combined)
 
 **UI & Visualization**:
 - **CALENDAR_RECHUTE_DISPLAY.md**: Calendar rechute indicators

@@ -42,8 +42,11 @@ foreach ($merged1 as $index => $arret) {
 }
 
 // Verify
-if (count($merged1) === 1 && count($merged1[0]['merged_arret_indices']) === 3) {
+if (count($merged1) === 1 &&
+	isset($merged1[0]['merged_arret_indices']) &&
+	count($merged1[0]['merged_arret_indices']) === 3) {
 	echo "✓ PASS: All three arrets merged correctly\n";
+	echo "✓ PASS: merged_arret_indices exists (actual merge occurred)\n";
 	echo "✓ PASS: Tracking shows [0, 1, 2] as expected\n";
 } else {
 	echo "✗ FAIL: Merge tracking incorrect\n";
@@ -87,11 +90,14 @@ foreach ($merged2 as $index => $arret) {
 
 // Verify
 if (count($merged2) === 2 &&
+	isset($merged2[0]['merged_arret_indices']) &&
+	isset($merged2[1]['merged_arret_indices']) &&
 	count($merged2[0]['merged_arret_indices']) === 2 &&
 	count($merged2[1]['merged_arret_indices']) === 2 &&
 	$merged2[0]['merged_arret_indices'] == [0, 1] &&
 	$merged2[1]['merged_arret_indices'] == [2, 3]) {
 	echo "✓ PASS: Two groups merged correctly\n";
+	echo "✓ PASS: merged_arret_indices exists for both (actual merges occurred)\n";
 	echo "✓ PASS: First group: [0, 1]\n";
 	echo "✓ PASS: Second group: [2, 3]\n";
 } else {
@@ -132,13 +138,20 @@ foreach ($merged3 as $index => $arret) {
 
 // Verify
 if (count($merged3) === 3 &&
-	$merged3[0]['merged_arret_indices'] == [0] &&
-	$merged3[1]['merged_arret_indices'] == [1] &&
-	$merged3[2]['merged_arret_indices'] == [2]) {
+	!isset($merged3[0]['merged_arret_indices']) &&
+	!isset($merged3[1]['merged_arret_indices']) &&
+	!isset($merged3[2]['merged_arret_indices']) &&
+	$merged3[0]['original_index'] === 0 &&
+	$merged3[1]['original_index'] === 1 &&
+	$merged3[2]['original_index'] === 2) {
 	echo "✓ PASS: All arrets remain separate\n";
-	echo "✓ PASS: Each has single index: [0], [1], [2]\n";
+	echo "✓ PASS: No merged_arret_indices field (no merges occurred)\n";
+	echo "✓ PASS: original_index preserved: 0, 1, 2\n";
 } else {
 	echo "✗ FAIL: Merge tracking incorrect\n";
+	if (isset($merged3[0]['merged_arret_indices'])) {
+		echo "  ERROR: merged_arret_indices exists when it shouldn't!\n";
+	}
 }
 
 echo "\n=== All Tests Complete ===\n";
