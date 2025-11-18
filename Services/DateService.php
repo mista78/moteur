@@ -698,6 +698,11 @@ class DateService implements DateCalculationInterface {
 	 * @return int Nombre de jours de décompte
 	 */
 	private function calculateDecompteDays(array $arret): int {
+		// Si c'est une rechute, décompte est toujours 0
+		if (isset($arret['is_rechute']) && $arret['is_rechute'] === true) {
+			return 0;
+		}
+
 		// Si pas de date d'effet, tous les jours sont en décompte
 		if (!isset($arret['date-effet']) || empty($arret['date-effet'])) {
 			if (isset($arret['arret_diff'])) {
