@@ -392,23 +392,25 @@ class DateService implements DateCalculationInterface {
 					}
 
 					// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
-					$dates = date('Y-m-d', max([
+					$dateEffetCalculated = date('Y-m-d', max([
 						strtotime($dateDeb->format('Y-m-d')),
 						strtotime($dateDT ?? '1970-01-01'),
 						strtotime($dateCotis ?? '1970-01-01'),
 					]));
 
-					// Decompte: 14 days if arret shorter than date-effet, otherwise 0
-					$dateEffetTimestamp = strtotime($dates);
+					// Check if arret reaches date-effet
+					$dateEffetTimestamp = strtotime($dateEffetCalculated);
 					$arretEndTimestamp = strtotime($endDate->format('Y-m-d'));
 
-					if ($arretEndTimestamp < $dateEffetTimestamp) {
-						// Arret ends before date-effet, calculate remaining days
+					if ($arretEndTimestamp >= $dateEffetTimestamp) {
+						// Arret reaches or passes date-effet
+						$dates = $dateEffetCalculated;
+						$currentData['decompte_days'] = 0;
+					} else {
+						// Arret ends before date-effet, threshold not reached
+						$dates = ''; // date-effet is empty
 						$remainingDays = ($dateEffetTimestamp - strtotime($startDate->format('Y-m-d'))) / 86400 - $arret_diff;
 						$currentData['decompte_days'] = max(0, (int)$remainingDays);
-					} else {
-						// Arret reaches date-effet
-						$currentData['decompte_days'] = 0;
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
