@@ -407,12 +407,11 @@ class DateService implements DateCalculationInterface {
 						$dates = $dateEffetCalculated;
 						$currentData['decompte_days'] = 0; // All rechute decompte is 0
 					} else {
-						// Arret ends before date-effet - NOT a valid rechute
-						// Treat as non-rechute (date-effet empty, no rights opened)
+						// Arret ends before date-effet - still a rechute but doesn't reach threshold
+						// Keep is_rechute true, but date-effet empty
 						$dates = ''; // date-effet is empty
-						$currentData['is_rechute'] = false; // Not a valid rechute
-						$currentData['decompte_days'] = 0; // No decompte for failed rechute
-						unset($currentData['rechute_of_arret_index']); // Remove rechute reference
+						$currentData['decompte_days'] = 0; // All rechute decompte is 0
+						// Keep is_rechute = true and rechute_of_arret_index
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
