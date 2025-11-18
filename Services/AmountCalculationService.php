@@ -564,11 +564,11 @@ class AmountCalculationService implements AmountCalculationInterface {
 
 			if ($rateData) {
 				// Handle both DateTime objects and string dates
-			$dateEnd = $rateData['date_end'];
-			if ($dateEnd instanceof \DateTimeInterface) {
-				$dateEnd = $dateEnd->format('Y-m-d');
-			}
-			$periodEnd = new DateTime($dateEnd);
+				$dateEnd = $rateData['date_end'];
+				if ($dateEnd instanceof \DateTimeInterface) {
+					$dateEnd = $dateEnd->format('Y-m-d');
+				}
+				$periodEnd = new DateTime($dateEnd);
 			} else {
 				$periodEnd = new DateTime("$year-12-31");
 			}

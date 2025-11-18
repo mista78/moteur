@@ -25,7 +25,7 @@ class DateService implements DateCalculationInterface {
 			return (int)$current->format('Y') - (int)$birth->format('Y') - 1;
 		}
 
-			return (int)$current->format('Y') - (int)$birth->format('Y') - 1;
+		return (int)$current->format('Y') - (int)$birth->format('Y') - 1;
 	}
 
 	public function calculateTrimesters(string $affiliationDate, string $currentDate): int {
@@ -103,7 +103,7 @@ class DateService implements DateCalculationInterface {
 			return 3;
 		}
 
-			return 4;
+		return 4;
 	}
 
 	/**
@@ -190,7 +190,7 @@ class DateService implements DateCalculationInterface {
 			$nextDay = clone $lastEnd;
 			$nextDay->modify('+1 day');
 
-			if ($nextDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+			if ($nextDay->format('Y-m-d') >= $currentStart->format('Y-m-d')) {
 				// C'est le jour suivant (prolongation)
 				$last['arret-to-line'] = $arret['arret-to-line'];
 			} else {
@@ -199,45 +199,6 @@ class DateService implements DateCalculationInterface {
 		}
 
 		return $merged;
-	}
-
-	/**
-	 * Déterminer automatiquement si un arrêt est une rechute
-	 * Règle: TOUJOURS calculé automatiquement (jamais forcé)
-	 * - Rechute si date début < (date fin dernier arrêt + 1 an)
-	 * - ET l'arrêt n'est pas une prolongation (exactly next day, including weekends)
-	 * - ET les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
-	 */
-	private function isRechute(array $currentArret, ?array $previousArret): bool {
-		// Pas de précédent arrêt → pas une rechute
-		if (!$previousArret) {
-			return false;
-		}
-
-		// CRITICAL: Si l'arrêt précédent n'a pas de date-effet (droits pas ouverts),
-		// alors ce n'est pas une rechute, juste une accumulation vers le seuil de 90 jours
-		if (!isset($previousArret['date-effet']) || empty($previousArret['date-effet'])) {
-			return false;
-		}
-
-		$lastEnd = new DateTime($previousArret['arret-to-line']);
-		$currentStart = new DateTime($currentArret['arret-from-line']);
-
-		// Vérifier si c'est une prolongation (exactly next day, including weekends)
-		$nextDay = clone $lastEnd;
-		$nextDay->modify('+1 day');
-
-		if ($nextDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
-			// C'est une prolongation, pas une rechute
-			return false;
-		}
-
-		// Vérifier si < 1 an après la fin du dernier arrêt
-		// Règle: date début <= date fin dernier + 1 an - 1 jour
-		$oneYearAfterLast = clone $lastEnd;
-		$oneYearAfterLast->modify('+1 year')->modify('-1 day');
-
-		return $currentStart <= $oneYearAfterLast;
 	}
 
 	public function calculateDateEffet(array $arrets, ?string $birthDate = null, int $previousCumulDays = 0): array {
@@ -279,7 +240,11 @@ class DateService implements DateCalculationInterface {
 				$currentData['date-effet'] = $currentData['ouverture-date-line'];
 				$currentData['decompte_days'] = 0; // Rights already opened
 				$nbJours = $newNbJours;
-				$arretDroits++; // Mark that rights have been opened for this arret
+				if ($arretDroits === 0) {
+					$arretDroits++; // Mark that rights have been opened for this arret
+				} else {
+					$currentData['is_rechute'] = true;
+				}
 				$increment++;
 				if (count($arrets) === $increment) {
 					break;
@@ -293,8 +258,13 @@ class DateService implements DateCalculationInterface {
 				$currentData['date-effet'] = $currentData['date_deb_dr_force'];
 				$currentData['decompte_days'] = 0; // Rights forced open
 				$nbJours = $newNbJours;
-				$arretDroits++; // Mark that rights have been opened for this arret
+				if ($arretDroits === 0) {
+					$arretDroits++; // Mark that rights have been opened for this arret
+				} else {
+					$currentData['is_rechute'] = true;
+				}
 				$increment++;
+
 				if (count($arrets) === $increment) {
 					break;
 				}
@@ -511,10 +481,10 @@ class DateService implements DateCalculationInterface {
 			return "$year-07-01";
 		}
 
-			// Si anniversaire entre juillet et décembre (mois 7-12)
-			$nextYear = $year + 1;
+		// Si anniversaire entre juillet et décembre (mois 7-12)
+		$nextYear = $year + 1;
 
-			return "$nextYear-01-01";
+		return "$nextYear-01-01";
 	}
 
 	public function calculatePayableDays(
