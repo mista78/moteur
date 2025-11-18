@@ -175,9 +175,15 @@ class DateService implements DateCalculationInterface {
 		});
 
 		$merged = [];
+		$originalIndex = 0;
+
 		foreach ($arrets as $arret) {
 			if (empty($merged)) {
+				// Initialize with original index tracking
+				$arret['merged_arret_indices'] = [$originalIndex];
+				$arret['original_index'] = $originalIndex;
 				$merged[] = $arret;
+				$originalIndex++;
 
 				continue;
 			}
@@ -193,9 +199,20 @@ class DateService implements DateCalculationInterface {
 			if ($nextDay->format('Y-m-d') >= $currentStart->format('Y-m-d')) {
 				// C'est le jour suivant (prolongation)
 				$last['arret-to-line'] = $arret['arret-to-line'];
+
+				// Track which original arrets were merged
+				if (!isset($last['merged_arret_indices'])) {
+					$last['merged_arret_indices'] = [$last['original_index'] ?? 0];
+				}
+				$last['merged_arret_indices'][] = $originalIndex;
 			} else {
+				// Initialize with original index tracking
+				$arret['merged_arret_indices'] = [$originalIndex];
+				$arret['original_index'] = $originalIndex;
 				$merged[] = $arret;
 			}
+
+			$originalIndex++;
 		}
 
 		return $merged;
