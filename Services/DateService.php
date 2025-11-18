@@ -343,9 +343,23 @@ class DateService implements DateCalculationInterface {
 					$currentData['decompte_days'] = 90 - $newNbJours;
 				}
 			} elseif ($increment > 0) {
-				// Déterminer si c'est une rechute (forcée via rechute-line OU automatique < 1 an)
-				$previousArret = $increment > 0 ? $arrets[$increment - 1] : null;
-				$siRechute = $this->isRechute($currentData, $previousArret);
+				// Déterminer si c'est une rechute: automatique si arretDroits > 0 ET pas une prolongation
+				$previousArret = $arrets[$increment - 1];
+				$siRechute = false;
+
+				if ($arretDroits > 0) {
+					// Check if it's NOT a prolongation (consecutive days)
+					$lastEnd = new DateTime($previousArret['arret-to-line']);
+					$currentStart = new DateTime($currentData['arret-from-line']);
+
+					$nextDay = clone $lastEnd;
+					$nextDay->modify('+1 day');
+
+					// If NOT consecutive (not next day), then it's a rechute
+					if ($nextDay->format('Y-m-d') != $currentStart->format('Y-m-d')) {
+						$siRechute = true;
+					}
+				}
 
 				// Ajouter l'indication de rechute au résultat pour l'affichage frontend
 				$currentData['is_rechute'] = $siRechute;
