@@ -305,6 +305,7 @@ class DateService implements DateCalculationInterface {
 			if ($arretDroits === 0) {
 				// Premier arrêt ou nouvelle pathologie, pas une rechute
 				$currentData['is_rechute'] = false;
+				$currentData['decompte_days'] = 90; // 90 jours de décompte pour nouvelle pathologie
 
 				$lessDate = 90 - ($newNbJours - $arret_diff);
 				$dateDeb = clone $startDate;
@@ -360,6 +361,9 @@ class DateService implements DateCalculationInterface {
 				// Rechute: droits au 15ème jour (règle des 15 jours pour rechute)
 				// Note: Si MC veut forcer au jour 1, utiliser le champ date-effet qui sera traité plus haut
 				if ($siRechute) {
+					// 14 jours de décompte pour rechute (droits ouvrent au 15ème jour)
+					$currentData['decompte_days'] = 14;
+
 					// Date de base: 15ème jour d'arrêt
 					$dateDeb = clone $startDate;
 					$dateDeb->modify('+14 days');
@@ -397,6 +401,7 @@ class DateService implements DateCalculationInterface {
 					$arretDroits = 0;
 					$nbJours = 0; // Reset pour nouvelle pathologie
 					$newNbJours = $arret_diff; // Seulement les jours de cet arrêt
+					$currentData['decompte_days'] = 90; // 90 jours de décompte pour nouvelle pathologie
 
 					$lessDate = 90 - $arret_diff;
 					$dateDeb = clone $startDate;
