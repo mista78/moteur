@@ -343,7 +343,7 @@ class DateService implements DateCalculationInterface {
 					$currentData['decompte_days'] = 90 - $newNbJours;
 				}
 			} elseif ($increment > 0) {
-				// Déterminer si c'est une rechute: automatique si arretDroits > 0 ET pas une prolongation
+				// Déterminer si c'est une rechute: automatique si arretDroits > 0 ET pas une prolongation ET < 1 an
 				$previousArret = $arrets[$increment - 1];
 				$siRechute = false;
 
@@ -355,9 +355,16 @@ class DateService implements DateCalculationInterface {
 					$nextDay = clone $lastEnd;
 					$nextDay->modify('+1 day');
 
-					// If NOT consecutive (not next day), then it's a rechute
+					// If NOT consecutive (not next day), check 1-year rule
 					if ($nextDay->format('Y-m-d') != $currentStart->format('Y-m-d')) {
-						$siRechute = true;
+						// Vérifier si < 1 an après la fin du dernier arrêt
+						// Règle: date début <= date fin dernier + 1 an - 1 jour
+						$oneYearAfterLast = clone $lastEnd;
+						$oneYearAfterLast->modify('+1 year')->modify('-1 day');
+
+						if ($currentStart <= $oneYearAfterLast) {
+							$siRechute = true;
+						}
 					}
 				}
 
