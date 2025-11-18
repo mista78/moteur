@@ -186,10 +186,12 @@ class DateService implements DateCalculationInterface {
 			$lastEnd = new DateTime($last['arret-to-line']);
 			$currentStart = new DateTime($arret['arret-from-line']);
 
-			// Calculer le prochain jour ouvré après la fin du dernier arrêt
-			$nextBusinessDay = $this->addOneBusinessDay($lastEnd);
+			// Calculer le prochain jour (including weekends - arrets can be on weekends)
+			$nextDay = clone $lastEnd;
+			$nextDay->modify('+1 day');
 
-			if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+			if ($nextDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+				// C'est le jour suivant (prolongation)
 				$last['arret-to-line'] = $arret['arret-to-line'];
 			} else {
 				$merged[] = $arret;
@@ -201,18 +203,12 @@ class DateService implements DateCalculationInterface {
 
 	/**
 	 * Déterminer automatiquement si un arrêt est une rechute
-	 * Règle: Si rechute-line est déjà défini (forcé par commission), le respecter.
-	 * Sinon, calculer automatiquement: rechute si date début < (date fin dernier arrêt + 1 an)
-	 * et que l'arrêt n'est pas une prolongation (consécutif)
-	 * ET que les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
+	 * Règle: TOUJOURS calculé automatiquement (jamais forcé)
+	 * - Rechute si date début < (date fin dernier arrêt + 1 an)
+	 * - ET l'arrêt n'est pas une prolongation (exactly next day, including weekends)
+	 * - ET les droits ont déjà été ouverts (date-effet existe pour l'arrêt précédent)
 	 */
 	private function isRechute(array $currentArret, ?array $previousArret): bool {
-		// Si rechute-line est explicitement défini (forcé par commission), le respecter
-		// Note: rechute-line peut être 1 (rechute) ou un nombre > 1 (ex: 15 pour délai de 15 jours)
-		if (isset($currentArret['rechute-line']) && $currentArret['rechute-line'] !== null && $currentArret['rechute-line'] !== '') {
-			return (int)$currentArret['rechute-line'] > 0;
-		}
-
 		// Pas de précédent arrêt → pas une rechute
 		if (!$previousArret) {
 			return false;
@@ -227,9 +223,11 @@ class DateService implements DateCalculationInterface {
 		$lastEnd = new DateTime($previousArret['arret-to-line']);
 		$currentStart = new DateTime($currentArret['arret-from-line']);
 
-		// Vérifier si consécutif (prolongation)
-		$nextBusinessDay = $this->addOneBusinessDay($lastEnd);
-		if ($nextBusinessDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
+		// Vérifier si c'est une prolongation (exactly next day, including weekends)
+		$nextDay = clone $lastEnd;
+		$nextDay->modify('+1 day');
+
+		if ($nextDay->format('Y-m-d') == $currentStart->format('Y-m-d')) {
 			// C'est une prolongation, pas une rechute
 			return false;
 		}
@@ -393,18 +391,24 @@ class DateService implements DateCalculationInterface {
 						$dateCotis = $cotisDate->format('Y-m-d');
 					}
 
-					// Check if threshold reached (15 days)
-					if ($arret_diff >= 15) {
-						// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
-						$dates = date('Y-m-d', max([
-							strtotime($dateDeb->format('Y-m-d')),
-							strtotime($dateDT ?? '1970-01-01'),
-							strtotime($dateCotis ?? '1970-01-01'),
-						]));
-						$currentData['decompte_days'] = 0; // Rights opened
+					// Calculer le max des 3 dates (15ème jour arrêt, DT+15j, MAJ+15j)
+					$dates = date('Y-m-d', max([
+						strtotime($dateDeb->format('Y-m-d')),
+						strtotime($dateDT ?? '1970-01-01'),
+						strtotime($dateCotis ?? '1970-01-01'),
+					]));
+
+					// Decompte: 14 days if arret shorter than date-effet, otherwise 0
+					$dateEffetTimestamp = strtotime($dates);
+					$arretEndTimestamp = strtotime($endDate->format('Y-m-d'));
+
+					if ($arretEndTimestamp < $dateEffetTimestamp) {
+						// Arret ends before date-effet, calculate remaining days
+						$remainingDays = ($dateEffetTimestamp - strtotime($startDate->format('Y-m-d'))) / 86400 - $arret_diff;
+						$currentData['decompte_days'] = max(0, (int)$remainingDays);
 					} else {
-						// Remaining days before threshold
-						$currentData['decompte_days'] = 15 - $arret_diff;
+						// Arret reaches date-effet
+						$currentData['decompte_days'] = 0;
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
