@@ -412,6 +412,7 @@ class DateService implements DateCalculationInterface {
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
+					$currentData['is_rechute'] = false; // Not a rechute, new pathology
 					$arretDroits = 0;
 					$nbJours = 0; // Reset pour nouvelle pathologie
 					$newNbJours = $arret_diff; // Seulement les jours de cet arrêt

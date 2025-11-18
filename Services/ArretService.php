@@ -356,4 +356,56 @@ class ArretService
 
         return $totalDays;
     }
+
+    /**
+     * Format arrets to standard output format (matching arrets.json structure)
+     * Maps enhanced fields back to original field names
+     *
+     * @param array $arrets Array of arrets with enhanced fields
+     * @return array Formatted arrets
+     */
+    public function formatForOutput(array $arrets): array
+    {
+        $formatted = [];
+
+        foreach ($arrets as $arret) {
+            $output = $arret;
+
+            // Map is_rechute to rechute-line (0 or 1)
+            if (isset($arret['is_rechute'])) {
+                $output['rechute-line'] = $arret['is_rechute'] ? 1 : 0;
+                // Keep is_rechute for backward compatibility
+            } else {
+                // Ensure all arrets have rechute-line
+                $output['rechute-line'] = 0;
+                $output['is_rechute'] = false;
+            }
+
+            // Map decompte_days to decompte-line
+            if (isset($arret['decompte_days'])) {
+                $output['decompte-line'] = $arret['decompte_days'];
+                // Keep decompte_days for backward compatibility
+            }
+
+            // Ensure ouverture-date-line is set from date-effet
+            if (isset($arret['date-effet']) && !isset($output['ouverture-date-line'])) {
+                $output['ouverture-date-line'] = $arret['date-effet'];
+            }
+
+            $formatted[] = $output;
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Format a single arret to standard output format
+     *
+     * @param array $arret Arret with enhanced fields
+     * @return array Formatted arret
+     */
+    public function formatArretForOutput(array $arret): array
+    {
+        return $this->formatForOutput([$arret])[0];
+    }
 }
