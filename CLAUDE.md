@@ -80,12 +80,12 @@ The project uses a **service-oriented architecture** following SOLID principles,
 
 All services implement interfaces and are located in `/Services/`:
 
-**RateService** (`RateServiceInterface.php`) - 156 lines:
+**RateService** (`RateServiceInterface.php`) - 217 lines:
 - `getDailyRate()`: Calculate daily rate from CSV based on status, class, age, tier
 - `getRateForYear()` / `getRateForDate()`: Retrieve rate data for specific periods
 - Handles tier determination (1/2/3 for periods) and option multipliers (CCPL/RSPM)
 
-**DateService** (`DateCalculationInterface.php`) - 685 lines:
+**DateService** (`DateCalculationInterface.php`) - 743 lines:
 - `calculateAge()`: Age calculation at specific date
 - `calculateTrimesters()`: Affiliation quarters with Q1-Q4 rounding rules
 - `mergeProlongations()`: Merge consecutive work stoppages, tracks merged indices
@@ -94,27 +94,40 @@ All services implement interfaces and are located in `/Services/`:
 - `calculateDecompteDays()`: Non-paid days before date-effet (décompte feature)
 - `isRechute()`: Detect relapse conditions (< 1 year, non-consecutive, rights opened)
 
-**TauxDeterminationService** (`TauxDeterminationInterface.php`) - 112 lines:
+**TauxDeterminationService** (`TauxDeterminationInterface.php`) - 148 lines:
 - `determineTauxNumber()`: Rate number (1-9) from age/quarters/pathology decision tree
 - `determineClasse()`: Contribution class (A/B/C) from N-2 revenue
 
-**AmountCalculationService** (`AmountCalculationInterface.php`) - 644 lines:
+**AmountCalculationService** (`AmountCalculationInterface.php`) - 736 lines:
 - `calculateTotalAmount()`: Main orchestration of entire calculation pipeline
 - Integrates all services, handles multi-period calculations, returns detailed breakdown
 - Auto-determines classe from `revenu_n_moins_2` if not explicitly provided
 
-**RecapService** - 374 lines:
+**RecapService** - 151 lines:
 - `generateRecapRecords()`: Transform calculation results into `ij_recap` table records
 - `generateInsertSQL()` / `generateBatchInsertSQL()`: Generate SQL INSERT statements
 - `validateRecord()`: Validate records before database insertion
 - `setCalculator()`: Enable auto-determination of classe from revenue
 - Groups payments by month/year/taux for database storage
 
-**DetailJourService** - 331 lines:
+**DetailJourService** - 114 lines:
 - `generateDetailJourRecords()`: Transform daily breakdown into `ij_detail_jour` table records
 - Maps each day of month to columns j1-j31 with amounts in centimes
 - `generateInsertSQL()` / `generateBatchInsertSQL()`: Generate SQL statements
 - One record per month with daily amounts for database storage
+
+**ArretService** - 401 lines:
+- `loadFromJson()`: Load arrets from JSON file
+- `loadFromEntities()`: Load from CakePHP entities or database results
+- `normalizeArrets()` / `normalizeArret()`: Normalize field names and date formats
+- `validateArret()` / `validateArrets()`: Validate required fields and formats
+- `sortByDate()` / `filterByDateRange()`: Sort and filter arret collections
+- `groupBySinistre()` / `countTotalDays()`: Group and aggregate arret data
+- Handles variations in field names (arret_from vs arret-from-line)
+
+**DateNormalizer** - 266 lines:
+- Normalize date formats across different sources (DateTime objects, strings, database formats)
+- Ensures consistent date handling throughout the application
 
 ### Critical Business Rules
 
@@ -299,6 +312,16 @@ POST /api.php?endpoint=determine-classe
 ```
 Auto-determines contribution class (A/B/C) from `revenu_n_moins_2` and `pass_value`
 
+**Calculate Arrets Date-Effet** (batch calculation):
+```bash
+POST /api.php?endpoint=calculate-arrets-date-effet
+```
+Calculate date-effet for multiple arrets with rechute detection. Returns arrets array with added fields:
+- `date-effet`: Rights opening date for each arret
+- `is_rechute`: Boolean indicating if arret is a rechute
+- `rechute_of_arret_index`: Index of source arret (if rechute)
+- `arret_diff`: Duration in days
+
 ## Test Data & Mock Scenarios
 
 28+ integration test scenarios in root directory and `webroot/mocks/`:
@@ -341,13 +364,15 @@ Auto-determines contribution class (A/B/C) from `revenu_n_moins_2` and `pass_val
 ```
 /
 ├── IJCalculator.php           # Main calculator (~690 lines)
-├── Services/                  # SOLID service layer (~2,500 lines)
+├── Services/                  # SOLID service layer (~3,000 lines)
 │   ├── RateService.php / RateServiceInterface.php
 │   ├── DateService.php / DateCalculationInterface.php
 │   ├── TauxDeterminationService.php / TauxDeterminationInterface.php
 │   ├── AmountCalculationService.php / AmountCalculationInterface.php
 │   ├── RecapService.php (ij_recap table records generation)
-│   └── DetailJourService.php (ij_detail_jour table records generation)
+│   ├── DetailJourService.php (ij_detail_jour table records generation)
+│   ├── ArretService.php (arret data loading, validation, normalization)
+│   └── DateNormalizer.php (date format normalization)
 ├── Tests/                     # Unit tests (~56 tests)
 │   ├── RateServiceTest.php (13 tests)
 │   ├── DateServiceTest.php (17 tests)
@@ -458,6 +483,45 @@ php test_rechute_simple.php         # Basic verification
 - Within 1 year of previous arret end
 - 15-day threshold (not 91 days)
 
+### Working with Arret Collections
+
+**Use ArretService for loading and managing arrets**:
+
+```php
+require_once 'Services/ArretService.php';
+use App\IJCalculator\Services\ArretService;
+
+$arretService = new ArretService();
+
+// Load from JSON file
+$arrets = $arretService->loadFromJson('arrets.json');
+
+// Load from CakePHP entities
+$entities = $this->Arrets->find('all')->where(['num_sinistre' => 8038]);
+$arrets = $arretService->loadFromEntities($entities);
+
+// Normalize field names
+$normalized = $arretService->normalizeArrets($rawArrets);
+
+// Validate arrets
+$validation = $arretService->validateArrets($arrets);
+if (!$validation['valid']) {
+    print_r($validation['errors']);
+}
+
+// Utility functions
+$sorted = $arretService->sortByDate($arrets);  // Sort by arret-from-line
+$filtered = $arretService->filterByDateRange($arrets, '2023-01-01', '2023-12-31');
+$grouped = $arretService->groupBySinistre($arrets);
+$totalDays = $arretService->countTotalDays($arrets);
+```
+
+**Test arret service**:
+```bash
+php test_arrets_endpoint.php    # Test batch date-effet calculation
+php test_arret_format.php        # Test arret normalization
+```
+
 ### Generating Database Records
 
 **For CakePHP integration or direct database insertion**:
@@ -561,6 +625,8 @@ php test_rechute_simple.php         # Basic verification
 - **DETAIL_JOUR_SERVICE_DOCUMENTATION.md**: DetailJourService usage for ij_detail_jour table
 - **RECAP_CLASS_DETERMINATION.md**: Auto-determination in RecapService
 - **MERGE_TRACKING_DOCUMENTATION.md**: Merge tracking in mergeProlongations (tracks which arrets are combined)
+- **ARRET_SERVICE_DOC.md**: ArretService for loading, validating, and normalizing arret data
+- **ARRETS_ENDPOINT_DOC.md**: Batch date-effet calculation endpoint documentation
 
 **UI & Visualization**:
 - **CALENDAR_RECHUTE_DISPLAY.md**: Calendar rechute indicators
