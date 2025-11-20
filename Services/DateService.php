@@ -176,7 +176,10 @@ class DateService implements DateCalculationInterface {
 
 		$merged = [];
 		$originalIndex = 0;
-
+		$arrets = array_map(function($x) {
+			unset($x['merged_arret_indices']);
+			return $x;
+		}, $arrets);
 		foreach ($arrets as $arret) {
 			if (empty($merged)) {
 				// Store original index but don't add merged_arret_indices yet
@@ -191,26 +194,20 @@ class DateService implements DateCalculationInterface {
 			$lastEnd = new DateTime($last['arret-to-line']);
 			$currentStart = new DateTime($arret['arret-from-line']);
 
-			// Calculer le prochain jour (including weekends - arrets can be on weekends)
-			$nextDay = clone $lastEnd;
-			$nextDay->modify('+1 day');
+			// Calculer le prochain jour ouvré après la fin du dernier arrêt
+			$nextBusinessDay = $this->addOneBusinessDay($lastEnd);
 
-			if ($nextDay->format('Y-m-d') >= $currentStart->format('Y-m-d')) {
-				// C'est le jour suivant (prolongation) - actual merge happening
+			if ($nextBusinessDay->format('Y-m-d') >= $currentStart->format('Y-m-d')) {
 				$last['arret-to-line'] = $arret['arret-to-line'];
-
-				// Track which original arrets were merged (only when merge occurs)
 				if (!isset($last['merged_arret_indices'])) {
 					// First merge - add both the original and current
 					$last['merged_arret_indices'] = [$last['original_index']];
 				}
 				$last['merged_arret_indices'][] = $originalIndex;
 			} else {
-				// No merge - store original index only
 				$arret['original_index'] = $originalIndex;
 				$merged[] = $arret;
 			}
-
 			$originalIndex++;
 		}
 
