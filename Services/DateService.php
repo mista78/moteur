@@ -178,6 +178,7 @@ class DateService implements DateCalculationInterface {
 		$originalIndex = 0;
 		$arrets = array_map(function($x) {
 			unset($x['merged_arret_indices']);
+
 			return $x;
 		}, $arrets);
 		foreach ($arrets as $arret) {
