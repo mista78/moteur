@@ -10,6 +10,7 @@ require_once __DIR__ . '/Services/TauxDeterminationInterface.php';
 require_once __DIR__ . '/Services/TauxDeterminationService.php';
 require_once __DIR__ . '/Services/AmountCalculationInterface.php';
 require_once __DIR__ . '/Services/AmountCalculationService.php';
+require_once __DIR__ . '/Services/DateNormalizer.php';
 
 use App\IJCalculator\Services\AmountCalculationInterface;
 use App\IJCalculator\Services\AmountCalculationService;

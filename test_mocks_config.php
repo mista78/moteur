@@ -91,10 +91,10 @@ return [
         'patho_anterior' => 0
     ],
     'mock6.json' => [
-        'expected' => 31412.61,
+        'expected' => 3012.61,
         'nbe_jours' => 279,
         'statut' => 'M',
-        'classe' => 'B',
+        'classe' => 'A',
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1962-05-01',

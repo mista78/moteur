@@ -107,21 +107,20 @@ class RateService implements RateServiceInterface {
 
 	public function getRateForDate(string $date): ?array {
 		$dateTimestamp = strtotime($date);
-
-		foreach ($this->rates as $rate) {
+		foreach (DateNormalizer::normalize($this->rates) as $rate) {
 			// Handle both DateTime objects and string dates
 			$dateStart = $rate['date_start'];
 			$dateEnd = $rate['date_end'];
-
 			// Convert DateTime to string if needed
 			if ($dateStart instanceof \DateTimeInterface) {
 				$dateStart = $dateStart->format('Y-m-d');
 			}
 			if ($dateEnd instanceof \DateTimeInterface) {
 				$dateEnd = $dateEnd->format('Y-m-d');
+
 			}
 
-			$startTimestamp = strtotime($dateStart);
+			$startTimestamp = strtotime((string)$dateStart);
 			$endTimestamp = strtotime($dateEnd);
 
 			if ($dateTimestamp >= $startTimestamp && $dateTimestamp <= $endTimestamp) {
@@ -140,14 +139,38 @@ class RateService implements RateServiceInterface {
 		int $year,
 		?string $date = null,
 		?int $age = null,
-		?bool $usePeriode2 = null
+		?bool $usePeriode2 = null,
+		?float $revenu = null
 	): float {
+
+		$effectiveDate = $date ?? "$year-01-01";
+		$isAfter2025Reform = strtotime($effectiveDate) >= strtotime('2025-01-01');
+
+		if ($isAfter2025Reform && strtoupper($classe) === 'B' && $revenu !== null && $revenu > 0) {
+			$baseRate = $revenu / 730;
+
+			if (in_array(strtoupper($statut), ['CCPL', 'RSPM'])) {
+				$optionValue = (float)str_replace(',', '.', (string)$option);
+
+				if ($optionValue > 1) {
+					$optionValue = $optionValue / 100;
+				}
+
+				if ($optionValue > 0 && $optionValue <= 1) {
+					$baseRate *= $optionValue;
+				}
+			}
+
+			return round($baseRate, 2);
+		}
+
 		// Obtenir les données de taux
 		if ($date) {
 			$rateData = $this->getRateForDate($date);
 		} else {
 			$rateData = $this->getRateForYear($year);
 		}
+
 		if (!$rateData) {
 			return 0.0;
 		}

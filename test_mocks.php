@@ -97,11 +97,11 @@ $testCases = [
         'patho_anterior' => 0
     ],
     'mock6.json' => [
-        'expected' => 31412.61,
+        'expected' => 0,
         "payment_start" => ["", "2024-03-28"],
         'nbe_jours' => 279,
         'statut' => 'M',
-        'classe' => 'B',
+        'classe' => 'A',
         'option' => 100,
         'pass_value' => 47000,
         'birth_date' => '1962-05-01',

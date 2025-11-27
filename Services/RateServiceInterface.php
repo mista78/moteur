@@ -29,7 +29,8 @@ interface RateServiceInterface {
 		int $year,
 		?string $date = null,
 		?int $age = null,
-		?bool $usePeriode2 = null
+		?bool $usePeriode2 = null,
+		?float $revenu = null
 	): float;
 
 	/**

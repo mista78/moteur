@@ -353,7 +353,9 @@ class AmountCalculationService implements AmountCalculationInterface {
 				if ($segmentAge < 62) {
 					// Âge < 62 : taux unique basé sur les trimestres
 					$taux = $this->tauxService->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
-					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null);
+					$revenuForYear = $this->getRevenuForYear($yearData['year'], $data);
+					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null, $revenuForYear);
+
 					$arretMontant += $yearData['days'] * $dailyRate;
 					$trimester = $this->dateService->getTrimesterFromDate($yearData['start']);
 
@@ -436,7 +438,8 @@ class AmountCalculationService implements AmountCalculationInterface {
 						$periodEnd->modify('+' . ($joursP - 1) . ' days');
 
 						// For taux 4-6 (period 3), pass $usePeriode2 to determine tier
-						$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $periodStart->format('Y-m-d'), $segmentAge, $usePeriode2);
+						$revenuForYear = $this->getRevenuForYear($yearData['year'], $data);
+						$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $periodStart->format('Y-m-d'), $segmentAge, $usePeriode2, $revenuForYear);
 						$arretMontant += $joursP * $dailyRate;
 						$trimester = $this->dateService->getTrimesterFromDate($periodStart->format('Y-m-d'));
 
@@ -463,7 +466,8 @@ class AmountCalculationService implements AmountCalculationInterface {
 				} else { // segmentAge >= 70
 					// Age >= 70: reduced rate (taux 4, 5 or 6)
 					$taux = $this->tauxService->determineTauxNumber($segmentAge, $periodNbTrimestres, $pathoAnterior, $historicalReducedRate);
-					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge);
+					$revenuForYear = $this->getRevenuForYear($yearData['year'], $data);
+					$dailyRate = $this->rateService->getDailyRate($statut, $segmentClasse, $option, $taux, $yearData['year'], $yearData['start'], $segmentAge, null, $revenuForYear);
 					$arretMontant += $yearData['days'] * $dailyRate;
 					$trimester = $this->dateService->getTrimesterFromDate($yearData['start']);
 

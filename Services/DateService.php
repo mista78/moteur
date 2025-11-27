@@ -176,7 +176,7 @@ class DateService implements DateCalculationInterface {
 
 		$merged = [];
 		$originalIndex = 0;
-		$arrets = array_map(function($x) {
+		$arrets = array_map(function ($x) {
 			unset($x['merged_arret_indices']);
 
 			return $x;
@@ -185,6 +185,14 @@ class DateService implements DateCalculationInterface {
 			if (empty($merged)) {
 				// Store original index but don't add merged_arret_indices yet
 				$arret['original_index'] = $originalIndex;
+
+				$merged[] = $arret;
+				$originalIndex++;
+
+				continue;
+			}
+
+			if (isset($arret['source']) && $arret['source'] === 'MF') {
 				$merged[] = $arret;
 				$originalIndex++;
 
@@ -206,6 +214,15 @@ class DateService implements DateCalculationInterface {
 				}
 				$last['merged_arret_indices'][] = $originalIndex;
 			} else {
+				if (!$this->isRechute($last, $arret)) {
+					if (!isset($last['arret_year_indices'])) {
+						// First merge - add both the original and current
+						$last['arret_year_indices'] = [$last['original_index']];
+					}
+					$last['arret_year_indices'][] = $originalIndex;
+
+					continue;
+				}
 				$arret['original_index'] = $originalIndex;
 				$merged[] = $arret;
 			}
@@ -250,7 +267,7 @@ class DateService implements DateCalculationInterface {
 			$newNbJours = $nbJours + $arret_diff;
 
 			// Si date_deb_droit existe et n'est pas 0000-00-00, l'utiliser comme date-effet
-			if (isset($currentData['ouverture-date-line']) && !empty($currentData['ouverture-date-line']) && $currentData['ouverture-date-line'] !== '0000-00-00') {
+			if (isset($currentData['ouverture-date-line'], $currentData['source']) && !empty($currentData['ouverture-date-line']) && $currentData['ouverture-date-line'] !== '0000-00-00' && !empty($currentData['source'])) {
 				$currentData['date-effet'] = $currentData['ouverture-date-line'];
 				$currentData['decompte_days'] = 0; // Rights already opened
 				$nbJours = $newNbJours;
@@ -295,19 +312,19 @@ class DateService implements DateCalculationInterface {
 				$dateDeb = clone $startDate;
 				$dateDeb->modify("+$lessDate days");
 
-				// Gérer les DT non excusées (DT_excused = 0)
-				if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '0') && !empty($currentData['date_declaration'])) {
+				// Gérer les DT non excusées (dt-line = 0)
+				if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
 					if ($increment > 0) {
 						$choice = $arrets[0];
 					}
 					$slect = $choice ?? $currentData;
-					$dtDate = new DateTime($slect['date_declaration']);
+					$dtDate = new DateTime($slect['declaration-date-line']);
 					$dtDate->modify('+30 days');
 					$dateDT = $dtDate->format('Y-m-d');
 				}
 
-				// Gérer la mise à jour du compte (DT_excused = 1 et date_maj_compte présente)
-				if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+				// Gérer la mise à jour du compte (dt-line = 1 et date_maj_compte présente)
+				if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
 					$cotisDate = new DateTime($currentData['date_maj_compte']);
 					$cotisDate->modify('+30 days');
 					$dateCotis = $cotisDate->format('Y-m-d');
@@ -329,32 +346,15 @@ class DateService implements DateCalculationInterface {
 			} elseif ($increment > 0) {
 				// Déterminer si c'est une rechute: automatique si arretDroits > 0 ET pas une prolongation ET < 1 an
 				$previousArret = $arrets[$increment - 1];
-				$siRechute = false;
+				$siRechute = $this->isRechute($previousArret, $currentData);
 
 				if ($arretDroits > 0) {
 					// Check if it's NOT a prolongation (consecutive days)
-					$lastEnd = new DateTime($previousArret['arret-to-line']);
-					$currentStart = new DateTime($currentData['arret-from-line']);
 
-					$nextDay = clone $lastEnd;
-					$nextDay->modify('+1 day');
-
-					// If NOT consecutive (not next day), check 1-year rule
-					if ($nextDay->format('Y-m-d') != $currentStart->format('Y-m-d')) {
-						// Vérifier si < 1 an après la fin du dernier arrêt
-						// Règle: date début <= date fin dernier + 1 an - 1 jour
-						$oneYearAfterLast = clone $lastEnd;
-						$oneYearAfterLast->modify('+1 year')->modify('-1 day');
-
-						if ($currentStart <= $oneYearAfterLast) {
-							$siRechute = true;
-						}
-					}
 				}
 
 				// Ajouter l'indication de rechute au résultat pour l'affichage frontend
 				$currentData['is_rechute'] = $siRechute;
-
 				// Si c'est une rechute, identifier de quel arrêt (le dernier avec date-effet)
 				if ($siRechute) {
 					// Trouver le dernier arrêt précédent qui a une date-effet
@@ -378,19 +378,19 @@ class DateService implements DateCalculationInterface {
 					$dateDT = null;
 					$dateCotis = null;
 
-					// Gérer les DT non excusées (DT_excused = 0) - 15ème jour après déclaration
-					if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '0') && !empty($currentData['date_declaration'])) {
+					// Gérer les DT non excusées (dt-line = 0) - 15ème jour après déclaration
+					if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
 						if ($increment > 0) {
 							$choice = $arrets[0];
 						}
 						$slect = $choice ?? $currentData;
-						$dtDate = new DateTime($slect['date_declaration']);
+						$dtDate = new DateTime($slect['declaration-date-line']);
 						$dtDate->modify('+14 days'); // +14 pour obtenir le 15ème jour
 						$dateDT = $dtDate->format('Y-m-d');
 					}
 
-					// Gérer la mise à jour du compte (DT_excused = 1 et date_maj_compte présente) - 15ème jour après MAJ
-					if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+					// Gérer la mise à jour du compte (dt-line = 1 et date_maj_compte présente) - 15ème jour après MAJ
+					if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
 						$cotisDate = new DateTime($currentData['date_maj_compte']);
 						$cotisDate->modify('+14 days'); // +14 pour obtenir le 15ème jour
 						$dateCotis = $cotisDate->format('Y-m-d');
@@ -433,14 +433,14 @@ class DateService implements DateCalculationInterface {
 					$dateDT = null;
 					$dateCotis = null;
 
-					if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '0') && !empty($currentData['date_declaration'])) {
-						$dtDate = new DateTime($currentData['date_declaration']);
+					if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '0') && !empty($currentData['declaration-date-line'])) {
+						$dtDate = new DateTime($currentData['declaration-date-line']);
 						$dtDate->modify('+30 days');
 						$dateDT = $dtDate->format('Y-m-d');
 					}
 
 					// Gérer la mise à jour du compte (31 jours pour nouvelle pathologie)
-					if ((isset($currentData['DT_excused']) && $currentData['DT_excused'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
+					if ((isset($currentData['dt-line']) && $currentData['dt-line'] == '1') && (isset($currentData['date_maj_compte']) && $currentData['date_maj_compte'] != '')) {
 						$cotisDate = new DateTime($currentData['date_maj_compte']);
 						$cotisDate->modify('+30 days');
 						$dateCotis = $cotisDate->format('Y-m-d');
@@ -471,6 +471,28 @@ class DateService implements DateCalculationInterface {
 		}
 
 		return $arrets;
+	}
+
+	private function isRechute($previousArret, $currentData, $siRechute = false) {
+		$lastEnd = new DateTime($previousArret['arret-to-line']);
+		$currentStart = new DateTime($currentData['arret-from-line']);
+
+		$nextDay = clone $lastEnd;
+		$nextDay->modify('+1 day');
+
+		// If NOT consecutive (not next day), check 1-year rule
+		if ($nextDay->format('Y-m-d') != $currentStart->format('Y-m-d')) {
+			// Vérifier si < 1 an après la fin du dernier arrêt
+			// Règle: date début <= date fin dernier + 1 an - 1 jour
+			$oneYearAfterLast = clone $lastEnd;
+			$oneYearAfterLast->modify('+1 year')->modify('-1 day');
+
+			if ($currentStart <= $oneYearAfterLast) {
+				$siRechute = true;
+			}
+		}
+
+		return $siRechute;
 	}
 
 	/**
@@ -559,8 +581,8 @@ class DateService implements DateCalculationInterface {
 				continue;
 			}
 
-			// Vérifier DT_excused - pas de paiement si DT non excusée (DT_excused === "0" string)
-			if (isset($arret['DT_excused']) && $arret['DT_excused'] === '0') {
+			// Vérifier dt-line - pas de paiement si DT non excusée (dt-line === "0" string)
+			if (isset($arret['dt-line']) && $arret['dt-line'] === '0') {
 				$decompte_days = $this->calculateDecompteDays($arret);
 
 				$paymentDetails[$index] = [
@@ -575,7 +597,7 @@ class DateService implements DateCalculationInterface {
 					'payment_start' => null,
 					'payment_end' => null,
 					'payable_days' => 0,
-					'reason' => 'DT not excused (DT_excused === "0")',
+					'reason' => 'DT not excused (dt-line === "0")',
 				];
 
 				continue;

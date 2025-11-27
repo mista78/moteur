@@ -46,6 +46,8 @@ class DateNormalizer {
 		'ouverture-date-line',
 		'payment_start',
 		'payment_end',
+		'date_start',
+		'date_end',
 	];
 
 	/**
@@ -114,6 +116,7 @@ class DateNormalizer {
 
 		// Handle string dates
 		if (is_string($value)) {
+
 			// Already in correct format (Y-m-d)
 			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
 				// Validate the date is actually valid
@@ -157,12 +160,11 @@ class DateNormalizer {
 
 				return null;
 			}
+		} else {
+			return $value->format('Y-m-d');
 		}
 
-		// Unexpected type
-		error_log('DateNormalizer: Unexpected date type: ' . gettype($value));
-
-		return null;
+		return $value->format('Y-m-d');
 	}
 
 	/**
