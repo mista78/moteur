@@ -1,0 +1,31 @@
+[Thu Nov 27 14:03:59 2025] PHP 8.2.29 Development Server (http://localhost:8000) started
+[Thu Nov 27 14:04:01 2025] [::1]:48880 Accepted
+[Thu Nov 27 14:04:01 2025] [::1]:48880 [404]: GET /index.html - No such file or directory
+[Thu Nov 27 14:04:01 2025] [::1]:48880 Closing
+[Thu Nov 27 14:04:20 2025] [::1]:40442 Accepted
+[Thu Nov 27 14:04:20 2025] [::1]:40448 Accepted
+[Thu Nov 27 14:04:20 2025] [::1]:40442 [200]: GET /api/mocks
+[Thu Nov 27 14:04:20 2025] [::1]:40442 Closing
+[Thu Nov 27 14:04:20 2025] [::1]:40448 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Thu Nov 27 14:04:20 2025] [::1]:40448 Closing
+[Thu Nov 27 14:04:22 2025] [::1]:40450 Accepted
+[Thu Nov 27 14:04:22 2025] [::1]:40450 [200]: GET /api/mocks
+[Thu Nov 27 14:04:22 2025] [::1]:40450 Closing
+[Thu Nov 27 14:04:22 2025] [::1]:40462 Accepted
+[Thu Nov 27 14:04:22 2025] [::1]:40462 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Thu Nov 27 14:04:22 2025] [::1]:40462 Closing
+[Thu Nov 27 14:04:22 2025] [::1]:40476 Accepted
+[Thu Nov 27 14:04:22 2025] [::1]:40484 Accepted
+[Thu Nov 27 14:04:22 2025] [::1]:40476 [200]: GET /api/mocks
+[Thu Nov 27 14:04:22 2025] [::1]:40476 Closing
+[Thu Nov 27 14:04:22 2025] [::1]:40484 [404]: GET /.well-known/appspecific/com.chrome.devtools.json - No such file or directory
+[Thu Nov 27 14:04:22 2025] [::1]:40484 Closing
+[Thu Nov 27 14:04:24 2025] [::1]:40500 Accepted
+[Thu Nov 27 14:04:24 2025] [::1]:40500 [200]: GET /index.html
+[Thu Nov 27 14:04:24 2025] [::1]:40500 Closing
+[Thu Nov 27 14:04:33 2025] [::1]:48286 Accepted
+[Thu Nov 27 14:04:33 2025] [::1]:48286 [302]: HEAD /
+[Thu Nov 27 14:04:33 2025] [::1]:48286 Closing
+[Thu Nov 27 14:04:33 2025] [::1]:48294 Accepted
+[Thu Nov 27 14:04:33 2025] [::1]:48294 [200]: GET /api/mocks
+[Thu Nov 27 14:04:33 2025] [::1]:48294 Closing

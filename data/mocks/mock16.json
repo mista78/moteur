@@ -1,0 +1,24 @@
+[
+    {
+        "arret-from-line": "2021-10-04",
+        "arret-to-line": "2024-09-30",
+        "id": 57,
+        "arret_diff": 1093,
+        "attestation-date-line": "2024-09-30",
+        "etat_anterieur": 0,
+        "dt-line": 1,
+        "date_maj_compte": null,
+        "declaration-date-line": "2021-10-17",
+        "rechute-line": 0,
+        "option": 100,
+        "valid_med_controleur": 1,
+        "date_deb_droit": "2022-01-02",
+        "cco_a_jour": 1,
+        "code_pathologie": "A",
+        "num_sinistre": 61,
+        "adherent_number": "228631K",
+        "date_deb_dr_force": null,
+        "date_fin_paiem_force": null,
+        "date_naissance": "1960-01-29"
+    }
+]

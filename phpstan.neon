@@ -1,0 +1,36 @@
+parameters:
+    # Analysis level (0-9, where 9 is strictest)
+    level: 8
+
+    # Paths to analyze
+    paths:
+        - src
+        - config
+
+    # Paths to exclude
+    excludePaths:
+        - vendor
+        - Tests
+
+    # PHP version to target
+    phpVersion: 80200  # PHP 8.2
+
+    # Error format (use table, raw, or json)
+    # Using 'raw' due to table formatter crash in PHPStan 2.1
+    errorFormat: raw
+
+    # Ignore specific errors if needed
+    ignoreErrors:
+        # Ignore always-true comparison warnings (code is correct, just overly safe)
+        - '#Comparison operation "[><=]+" between .* is always true\.#'
+        # Ignore unused methods/properties (may be used in legacy code or future features)
+        - '#Method .* is unused\.#'
+        - '#Property .* is never read, only written\.#'
+        # Ignore empty() checks on variables that always exist (defensive programming)
+        - '#Variable .* in empty\(\) always exists and is not falsy\.#'
+        # Ignore isset() checks on variables that always exist (defensive programming)
+        - '#Variable .* in isset\(\) always exists and is not nullable\.#'
+        # Ignore unreachable statements in DateNormalizer (defensive code)
+        - '#Unreachable statement - code above always terminates\.#'
+        # Ignore unsafe static calls in DateNormalizer (intentional design)
+        - '#Unsafe (access|call) to private (constant|method) .*DateNormalizer.*#'

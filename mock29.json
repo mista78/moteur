@@ -1,0 +1,25 @@
+{
+  "statut": "M",
+  "classe": "B",
+  "option": 100,
+  "birth_date": "1980-05-15",
+  "current_date": "2025-06-01",
+  "attestation_date": "2025-06-01",
+  "last_payment_date": null,
+  "affiliation_date": "2015-01-01",
+  "nb_trimestres": 42,
+  "previous_cumul_days": 90,
+  "patho_anterior": false,
+  "prorata": 1,
+  
+  "arrets": [
+    {
+      "arret-from-line": "2025-01-15",
+      "arret-to-line": "2025-02-15",
+      "rechute-line": 1,
+      "dt-line": 0,
+      "gpm-member-line": 0,
+      "declaration-date-line": "2025-01-16"
+    }
+  ]
+}

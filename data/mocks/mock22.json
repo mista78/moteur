@@ -1,0 +1,24 @@
+[
+    {
+        "arret-from-line": "2024-04-14",
+        "arret-to-line": "2024-07-14",
+        "id": 34,
+        "arret_diff": 92,
+        "date_dern_attestation": "2024-07-14",
+        "etat_anterieur": 0,
+        "dt-line": 1,
+        "date_maj_compte": null,
+        "declaration-date-line": "2024-04-18",
+        "rechute-line": 0,
+        "option": 25,
+        "valid_med_controleur": 1,
+        "date_deb_droit": "2024-07-13",
+        "cco_a_jour": 1,
+        "code_pathologie": "A",
+        "num_sinistre": 42,
+        "adherent_number": "287335H",
+        "date_deb_dr_force": null,
+        "date_fin_paiem_force": null,
+        "date_naissance": "1984-07-24"
+    }
+]
