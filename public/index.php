@@ -37,6 +37,9 @@ $dependencies($containerBuilder);
 // Build container
 $container = $containerBuilder->build();
 
+// Initialize Eloquent ORM
+$container->get(\Illuminate\Database\Capsule\Manager::class);
+
 // Create Slim App
 AppFactory::setContainer($container);
 $app = AppFactory::create();

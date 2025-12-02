@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-French medical professional sick leave benefits calculator ("Indemnités Journalières" - IJ) for CARMF (Caisse Autonome de Retraite des Médecins de France). Built with **Slim Framework 4** using modern PHP architecture with SOLID principles.
+French medical professional sick leave benefits calculator ("Indemnités Journalières" - IJ) for CARMF (Caisse Autonome de Retraite des Médecins de France). Built with **Slim Framework 4** and **Laravel Eloquent ORM** using modern PHP architecture with SOLID principles.
 
 Calculates daily benefits based on:
 - Contribution classes (A/B/C) and professional status (M/RSPM/CCPL)
@@ -28,21 +28,21 @@ cd public && php -S localhost:8000
 
 ```bash
 # Run all tests with PHPUnit
-php run_all_tests.php                       # Runs all unit tests (~56 tests)
+php run_all_tests.php                       # Recommended: runs all unit tests with formatted output
 ./vendor/bin/phpunit                        # Direct PHPUnit execution
 ./vendor/bin/phpunit --testdox              # Test documentation format
 
 # Run specific test suites
-./vendor/bin/phpunit test/RateServiceTest.php              # 13 tests - rate lookups
-./vendor/bin/phpunit test/DateServiceTest.php              # 17 tests - date calculations
-./vendor/bin/phpunit test/TauxDeterminationServiceTest.php # 16 tests - taux logic
-./vendor/bin/phpunit test/AmountCalculationServiceTest.php # 11 tests - amount calculations
-./vendor/bin/phpunit test/RechuteTest.php                  # 9 tests - relapse detection
+./vendor/bin/phpunit test/RateServiceTest.php              # Rate lookups
+./vendor/bin/phpunit test/DateServiceTest.php              # Date calculations
+./vendor/bin/phpunit test/TauxDeterminationServiceTest.php # Taux logic
+./vendor/bin/phpunit test/AmountCalculationServiceTest.php # Amount calculations
+./vendor/bin/phpunit test/RechuteTest.php                  # Relapse detection
 
 # Run with code coverage (requires Xdebug)
 ./vendor/bin/phpunit --coverage-html coverage/
 
-# Integration tests (mock scenarios - uses legacy jest-php)
+# Integration tests (mock scenarios)
 php test/test_mocks.php                    # 20+ real-world scenarios
 ```
 
@@ -89,6 +89,12 @@ project/
 │   │   ├── CalculationController.php  # Calculation endpoints
 │   │   └── MockController.php         # Mock data endpoints
 │   │
+│   ├── Models/                         # Eloquent ORM Models
+│   │   ├── IjArret.php                 # Work stoppage model
+│   │   ├── IjRecap.php                 # Calculation summary model
+│   │   ├── IjDetailJour.php            # Daily detail model
+│   │   └── IjSinistre.php              # Claim model
+│   │
 │   ├── Services/                       # Business logic (SOLID)
 │   │   ├── RateService.php             # Rate lookups (~220 lines)
 │   │   ├── DateService.php             # Date calculations (~740 lines)
@@ -110,7 +116,8 @@ project/
 │       └── ResponseFormatter.php       # Standardized responses
 │
 ├── config/
-│   ├── dependencies.php              # DI Container
+│   ├── dependencies.php              # DI Container (includes Eloquent setup)
+│   ├── database.php                  # Database configuration (Eloquent)
 │   ├── settings.php                  # App settings
 │   └── routes.php                    # Route definitions
 │
@@ -124,7 +131,7 @@ project/
 ├── phpunit.xml                       # PHPUnit configuration
 ├── run_all_tests.php                 # Test runner (wraps PHPUnit)
 ├── .env                              # Environment configuration
-└── composer.json                     # Dependencies (Slim 4, PHPUnit 10, PHPStan 2.1)
+└── composer.json                     # Dependencies (Slim 4, Eloquent 11, PHPUnit 10, PHPStan 2.1)
 
 ```
 
@@ -253,22 +260,23 @@ curl -X POST http://localhost:8000/api/calculations \
 **IMPORTANT**: Business logic lives in Services, not Controllers
 
 1. Update service in `src/Services/`
-2. Update interface if method signature changes
-3. Run unit tests: `php Tests/[Service]Test.php`
+2. Update interface if method signature changes (interfaces: `*Interface.php`)
+3. Run specific test: `./vendor/bin/phpunit test/[Service]Test.php`
 4. Run full suite: `php run_all_tests.php`
-5. Test integration: `php Tests/test_mocks.php`
+5. Test integration: `php test/test_mocks.php`
+6. Run static analysis: `./vendor/bin/phpstan analyse`
 
 ### Adding a New Test Scenario
 
 1. Create `data/mocks/mockN.json`
-2. Add to `Tests/test_mocks.php`:
+2. Add to `test/test_mocks.php`:
    ```php
    'mockN.json' => [
        'expected' => 1234.56,
        'nbe_jours' => 100
    ]
    ```
-3. Run: `php run_all_tests.php`
+3. Run: `php test/test_mocks.php`
 
 ### Debugging
 
@@ -290,26 +298,113 @@ MOCKS_PATH=data/mocks
 
 LOG_PATH=logs/app.log
 LOG_LEVEL=debug
+
+# Database Configuration (Eloquent ORM - Multi-Database)
+DB_DEFAULT_CONNECTION=mysql
+
+# Primary Database
+DB_DRIVER=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=carmf_ij
+DB_USER=root
+DB_PASSWORD=
+
+# Secondary Database (optional)
+DB_SECONDARY_HOST=localhost
+DB_SECONDARY_NAME=carmf_legacy
+DB_SECONDARY_USER=root
+DB_SECONDARY_PASSWORD=
+
+# Analytics Database (optional)
+DB_ANALYTICS_HOST=localhost
+DB_ANALYTICS_NAME=carmf_analytics
+DB_ANALYTICS_USER=root
+DB_ANALYTICS_PASSWORD=
 ```
 
 ### Dependency Injection
 
 Services are auto-wired via PHP-DI container defined in `config/dependencies.php`:
+- Eloquent ORM is initialized via Capsule Manager
 - IJCalculator receives rates from RateRepository
 - Controllers receive IJCalculator and Logger
 - All services use interface-based injection
 
+### Database (Eloquent ORM)
+
+The project uses **Laravel Eloquent ORM** with **multi-database support**:
+
+**Model Classes** (`src/Models/`):
+- `IjArret` - Work stoppages (arrêts de travail) - Primary DB
+- `IjRecap` - Calculation summaries - Primary DB
+- `IjDetailJour` - Daily calculation details - Primary DB
+- `IjSinistre` - Claims - Primary DB
+- `LegacyAdherent` - Legacy system data - Secondary DB
+- `AnalyticsLog` - Analytics/logging - Analytics DB
+
+**Available Database Connections**:
+- `mysql` (default) - Primary IJ calculation database
+- `mysql_secondary` - Secondary/legacy database
+- `mysql_analytics` - Analytics and logging database
+- `pgsql` - PostgreSQL (optional)
+- `sqlite` - SQLite for testing (optional)
+
+**Basic Usage**:
+```php
+use App\Models\IjRecap;
+
+// Default connection (primary database)
+$recap = IjRecap::create([
+    'montant_total' => 1500.00,
+    'nbe_jours' => 30,
+    'date_debut' => '2024-01-01',
+    'date_fin' => '2024-01-31',
+]);
+
+// Query with relationships
+$recap = IjRecap::with('details')->find($id);
+
+// Update
+$recap->update(['montant_total' => 1600.00]);
+```
+
+**Multi-Database Usage**:
+```php
+use App\Models\IjRecap;
+use App\Models\LegacyAdherent;
+use Illuminate\Support\Facades\DB;
+
+// Model with specific connection (defined in model class)
+$adherent = LegacyAdherent::find(1);
+
+// Switch connection at runtime
+$legacyData = IjRecap::on('mysql_secondary')->get();
+
+// Query Builder with specific connection
+$logs = DB::connection('mysql_analytics')
+    ->table('calculation_logs')
+    ->where('success', true)
+    ->get();
+```
+
+**See `MULTI_DATABASE_USAGE.md` for complete documentation and examples.**
+
 ## Testing Strategy
 
-- **Unit tests** (~56 tests): Each service tested independently using PHPUnit
-- **Integration tests** (20+ scenarios): Real-world mock data in data/mocks/
-- **Debug scripts**: Specific edge cases (debug_mock2.php, debug_mock9.php, etc.)
+- **Unit tests**: Each service tested independently using PHPUnit 10
+  - `RateServiceTest.php` - Rate lookups and tier determination
+  - `DateServiceTest.php` - Date calculations and age brackets
+  - `TauxDeterminationServiceTest.php` - Rate number determination
+  - `AmountCalculationServiceTest.php` - Payment calculations
+  - `RechuteTest.php` - Relapse detection logic
+- **Integration tests** (20+ scenarios): Real-world mock data in `data/mocks/`
+- **Debug scripts**: Specific edge cases (debug_mock2.php, debug_mock9.php, debug_mock20.php)
 - **Static analysis**: PHPStan level 8 for type safety
-- **Test framework**: PHPUnit 10 with strict typing and comprehensive assertions
 
 Run quality checks before committing:
 ```bash
-php run_all_tests.php              # Run all tests with PHPUnit
+php run_all_tests.php              # Run all unit tests
 ./vendor/bin/phpstan analyse       # Run static analysis
 ```
 
@@ -335,6 +430,7 @@ fetch('/api/calculations', {
 
 ## Important Notes
 
+- **ORM**: Laravel Eloquent 11 for database operations
 - **PSR Standards**: PSR-7 (HTTP messages), PSR-11 (Container), PSR-15 (Middleware)
 - **Autoloading**: PSR-4 autoloading via Composer (`App\` → `src/`)
 - **No require_once**: All classes loaded via Composer autoloader
@@ -345,6 +441,7 @@ fetch('/api/calculations', {
 
 **Core Docs**:
 - `SLIM_MIGRATION_PLAN.md` - Migration strategy and mapping
+- `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
 - `docs/README.md` - French technical documentation
 - Service-specific docs in `docs/[Service].md`
 
@@ -358,19 +455,25 @@ fetch('/api/calculations', {
 # 1. Install dependencies
 composer install
 
-# 2. Start server
+# 2. Configure databases in .env
+# Edit DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+
+# 3. Test database connections
+php test_eloquent.php
+
+# 4. Start server
 cd public && php -S localhost:8000
 
-# 3. Test endpoint
+# 5. Test endpoint
 curl http://localhost:8000/api/mocks
 
-# 4. Run tests
+# 6. Run tests
 php run_all_tests.php
 
-# 5. Run static analysis
+# 7. Run static analysis
 ./vendor/bin/phpstan analyse
 
-# 6. Access web interface
+# 8. Access web interface
 open http://localhost:8000/index.html
 ```
 

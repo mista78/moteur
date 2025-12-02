@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\IJCalculator;
 use App\Repositories\RateRepository;
 use DI\ContainerBuilder;
+use Illuminate\Database\Capsule\Manager as Capsule;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Monolog\Processor\UidProcessor;
@@ -13,6 +14,25 @@ use Psr\Log\LoggerInterface;
 
 return function (ContainerBuilder $containerBuilder) {
     $containerBuilder->addDefinitions([
+        // Eloquent Database (Multi-Database Support)
+        Capsule::class => function (ContainerInterface $c) {
+            $config = require __DIR__ . '/database.php';
+
+            $capsule = new Capsule;
+
+            // Register all database connections
+            foreach ($config['connections'] as $name => $connection) {
+                $capsule->addConnection($connection, $name);
+            }
+
+            // Set default connection
+            $capsule->getDatabaseManager()->setDefaultConnection($config['default']);
+
+            $capsule->setAsGlobal();
+            $capsule->bootEloquent();
+
+            return $capsule;
+        },
         // Logger
         LoggerInterface::class => function (ContainerInterface $c) {
             $settings = $c->get('settings')['settings'];
