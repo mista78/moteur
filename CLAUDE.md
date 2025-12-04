@@ -93,7 +93,8 @@ project/
 │   │   ├── IjArret.php                 # Work stoppage model
 │   │   ├── IjRecap.php                 # Calculation summary model
 │   │   ├── IjDetailJour.php            # Daily detail model
-│   │   └── IjSinistre.php              # Claim model
+│   │   ├── IjSinistre.php              # Claim model
+│   │   └── IjTaux.php                  # Rate model (27-rate system)
 │   │
 │   ├── Services/                       # Business logic (SOLID)
 │   │   ├── RateService.php             # Rate lookups (~220 lines)
@@ -340,6 +341,7 @@ The project uses **Laravel Eloquent ORM** with **multi-database support**:
 - `IjRecap` - Calculation summaries - Primary DB
 - `IjDetailJour` - Daily calculation details - Primary DB
 - `IjSinistre` - Claims - Primary DB
+- `IjTaux` - Rate records (27-rate system) - Primary DB
 - `LegacyAdherent` - Legacy system data - Secondary DB
 - `AnalyticsLog` - Analytics/logging - Analytics DB
 
@@ -389,6 +391,67 @@ $logs = DB::connection('mysql_analytics')
 ```
 
 **See `MULTI_DATABASE_USAGE.md` for complete documentation and examples.**
+
+### Rate Management (Database)
+
+The rate system has been migrated from CSV to **database storage** (`ij_taux` table):
+
+**Database Table Schema**:
+```sql
+CREATE TABLE `ij_taux` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `date_start` date DEFAULT NULL,
+  `date_end` date DEFAULT NULL,
+  `taux_a1` float NOT NULL,
+  `taux_a2` float NOT NULL,
+  `taux_a3` float NOT NULL,
+  `taux_b1` float NOT NULL,
+  `taux_b2` float NOT NULL,
+  `taux_b3` float NOT NULL,
+  `taux_c1` float NOT NULL,
+  `taux_c2` float NOT NULL,
+  `taux_c3` float NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+```
+
+**Migration Commands**:
+```bash
+# 1. Create the ij_taux table (use schema above)
+
+# 2. Migrate CSV data to database
+php migrate_rates_to_db.php
+
+# 3. Test database integration
+php test_rates_db.php
+
+# 4. Verify rates loaded correctly
+# The test script will show count and sample data
+```
+
+**Using the IjTaux Model**:
+```php
+use App\Models\IjTaux;
+
+// Get rate for specific year
+$rate = IjTaux::getRateForYear(2024);
+
+// Get rate for specific date
+$rate = IjTaux::getRateForDate('2024-06-15');
+
+// Get all rates ordered
+$rates = IjTaux::getAllRatesOrdered();
+
+// Access rate values
+echo $rate->taux_a1;  // Class A, tier 1
+echo $rate->taux_b2;  // Class B, tier 2
+echo $rate->taux_c3;  // Class C, tier 3
+```
+
+**RateRepository Behavior**:
+- **Primary**: Loads rates from database (`ij_taux` table)
+- **Fallback**: Falls back to CSV if database connection fails
+- **Compatibility**: Returns same data structure as legacy CSV format
 
 ## Testing Strategy
 
@@ -458,22 +521,28 @@ composer install
 # 2. Configure databases in .env
 # Edit DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
-# 3. Test database connections
-php test_eloquent.php
+# 3. Create ij_taux table
+# Execute the CREATE TABLE statement from "Rate Management" section
 
-# 4. Start server
+# 4. Migrate rate data from CSV to database
+php migrate_rates_to_db.php
+
+# 5. Test database connections and rate data
+php test_rates_db.php
+
+# 6. Start server
 cd public && php -S localhost:8000
 
-# 5. Test endpoint
+# 7. Test endpoint
 curl http://localhost:8000/api/mocks
 
-# 6. Run tests
+# 8. Run tests
 php run_all_tests.php
 
-# 7. Run static analysis
+# 9. Run static analysis
 ./vendor/bin/phpstan analyse
 
-# 8. Access web interface
+# 10. Access web interface
 open http://localhost:8000/index.html
 ```
 
@@ -481,7 +550,8 @@ open http://localhost:8000/index.html
 
 **Port already in use**: Change port in server command
 **Autoload errors**: Run `composer dump-autoload`
-**Rate file not found**: Check `RATES_CSV_PATH` in `.env`
+**Rate data not found**: Ensure `ij_taux` table exists and has data (run `php migrate_rates_to_db.php`)
+**Database connection failed**: System automatically falls back to CSV (`data/taux.csv`)
 **CORS errors**: CorsMiddleware handles all origins (*)
 **PHPStan memory errors**: Use `--memory-limit=256M` flag
 **PHPStan errors**: Default format is `raw` in phpstan.neon to prevent crashes
@@ -496,5 +566,6 @@ This project was migrated from standalone PHP to Slim Framework 4. Key changes:
 - **Services**: No changes (moved from `Services/` to `src/Services/`)
 - **IJCalculator**: Moved to `src/` (namespace `App\IJCalculator`)
 - **Tests**: Compatible with both old and new structure
+- **Rates**: CSV (`data/taux.csv`) → Database (`ij_taux` table) with CSV fallback
 
 See `SLIM_MIGRATION_PLAN.md` for complete migration details.
