@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controllers\CalculationController;
 use App\Controllers\MockController;
+use App\Controllers\MethodInjectionDemoController;
 use App\Middlewares\CorsMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
@@ -33,6 +34,12 @@ return function (App $app) {
         // Mock endpoints
         $group->get('/mocks', [MockController::class, 'list']);
         $group->get('/mocks/{file}', [MockController::class, 'load']);
+
+        // Demo endpoints - Method Injection examples
+        $group->post('/demo/calculate', [MethodInjectionDemoController::class, 'calculateWithMethodInjection']);
+        $group->get('/demo/rates', [MethodInjectionDemoController::class, 'getRatesWithMethodInjection']);
+        $group->get('/demo/rate/{year:\d+}', [MethodInjectionDemoController::class, 'getRateByYear']);
+        $group->post('/demo/advanced', [MethodInjectionDemoController::class, 'advancedMethodInjection']);
     });
 
     // Backward compatibility routes (old api.php style)

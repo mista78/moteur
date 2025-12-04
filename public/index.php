@@ -10,8 +10,8 @@ if (PHP_SAPI === 'cli-server') {
     }
 }
 
+use DI\Bridge\Slim\Bridge;
 use DI\ContainerBuilder;
-use Slim\Factory\AppFactory;
 use Slim\Factory\ServerRequestCreatorFactory;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -40,9 +40,8 @@ $container = $containerBuilder->build();
 // Initialize Eloquent ORM
 $container->get(\Illuminate\Database\Capsule\Manager::class);
 
-// Create Slim App
-AppFactory::setContainer($container);
-$app = AppFactory::create();
+// Create Slim App with DI Bridge (enables method injection)
+$app = Bridge::create($container);
 
 // Add body parsing middleware
 $app->addBodyParsingMiddleware();

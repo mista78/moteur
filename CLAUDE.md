@@ -505,6 +505,9 @@ fetch('/api/calculations', {
 **Core Docs**:
 - `SLIM_MIGRATION_PLAN.md` - Migration strategy and mapping
 - `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
+- `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
+- `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)
+- `RATE_DB_MIGRATION.md` - Rate system migration from CSV to database
 - `docs/README.md` - French technical documentation
 - Service-specific docs in `docs/[Service].md`
 
