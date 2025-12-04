@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\IJCalculator;
 use App\Repositories\RateRepository;
+use App\Repositories\PassRepository;
+use App\Services\TauxDeterminationService;
 use DI\ContainerBuilder;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Monolog\Handler\StreamHandler;
@@ -49,6 +51,23 @@ return function (ContainerBuilder $containerBuilder) {
         RateRepository::class => function (ContainerInterface $c) {
             $settings = $c->get('settings')['settings'];
             return new RateRepository($settings['paths']['rates_csv']);
+        },
+
+        // PASS Repository
+        PassRepository::class => function (ContainerInterface $c) {
+            return new PassRepository();
+        },
+
+        // Taux Determination Service (with PASS values from database)
+        TauxDeterminationService::class => function (ContainerInterface $c) {
+            $passRepo = $c->get(PassRepository::class);
+            $service = new TauxDeterminationService();
+
+            // Load PASS values from database
+            $passValues = $passRepo->loadPassValuesByYear();
+            $service->setPassValuesByYear($passValues);
+
+            return $service;
         },
 
         // IJ Calculator

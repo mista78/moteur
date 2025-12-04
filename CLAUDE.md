@@ -342,6 +342,7 @@ The project uses **Laravel Eloquent ORM** with **multi-database support**:
 - `IjDetailJour` - Daily calculation details - Primary DB
 - `IjSinistre` - Claims - Primary DB
 - `IjTaux` - Rate records (27-rate system) - Primary DB
+- `PlafondSecuSociale` - PASS values by year (class determination) - Primary DB
 - `LegacyAdherent` - Legacy system data - Secondary DB
 - `AnalyticsLog` - Analytics/logging - Analytics DB
 
@@ -508,6 +509,7 @@ fetch('/api/calculations', {
 - `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)
 - `RATE_DB_MIGRATION.md` - Rate system migration from CSV to database
+- `PASS_DB_INTEGRATION.md` - PASS values integration with database (class determination)
 - `docs/README.md` - French technical documentation
 - Service-specific docs in `docs/[Service].md`
 
