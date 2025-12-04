@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\CalculationController;
+use App\Controllers\HomeController;
 use App\Controllers\MockController;
 use App\Controllers\MethodInjectionDemoController;
 use App\Middlewares\CorsMiddleware;
@@ -14,16 +15,13 @@ return function (App $app) {
     $app->add(CorsMiddleware::class);
 
     // Root route - redirect to frontend
-    $app->get('/', function ($request, $response) {
-        return $response
-            ->withHeader('Location', '/index.html')
-            ->withStatus(302);
-    });
+    $app->get('/', [HomeController::class, 'index']);
 
     // API routes group
     $app->group('/api', function (RouteCollectorProxy $group) {
 
         // Calculation endpoints
+        $group->get('/dateeffect', [HomeController::class, 'index']);
         $group->post('/calculations', [CalculationController::class, 'calculate']);
         $group->post('/calculations/date-effet', [CalculationController::class, 'dateEffet']);
         $group->post('/calculations/end-payment', [CalculationController::class, 'endPayment']);

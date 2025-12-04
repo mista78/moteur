@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Tools\Tools;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -57,15 +58,15 @@ class IjArret extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date_start' => 'date',
-        'date_end' => 'date',
-        'date_reprise_activite' => 'date',
-        'date_end_init' => 'date',
-        'date_prolongation' => 'date',
-        'date_declaration' => 'date',
-        'date_dern_attestation' => 'date',
-        'date_deb_droit' => 'date',
-        'date_deb_dr_force' => 'date',
+        'date_start' => 'date:Y-m-d',
+        'date_end' => 'date:Y-m-d',
+        'date_reprise_activite' => 'date:Y-m-d',
+        'date_end_init' => 'date:Y-m-d',
+        'date_prolongation' => 'date:Y-m-d',
+        'date_declaration' => 'date:Y-m-d',
+        'date_dern_attestation' => 'date:Y-m-d',
+        'date_deb_droit' => 'date:Y-m-d',
+        'date_deb_dr_force' => 'date:Y-m-d',
         'first_day' => 'boolean',
         'is_rechute' => 'boolean',
         'is_prolongation' => 'boolean',
@@ -204,5 +205,12 @@ class IjArret extends Model
     public function hasResumedActivity(): bool
     {
         return $this->date_reprise_activite !== null;
+    }
+
+    public function toArray()
+    {
+        $array = parent::toArray();
+        
+        return Tools::renommerCles($array, Tools::$correspondance);
     }
 }

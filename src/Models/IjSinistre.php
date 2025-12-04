@@ -21,6 +21,13 @@ class IjSinistre extends Model
     protected $table = 'ij_sinistre';
 
     /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<string>
@@ -28,6 +35,7 @@ class IjSinistre extends Model
     protected $fillable = [
         'adherent_number',
         'code_pathologie',
+        'numero_dossier',
         'date_debut',
         'date_fin',
         'statut',
@@ -39,41 +47,77 @@ class IjSinistre extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date_debut' => 'date',
-        'date_fin' => 'date',
+        'numero_dossier' => 'integer',
+        'date_debut' => 'date:Y-m-d',
+        'date_fin' => 'date:Y-m-d',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
     /**
      * Get the arrets (work stoppages) for this sinistre
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function arrets()
     {
-        return $this->hasMany(IjArret::class, 'num_sinistre');
+        return $this->hasMany(IjArret::class, 'num_sinistre', 'id');
     }
 
     /**
      * Get the detail jour records for this sinistre
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function detailJours()
     {
-        return $this->hasMany(IjDetailJour::class, 'num_sinistre');
+        return $this->hasMany(IjDetailJour::class, 'num_sinistre', 'id');
     }
 
     /**
      * Get the recap records for this sinistre
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function recaps()
     {
-        return $this->hasMany(IjRecap::class, 'num_sinistre');
+        return $this->hasMany(IjRecap::class, 'num_sinistre', 'id');
+    }
+
+    /**
+     * Get the recap indem (view) records for this sinistre
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function recapIndems()
+    {
+        return $this->hasMany(RecapIdem::class, 'num_sinistre', 'id')
+                    ->orderBy('indemnisation_from_line', 'desc');
     }
 
     /**
      * Get the adherent associated with this sinistre
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function adherent()
     {
         return $this->belongsTo(AdherentInfos::class, 'adherent_number', 'adherent_number');
+    }
+
+    /**
+     * Scope: Active sinistres
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('statut', 'active');
+    }
+
+    /**
+     * Scope: By date range
+     */
+    public function scopeDateRange($query, $from, $to)
+    {
+        return $query->whereBetween('date_debut', [$from, $to]);
     }
 }
