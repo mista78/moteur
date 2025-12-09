@@ -7,6 +7,7 @@ use App\Controllers\HomeController;
 use App\Controllers\MockController;
 use App\Controllers\MethodInjectionDemoController;
 use App\Controllers\MoteurijController;
+use App\Controllers\SwaggerController;
 use App\Middlewares\CorsMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
@@ -14,6 +15,11 @@ use Slim\Routing\RouteCollectorProxy;
 return function (App $app) {
     // Add CORS middleware globally
     $app->add(CorsMiddleware::class);
+
+    // API Documentation routes (Swagger UI)
+    $app->get('/api-docs', [SwaggerController::class, 'ui']);
+    $app->get('/api/docs', [SwaggerController::class, 'json']);
+    $app->get('/api/docs/yaml', [SwaggerController::class, 'yaml']);
 
     // Root route - redirect to frontend
     // $app->get('/', [HomeController::class, 'index']);

@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Helpers\ResponseFormatter;
 use Exception;
+use OpenApi\Attributes as OA;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -33,6 +34,28 @@ class MockController
      * GET /api/mocks
      * List all available mock files
      */
+    #[OA\Get(
+        path: "/api/mocks",
+        summary: "List all mock files",
+        description: "Returns a list of available mock data files for testing",
+        tags: ["mocks"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "List of mock files",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            type: "array",
+                            items: new OA\Items(type: "string", example: "mock1.json")
+                        )
+                    ]
+                )
+            )
+        ]
+    )]
     public function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
@@ -60,6 +83,42 @@ class MockController
      * Load a specific mock file
      * @param array<string, mixed> $args
      */
+    #[OA\Get(
+        path: "/api/mocks/{file}",
+        summary: "Load a specific mock file",
+        description: "Load mock data for testing. File can be specified with or without .json extension",
+        tags: ["mocks"],
+        parameters: [
+            new OA\Parameter(
+                name: "file",
+                in: "path",
+                required: true,
+                description: "Mock file name (e.g., 'mock1' or 'mock1.json')",
+                schema: new OA\Schema(type: "string", example: "mock1")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Mock data loaded",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(
+                            property: "data",
+                            properties: [
+                                new OA\Property(property: "data", type: "object", description: "Mock calculation input data"),
+                                new OA\Property(property: "config", type: "object", description: "Test configuration with expected values", nullable: true)
+                            ],
+                            type: "object"
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 400, description: "Invalid file name"),
+            new OA\Response(response: 404, description: "Mock file not found")
+        ]
+    )]
     public function load(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {

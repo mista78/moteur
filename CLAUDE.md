@@ -107,7 +107,8 @@ project/
 │   │   └── DateNormalizer.php          # Date normalization
 │   │
 │   ├── Repositories/
-│   │   └── RateRepository.php          # CSV rate loading
+│   │   ├── RateRepository.php          # Rate loading (DB with CSV fallback)
+│   │   └── PassRepository.php          # PASS values loading
 │   │
 │   ├── Middlewares/
 │   │   ├── CorsMiddleware.php          # CORS headers
@@ -158,6 +159,28 @@ All services follow single responsibility principle and use dependency injection
 6. **Response** → Standardized JSON via ResponseFormatter
 
 ## API Endpoints
+
+### API Documentation (Swagger/OpenAPI)
+
+**Interactive Documentation**: http://localhost:8000/api-docs
+
+The API is fully documented with OpenAPI 3.0 (Swagger) using dynamic generation from PHP 8 attributes:
+
+```bash
+# Swagger UI (Interactive Documentation)
+GET /api-docs                             # Full interactive API documentation
+
+# OpenAPI Specification
+GET /api/docs                             # OpenAPI JSON format
+GET /api/docs/yaml                        # OpenAPI YAML format
+```
+
+**Features**:
+- ✅ Auto-generated from controller PHP 8 attributes
+- ✅ Try-it-out functionality for all endpoints
+- ✅ Request/response schemas with examples
+- ✅ cURL command generation
+- ✅ Always up-to-date with code changes
 
 ### RESTful Endpoints (New)
 
@@ -245,8 +268,35 @@ curl -X POST http://localhost:8000/api/calculations \
    $group->post('/calculations/new-endpoint', [CalculationController::class, 'newMethod']);
    ```
 
-2. **Add controller method** in `src/Controllers/CalculationController.php`:
+2. **Add controller method** with OpenAPI attributes in `src/Controllers/CalculationController.php`:
    ```php
+   #[OA\Post(
+       path: "/api/calculations/new-endpoint",
+       summary: "Brief description",
+       description: "Detailed description of what this endpoint does",
+       tags: ["calculations"],
+       requestBody: new OA\RequestBody(
+           required: true,
+           content: new OA\JsonContent(
+               properties: [
+                   new OA\Property(property: "param1", type: "string", example: "value1"),
+                   new OA\Property(property: "param2", type: "integer", example: 123)
+               ]
+           )
+       ),
+       responses: [
+           new OA\Response(
+               response: 200,
+               description: "Success response",
+               content: new OA\JsonContent(
+                   properties: [
+                       new OA\Property(property: "success", type: "boolean", example: true),
+                       new OA\Property(property: "data", type: "object")
+                   ]
+               )
+           )
+       ]
+   )]
    public function newMethod(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
    {
        // Implementation
@@ -254,7 +304,9 @@ curl -X POST http://localhost:8000/api/calculations \
    }
    ```
 
-3. **Test** with curl or frontend
+3. **Test** with curl, Swagger UI (http://localhost:8000/api-docs), or frontend
+
+**Note**: OpenAPI documentation is automatically updated when you add PHP 8 attributes to controller methods. No manual JSON/YAML editing required!
 
 ### Modifying Business Logic
 
@@ -328,9 +380,23 @@ DB_ANALYTICS_PASSWORD=
 
 Services are auto-wired via PHP-DI container defined in `config/dependencies.php`:
 - Eloquent ORM is initialized via Capsule Manager
-- IJCalculator receives rates from RateRepository
+- IJCalculator receives rates from RateRepository and PASS values from PassRepository
 - Controllers receive IJCalculator and Logger
 - All services use interface-based injection
+
+**IJCalculator Constructor** (6 parameters):
+```php
+new IJCalculator(
+    $rates,      // 1. Rates array (from RateRepository)
+    null,        // 2. RateService (optional, uses default)
+    null,        // 3. DateService (optional, uses default)
+    null,        // 4. TauxService (optional, uses default)
+    null,        // 5. AmountService (optional, uses default)
+    $passRepo    // 6. PassRepository (optional, loads PASS values from DB)
+);
+```
+
+When `PassRepository` is injected, PASS values are automatically loaded from database for year-specific class determination.
 
 ### Database (Eloquent ORM)
 
@@ -495,6 +561,7 @@ fetch('/api/calculations', {
 ## Important Notes
 
 - **ORM**: Laravel Eloquent 11 for database operations
+- **API Documentation**: OpenAPI 3.0 (Swagger) with zircote/swagger-php 5.x using PHP 8 attributes
 - **PSR Standards**: PSR-7 (HTTP messages), PSR-11 (Container), PSR-15 (Middleware)
 - **Autoloading**: PSR-4 autoloading via Composer (`App\` → `src/`)
 - **No require_once**: All classes loaded via Composer autoloader
@@ -510,6 +577,7 @@ fetch('/api/calculations', {
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)
 - `RATE_DB_MIGRATION.md` - Rate system migration from CSV to database
 - `PASS_DB_INTEGRATION.md` - PASS values integration with database (class determination)
+- `IJCALCULATOR_PASS_INJECTION.md` - PassRepository injection into IJCalculator constructor
 - `docs/README.md` - French technical documentation
 - Service-specific docs in `docs/[Service].md`
 
