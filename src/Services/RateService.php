@@ -152,18 +152,32 @@ class RateService implements RateServiceInterface {
 	): float {
 
 		$effectiveDate = $date ?? "$year-01-01";
-		$isAfter2025Reform = strtotime($effectiveDate) >= strtotime('2025-01-01');
+		$dateEffetTimestamp = strtotime($effectiveDate);
+		$isDateEffetAfter2025 = $dateEffetTimestamp >= strtotime('2025-01-01');
 
-		// Réforme 2025 : Calcul basé sur PASS pour toutes les classes
-		if ($isAfter2025Reform) {
+		// Réforme 2025 : Calcul basé sur PASS UNIQUEMENT pour les nouveaux arrêts (date_effet >= 2025)
+		if ($isDateEffetAfter2025) {
 			return $this->calculate2025Rate($statut, $classe, $option, $taux);
 		}
 
-		// Obtenir les données de taux
-		if ($date) {
-			$rateData = $this->getRateForDate($date);
+		// Pour les arrêts avec date_effet < 2025 :
+		// Si on est en 2025 ou après, utiliser les taux 2025 de la base de données
+		// Sinon, utiliser les taux historiques de l'année appropriée
+		$currentYear = (int)date('Y');
+		$dateEffetYear = (int)date('Y', $dateEffetTimestamp);
+
+		if ($currentYear >= 2025 && $dateEffetYear < 2025) {
+			// Arrêt ancien (date_effet < 2025) mais on est en 2025+
+			// → Utiliser les taux 2025 de la DB (pas la formule PASS)
+			$rateData = $this->getRateForYear(2025);
 		} else {
-			$rateData = $this->getRateForYear($year);
+			// Arrêt ancien et on est encore avant 2025
+			// → Utiliser les taux de l'année appropriée
+			if ($date) {
+				$rateData = $this->getRateForDate($date);
+			} else {
+				$rateData = $this->getRateForYear($year);
+			}
 		}
 
 		if (!$rateData) {
