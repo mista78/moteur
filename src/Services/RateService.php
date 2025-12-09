@@ -152,8 +152,6 @@ class RateService implements RateServiceInterface {
 		?string $calculationDate = null
 	): float {
 
-		dump($date,$calculationDate);
-
 		$effectiveDate = $date ?? "$year-01-01";
 		$dateEffetTimestamp = strtotime($effectiveDate);
 		$isDateEffetAfter2025 = $dateEffetTimestamp >= strtotime('2025-01-01');
