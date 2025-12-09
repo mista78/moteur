@@ -53,11 +53,11 @@ class SwaggerController
     {
         $html = <<<'HTML'
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CARMF IJ Calculator API Documentation</title>
+    <title>Documentation API Calculateur IJ CARMF</title>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
     <style>
         html {

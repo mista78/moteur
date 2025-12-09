@@ -572,6 +572,7 @@ fetch('/api/calculations', {
 
 **Core Docs**:
 - `SLIM_MIGRATION_PLAN.md` - Migration strategy and mapping
+- `SWAGGER_API_DOCUMENTATION.md` - OpenAPI/Swagger documentation guide (dynamic generation with PHP 8 attributes)
 - `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
 - `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)
@@ -617,6 +618,9 @@ php run_all_tests.php
 
 # 10. Access web interface
 open http://localhost:8000/index.html
+
+# 11. View API documentation
+open http://localhost:8000/api-docs
 ```
 
 ## Common Issues

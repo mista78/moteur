@@ -36,19 +36,20 @@ class MockController
      */
     #[OA\Get(
         path: "/api/mocks",
-        summary: "List all mock files",
-        description: "Returns a list of available mock data files for testing",
+        summary: "Lister les fichiers de test",
+        description: "Retourne la liste des fichiers de données de test (mocks) disponibles pour les tests",
         tags: ["mocks"],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "List of mock files",
+                description: "Liste des fichiers de test",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
                         new OA\Property(
                             property: "data",
                             type: "array",
+                            description: "Tableau des noms de fichiers",
                             items: new OA\Items(type: "string", example: "mock1.json")
                         )
                     ]
@@ -85,38 +86,38 @@ class MockController
      */
     #[OA\Get(
         path: "/api/mocks/{file}",
-        summary: "Load a specific mock file",
-        description: "Load mock data for testing. File can be specified with or without .json extension",
+        summary: "Charger un fichier de test spécifique",
+        description: "Charge les données de test pour les calculs. Le fichier peut être spécifié avec ou sans l'extension .json",
         tags: ["mocks"],
         parameters: [
             new OA\Parameter(
                 name: "file",
                 in: "path",
                 required: true,
-                description: "Mock file name (e.g., 'mock1' or 'mock1.json')",
+                description: "Nom du fichier de test (ex: 'mock1' ou 'mock1.json')",
                 schema: new OA\Schema(type: "string", example: "mock1")
             )
         ],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Mock data loaded",
+                description: "Données de test chargées avec succès",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
                         new OA\Property(
                             property: "data",
                             properties: [
-                                new OA\Property(property: "data", type: "object", description: "Mock calculation input data"),
-                                new OA\Property(property: "config", type: "object", description: "Test configuration with expected values", nullable: true)
+                                new OA\Property(property: "data", type: "object", description: "Données d'entrée pour le calcul"),
+                                new OA\Property(property: "config", type: "object", description: "Configuration de test avec les valeurs attendues", nullable: true)
                             ],
                             type: "object"
                         )
                     ]
                 )
             ),
-            new OA\Response(response: 400, description: "Invalid file name"),
-            new OA\Response(response: 404, description: "Mock file not found")
+            new OA\Response(response: 400, description: "Nom de fichier invalide"),
+            new OA\Response(response: 404, description: "Fichier de test non trouvé")
         ]
     )]
     public function load(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface

@@ -19,25 +19,25 @@ use Psr\Log\LoggerInterface;
  */
 #[OA\Info(
     version: "1.0.0",
-    title: "CARMF IJ Calculator API",
-    description: "French medical professional sick leave benefits calculator (Indemnités Journalières) for CARMF",
-    contact: new OA\Contact(name: "CARMF IJ API Support")
+    title: "API Calculateur IJ CARMF",
+    description: "Calculateur d'indemnités journalières pour les professionnels de santé libéraux - CARMF (Caisse Autonome de Retraite des Médecins de France)",
+    contact: new OA\Contact(name: "Support API CARMF IJ")
 )]
 #[OA\Server(
     url: "http://localhost:8000",
-    description: "Local development server"
+    description: "Serveur de développement local"
 )]
 #[OA\Server(
     url: "/",
-    description: "Production server"
+    description: "Serveur de production"
 )]
 #[OA\Tag(
     name: "calculations",
-    description: "IJ calculation operations"
+    description: "Opérations de calcul des indemnités journalières"
 )]
 #[OA\Tag(
     name: "mocks",
-    description: "Mock data for testing"
+    description: "Données de test (mocks)"
 )]
 class CalculationController
 {
@@ -56,34 +56,35 @@ class CalculationController
      */
     #[OA\Post(
         path: "/api/calculations",
-        summary: "Calculate IJ benefits",
-        description: "Main calculation endpoint for daily sick leave benefits based on contribution class, age, and work stoppages",
+        summary: "Calculer les indemnités journalières",
+        description: "Point d'entrée principal pour le calcul des indemnités journalières basé sur la classe de cotisation, l'âge et les arrêts de travail",
         tags: ["calculations"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["arrets"],
                 properties: [
-                    new OA\Property(property: "statut", type: "string", enum: ["M", "RSPM", "CCPL"], example: "M", description: "Professional status"),
-                    new OA\Property(property: "classe", type: "string", enum: ["A", "B", "C"], example: "A", description: "Contribution class"),
-                    new OA\Property(property: "option", type: "integer", example: 100, description: "Option percentage"),
-                    new OA\Property(property: "birth_date", type: "string", format: "date", example: "1989-09-26", description: "Birth date"),
-                    new OA\Property(property: "current_date", type: "string", format: "date", example: "2024-09-09", description: "Current date"),
-                    new OA\Property(property: "attestation_date", type: "string", format: "date", example: "2024-01-31", description: "Attestation date"),
-                    new OA\Property(property: "affiliation_date", type: "string", format: "date", example: "2019-01-15", description: "Affiliation date"),
-                    new OA\Property(property: "nb_trimestres", type: "integer", example: 22, description: "Number of quarters"),
-                    new OA\Property(property: "pass_value", type: "integer", example: 46368, description: "PASS value (optional)"),
-                    new OA\Property(property: "revenu_n_moins_2", type: "number", example: 50000, description: "Revenue N-2 for auto class determination"),
+                    new OA\Property(property: "statut", type: "string", enum: ["M", "RSPM", "CCPL"], example: "M", description: "Statut professionnel (M=Médecin, RSPM=Remplaçant, CCPL=Conjoint collaborateur)"),
+                    new OA\Property(property: "classe", type: "string", enum: ["A", "B", "C"], example: "A", description: "Classe de cotisation"),
+                    new OA\Property(property: "option", type: "integer", example: 100, description: "Pourcentage d'option"),
+                    new OA\Property(property: "birth_date", type: "string", format: "date", example: "1989-09-26", description: "Date de naissance"),
+                    new OA\Property(property: "current_date", type: "string", format: "date", example: "2024-09-09", description: "Date actuelle"),
+                    new OA\Property(property: "attestation_date", type: "string", format: "date", example: "2024-01-31", description: "Date d'attestation"),
+                    new OA\Property(property: "affiliation_date", type: "string", format: "date", example: "2019-01-15", description: "Date d'affiliation CARMF"),
+                    new OA\Property(property: "nb_trimestres", type: "integer", example: 22, description: "Nombre de trimestres validés"),
+                    new OA\Property(property: "pass_value", type: "integer", example: 46368, description: "Valeur du PASS (Plafond Annuel de la Sécurité Sociale) - optionnel"),
+                    new OA\Property(property: "revenu_n_moins_2", type: "number", example: 50000, description: "Revenu N-2 pour détermination automatique de la classe"),
                     new OA\Property(
                         property: "arrets",
                         type: "array",
+                        description: "Liste des arrêts de travail",
                         items: new OA\Items(
                             properties: [
-                                new OA\Property(property: "arret-from-line", type: "string", format: "date", example: "2023-10-24"),
-                                new OA\Property(property: "arret-to-line", type: "string", format: "date", example: "2024-01-31"),
-                                new OA\Property(property: "rechute-line", type: "integer", example: 0),
-                                new OA\Property(property: "dt-line", type: "integer", example: 1),
-                                new OA\Property(property: "gpm-member-line", type: "integer", example: 1)
+                                new OA\Property(property: "arret-from-line", type: "string", format: "date", example: "2023-10-24", description: "Date de début de l'arrêt"),
+                                new OA\Property(property: "arret-to-line", type: "string", format: "date", example: "2024-01-31", description: "Date de fin de l'arrêt"),
+                                new OA\Property(property: "rechute-line", type: "integer", example: 0, description: "Indicateur rechute (0=non, 1=oui)"),
+                                new OA\Property(property: "dt-line", type: "integer", example: 1, description: "Délai de transmission (jours)"),
+                                new OA\Property(property: "gpm-member-line", type: "integer", example: 1, description: "Membre GPM (0=non, 1=oui)")
                             ]
                         )
                     )
@@ -93,24 +94,24 @@ class CalculationController
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Successful calculation",
+                description: "Calcul effectué avec succès",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
                         new OA\Property(
                             property: "data",
                             properties: [
-                                new OA\Property(property: "montant", type: "number", format: "float", example: 12345.67),
-                                new OA\Property(property: "nb_jours", type: "integer", example: 100),
-                                new OA\Property(property: "details", type: "array", items: new OA\Items(type: "object"))
+                                new OA\Property(property: "montant", type: "number", format: "float", example: 12345.67, description: "Montant total des IJ en euros"),
+                                new OA\Property(property: "nb_jours", type: "integer", example: 100, description: "Nombre de jours indemnisés"),
+                                new OA\Property(property: "details", type: "array", items: new OA\Items(type: "object"), description: "Détails du calcul par jour")
                             ],
                             type: "object"
                         )
                     ]
                 )
             ),
-            new OA\Response(response: 400, description: "Invalid request"),
-            new OA\Response(response: 500, description: "Calculation error")
+            new OA\Response(response: 400, description: "Requête invalide"),
+            new OA\Response(response: 500, description: "Erreur de calcul")
         ]
     )]
     public function calculate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -162,26 +163,27 @@ class CalculationController
      */
     #[OA\Post(
         path: "/api/calculations/date-effet",
-        summary: "Calculate date-effet",
-        description: "Calculate effective date for work stoppages (90-day rule for new pathology, 15-day for rechute)",
+        summary: "Calculer la date d'effet",
+        description: "Calcule la date d'effet pour les arrêts de travail (règle des 90 jours pour nouvelle pathologie, 15 jours pour rechute)",
         tags: ["calculations"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["arrets"],
                 properties: [
-                    new OA\Property(property: "birth_date", type: "string", format: "date", example: "1989-09-26"),
-                    new OA\Property(property: "previous_cumul_days", type: "integer", example: 0),
+                    new OA\Property(property: "birth_date", type: "string", format: "date", example: "1989-09-26", description: "Date de naissance"),
+                    new OA\Property(property: "previous_cumul_days", type: "integer", example: 0, description: "Nombre de jours cumulés précédemment"),
                     new OA\Property(
                         property: "arrets",
                         type: "array",
+                        description: "Liste des arrêts de travail",
                         items: new OA\Items(
                             properties: [
-                                new OA\Property(property: "arret-from-line", type: "string", format: "date"),
-                                new OA\Property(property: "arret-to-line", type: "string", format: "date"),
-                                new OA\Property(property: "rechute-line", type: "integer"),
-                                new OA\Property(property: "dt-line", type: "integer"),
-                                new OA\Property(property: "gpm-member-line", type: "integer")
+                                new OA\Property(property: "arret-from-line", type: "string", format: "date", description: "Date de début"),
+                                new OA\Property(property: "arret-to-line", type: "string", format: "date", description: "Date de fin"),
+                                new OA\Property(property: "rechute-line", type: "integer", description: "Indicateur rechute"),
+                                new OA\Property(property: "dt-line", type: "integer", description: "Délai de transmission"),
+                                new OA\Property(property: "gpm-member-line", type: "integer", description: "Membre GPM")
                             ]
                         )
                     )
@@ -191,11 +193,11 @@ class CalculationController
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Date-effet calculated",
+                description: "Date d'effet calculée avec succès",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
-                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"))
+                        new OA\Property(property: "data", type: "array", items: new OA\Items(type: "object"), description: "Arrêts avec dates d'effet")
                     ]
                 )
             )
@@ -323,31 +325,31 @@ class CalculationController
      */
     #[OA\Post(
         path: "/api/calculations/classe",
-        summary: "Determine contribution class",
-        description: "Automatically determine contribution class (A/B/C) based on revenue and PASS value",
+        summary: "Déterminer la classe de cotisation",
+        description: "Détermine automatiquement la classe de cotisation (A/B/C) en fonction du revenu et de la valeur du PASS",
         tags: ["calculations"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "revenu_n_moins_2", type: "number", example: 50000, description: "Revenue N-2"),
-                    new OA\Property(property: "date_ouverture_droits", type: "string", format: "date", example: "2024-01-01"),
-                    new OA\Property(property: "taxe_office", type: "boolean", example: false),
-                    new OA\Property(property: "pass_value", type: "integer", example: 46368, description: "Optional PASS value")
+                    new OA\Property(property: "revenu_n_moins_2", type: "number", example: 50000, description: "Revenu de l'année N-2 en euros"),
+                    new OA\Property(property: "date_ouverture_droits", type: "string", format: "date", example: "2024-01-01", description: "Date d'ouverture des droits"),
+                    new OA\Property(property: "taxe_office", type: "boolean", example: false, description: "Soumis à la taxe d'office"),
+                    new OA\Property(property: "pass_value", type: "integer", example: 46368, description: "Valeur du PASS (optionnel)")
                 ]
             )
         ),
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Class determined",
+                description: "Classe déterminée avec succès",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
                         new OA\Property(
                             property: "data",
                             properties: [
-                                new OA\Property(property: "classe", type: "string", enum: ["A", "B", "C"], example: "B"),
+                                new OA\Property(property: "classe", type: "string", enum: ["A", "B", "C"], example: "B", description: "Classe de cotisation déterminée"),
                                 new OA\Property(property: "revenu_n_moins_2", type: "number", example: 50000),
                                 new OA\Property(property: "taxe_office", type: "boolean", example: false),
                                 new OA\Property(property: "pass_value", type: "integer", example: 46368)

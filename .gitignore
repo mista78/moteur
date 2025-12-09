@@ -1,2 +1,4 @@
 vendor
 .claude
+logs/
+*.log
