@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réforme 2025 - Calculs Journaliers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .info-box li {
+            padding: 5px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .info-box li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .scenario {
+            margin: 30px;
+        }
+        .scenario-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin-top: 30px;
+        }
+        .scenario-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+        .scenario-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .info-card {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .info-card .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .info-card .value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .month-2024 {
+            background-color: #fff3cd;
+        }
+        .month-2025 {
+            background-color: #d1ecf1;
+        }
+        .total-row {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .total-row td {
+            padding: 20px 15px;
+            border: none;
+        }
+        .rate-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .rate-2024 {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .rate-2025-db {
+            background-color: #28a745;
+            color: white;
+        }
+        .rate-pass {
+            background-color: #007bff;
+            color: white;
+        }
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+        }
+        .summary-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .summary-card .amount {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .comparison {
+            margin: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border: 2px solid #ffc107;
+        }
+        .comparison h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        .footer {
+            background: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-top: 30px;
+        }
+        .legend {
+            margin: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        .legend-items {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container"><div class="header">
+        <h1>🏥 Réforme 2025 - Calculs Journaliers</h1>
+        <p>Analyse détaillée de l'application des taux jour par jour</p>
+        <p style="font-size: 0.9em; margin-top: 10px;">Générée le 09/12/2025 à 16:11:09</p>
+    </div><div class="info-box">
+        <h3>📋 Règles de la Réforme 2025</h3>
+        <ul>
+            <li><strong>Date d'effet &gt;= 2025-01-01</strong> : Utilise la formule PASS (Classe × 46368 / 730)</li>
+            <li><strong>Date d'effet &lt; 2025-01-01 ET Année courante &gt;= 2025</strong> : Utilise taux 2025 DB</li>
+            <li><strong>Date d'effet &lt; 2025-01-01 ET Année courante &lt; 2025</strong> : Utilise taux historiques</li>
+            <li><strong>Critère déterminant</strong> : DATE D'EFFET (pas date de paiement, pas date du jour)</li>
+            <li><strong>Tous les jours</strong> d'un même arrêt utilisent le même taux (basé sur date d'effet)</li>
+        </ul>
+    </div><div class="legend">
+        <h3>🎨 Légende des Couleurs</h3>
+        <div class="legend-items">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #fff3cd;"></div>
+                <span>Décembre 2024</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #d1ecf1;"></div>
+                <span>Janvier 2025</span>
+            </div>
+            <div class="legend-item">
+                <span class="rate-badge rate-2024">Taux 2024 DB</span>
+            </div>
+            <div class="legend-item">
+                <span class="rate-badge rate-2025-db">Taux 2025 DB</span>
+            </div>
+            <div class="legend-item">
+                <span class="rate-badge rate-pass">Formule PASS</span>
+            </div>
+        </div>
+    </div><div class="scenario"><div class="scenario-header"><h2>Scénario 1 : Arrêt Débutant en Décembre 2024</h2><p>Arrêt du 20 décembre 2024 au 10 janvier 2025 (date_effet = 2024-12-20)</p><div class="scenario-info"><div class="info-card">
+            <div class="label">Date d'effet</div>
+            <div class="value">2024-12-20</div>
+        </div><div class="info-card">
+            <div class="label">Classe</div>
+            <div class="value">A</div>
+        </div><div class="info-card">
+            <div class="label">Taux journalier</div>
+            <div class="value">100,00 €</div>
+        </div><div class="info-card">
+            <div class="label">Système</div>
+            <div class="value">🟢 Taux 2025 DB</div>
+        </div><div class="info-card">
+            <div class="label">Nombre de jours</div>
+            <div class="value">22 jours</div>
+        </div><div class="info-card">
+            <div class="label">Montant total</div>
+            <div class="value">2 200,00 €</div>
+        </div></div></div><table><thead><tr>
+            <th>Jour #</th>
+            <th>Date</th>
+            <th>Jour</th>
+            <th>Mois</th>
+            <th>Taux journalier</th>
+            <th>Montant</th>
+        </tr></thead><tbody><tr class="month-2024"><td><strong>1</strong></td><td>20/12/2024</td><td>Friday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>2</strong></td><td>21/12/2024</td><td>Saturday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>3</strong></td><td>22/12/2024</td><td>Sunday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>4</strong></td><td>23/12/2024</td><td>Monday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>5</strong></td><td>24/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>6</strong></td><td>25/12/2024</td><td>Wednesday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>7</strong></td><td>26/12/2024</td><td>Thursday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>8</strong></td><td>27/12/2024</td><td>Friday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>9</strong></td><td>28/12/2024</td><td>Saturday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>10</strong></td><td>29/12/2024</td><td>Sunday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>11</strong></td><td>30/12/2024</td><td>Monday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2024"><td><strong>12</strong></td><td>31/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>13</strong></td><td>01/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>14</strong></td><td>02/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>15</strong></td><td>03/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>16</strong></td><td>04/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>17</strong></td><td>05/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>18</strong></td><td>06/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>19</strong></td><td>07/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>20</strong></td><td>08/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>21</strong></td><td>09/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>22</strong></td><td>10/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td><strong>22 jours × 100,00 €</strong></td><td><strong>2 200,00 €</strong></td></tr></tbody></table></div><div class="scenario"><div class="scenario-header"><h2>Scénario 2 : Arrêt Débutant en Janvier 2025</h2><p>Arrêt du 5 janvier 2025 au 25 janvier 2025 (date_effet = 2025-01-05)</p><div class="scenario-info"><div class="info-card">
+            <div class="label">Date d'effet</div>
+            <div class="value">2025-01-05</div>
+        </div><div class="info-card">
+            <div class="label">Classe</div>
+            <div class="value">A</div>
+        </div><div class="info-card">
+            <div class="label">Taux journalier</div>
+            <div class="value">63,52 €</div>
+        </div><div class="info-card">
+            <div class="label">Système</div>
+            <div class="value">🔵 Formule PASS</div>
+        </div><div class="info-card">
+            <div class="label">Nombre de jours</div>
+            <div class="value">21 jours</div>
+        </div><div class="info-card">
+            <div class="label">Montant total</div>
+            <div class="value">1 333,92 €</div>
+        </div></div></div><table><thead><tr>
+            <th>Jour #</th>
+            <th>Date</th>
+            <th>Jour</th>
+            <th>Mois</th>
+            <th>Taux journalier</th>
+            <th>Montant</th>
+        </tr></thead><tbody><tr class="month-2025"><td><strong>1</strong></td><td>05/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>2</strong></td><td>06/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>3</strong></td><td>07/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>4</strong></td><td>08/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>5</strong></td><td>09/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>6</strong></td><td>10/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>7</strong></td><td>11/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>8</strong></td><td>12/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>9</strong></td><td>13/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>10</strong></td><td>14/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>11</strong></td><td>15/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>12</strong></td><td>16/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>13</strong></td><td>17/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>14</strong></td><td>18/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>15</strong></td><td>19/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>16</strong></td><td>20/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>17</strong></td><td>21/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>18</strong></td><td>22/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>19</strong></td><td>23/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>20</strong></td><td>24/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="month-2025"><td><strong>21</strong></td><td>25/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>63,52 €</strong></td><td>63,52 €</td></tr><tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td><strong>21 jours × 63,52 €</strong></td><td><strong>1 333,92 €</strong></td></tr></tbody></table></div><div class="scenario"><div class="scenario-header"><h2>Scénario 3 : Classe B - Arrêt Décembre 2024 à Janvier 2025</h2><p>Arrêt du 15 décembre 2024 au 15 janvier 2025 (date_effet = 2024-12-15)</p><div class="scenario-info"><div class="info-card">
+            <div class="label">Date d'effet</div>
+            <div class="value">2024-12-15</div>
+        </div><div class="info-card">
+            <div class="label">Classe</div>
+            <div class="value">B</div>
+        </div><div class="info-card">
+            <div class="label">Taux journalier</div>
+            <div class="value">200,00 €</div>
+        </div><div class="info-card">
+            <div class="label">Système</div>
+            <div class="value">🟢 Taux 2025 DB</div>
+        </div><div class="info-card">
+            <div class="label">Nombre de jours</div>
+            <div class="value">32 jours</div>
+        </div><div class="info-card">
+            <div class="label">Montant total</div>
+            <div class="value">6 400,00 €</div>
+        </div></div></div><table><thead><tr>
+            <th>Jour #</th>
+            <th>Date</th>
+            <th>Jour</th>
+            <th>Mois</th>
+            <th>Taux journalier</th>
+            <th>Montant</th>
+        </tr></thead><tbody><tr class="month-2024"><td><strong>1</strong></td><td>15/12/2024</td><td>Sunday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>2</strong></td><td>16/12/2024</td><td>Monday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>3</strong></td><td>17/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>4</strong></td><td>18/12/2024</td><td>Wednesday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>5</strong></td><td>19/12/2024</td><td>Thursday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>6</strong></td><td>20/12/2024</td><td>Friday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>7</strong></td><td>21/12/2024</td><td>Saturday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>8</strong></td><td>22/12/2024</td><td>Sunday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>9</strong></td><td>23/12/2024</td><td>Monday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>10</strong></td><td>24/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>11</strong></td><td>25/12/2024</td><td>Wednesday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>12</strong></td><td>26/12/2024</td><td>Thursday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>13</strong></td><td>27/12/2024</td><td>Friday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>14</strong></td><td>28/12/2024</td><td>Saturday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>15</strong></td><td>29/12/2024</td><td>Sunday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>16</strong></td><td>30/12/2024</td><td>Monday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2024"><td><strong>17</strong></td><td>31/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>18</strong></td><td>01/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>19</strong></td><td>02/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>20</strong></td><td>03/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>21</strong></td><td>04/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>22</strong></td><td>05/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>23</strong></td><td>06/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>24</strong></td><td>07/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>25</strong></td><td>08/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>26</strong></td><td>09/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>27</strong></td><td>10/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>28</strong></td><td>11/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>29</strong></td><td>12/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>30</strong></td><td>13/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>31</strong></td><td>14/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="month-2025"><td><strong>32</strong></td><td>15/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>200,00 €</strong></td><td>200,00 €</td></tr><tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td><strong>32 jours × 200,00 €</strong></td><td><strong>6 400,00 €</strong></td></tr></tbody></table></div><div class="scenario"><div class="scenario-header"><h2>Scénario 4 : Classe C - Arrêt Janvier 2025</h2><p>Arrêt du 2 janvier 2025 au 31 janvier 2025 (date_effet = 2025-01-02)</p><div class="scenario-info"><div class="info-card">
+            <div class="label">Date d'effet</div>
+            <div class="value">2025-01-02</div>
+        </div><div class="info-card">
+            <div class="label">Classe</div>
+            <div class="value">C</div>
+        </div><div class="info-card">
+            <div class="label">Taux journalier</div>
+            <div class="value">190,55 €</div>
+        </div><div class="info-card">
+            <div class="label">Système</div>
+            <div class="value">🔵 Formule PASS</div>
+        </div><div class="info-card">
+            <div class="label">Nombre de jours</div>
+            <div class="value">30 jours</div>
+        </div><div class="info-card">
+            <div class="label">Montant total</div>
+            <div class="value">5 716,50 €</div>
+        </div></div></div><table><thead><tr>
+            <th>Jour #</th>
+            <th>Date</th>
+            <th>Jour</th>
+            <th>Mois</th>
+            <th>Taux journalier</th>
+            <th>Montant</th>
+        </tr></thead><tbody><tr class="month-2025"><td><strong>1</strong></td><td>02/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>2</strong></td><td>03/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>3</strong></td><td>04/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>4</strong></td><td>05/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>5</strong></td><td>06/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>6</strong></td><td>07/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>7</strong></td><td>08/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>8</strong></td><td>09/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>9</strong></td><td>10/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>10</strong></td><td>11/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>11</strong></td><td>12/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>12</strong></td><td>13/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>13</strong></td><td>14/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>14</strong></td><td>15/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>15</strong></td><td>16/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>16</strong></td><td>17/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>17</strong></td><td>18/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>18</strong></td><td>19/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>19</strong></td><td>20/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>20</strong></td><td>21/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>21</strong></td><td>22/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>22</strong></td><td>23/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>23</strong></td><td>24/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>24</strong></td><td>25/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>25</strong></td><td>26/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>26</strong></td><td>27/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>27</strong></td><td>28/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>28</strong></td><td>29/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>29</strong></td><td>30/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="month-2025"><td><strong>30</strong></td><td>31/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>190,55 €</strong></td><td>190,55 €</td></tr><tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td><strong>30 jours × 190,55 €</strong></td><td><strong>5 716,50 €</strong></td></tr></tbody></table></div><div class="scenario"><div class="scenario-header"><h2>Scénario 5 : Cas Limite - 31 Décembre 2024</h2><p>Arrêt du 31 décembre 2024 au 15 janvier 2025 (date_effet = 2024-12-31)</p><div class="scenario-info"><div class="info-card">
+            <div class="label">Date d'effet</div>
+            <div class="value">2024-12-31</div>
+        </div><div class="info-card">
+            <div class="label">Classe</div>
+            <div class="value">A</div>
+        </div><div class="info-card">
+            <div class="label">Taux journalier</div>
+            <div class="value">100,00 €</div>
+        </div><div class="info-card">
+            <div class="label">Système</div>
+            <div class="value">🟢 Taux 2025 DB</div>
+        </div><div class="info-card">
+            <div class="label">Nombre de jours</div>
+            <div class="value">16 jours</div>
+        </div><div class="info-card">
+            <div class="label">Montant total</div>
+            <div class="value">1 600,00 €</div>
+        </div></div></div><table><thead><tr>
+            <th>Jour #</th>
+            <th>Date</th>
+            <th>Jour</th>
+            <th>Mois</th>
+            <th>Taux journalier</th>
+            <th>Montant</th>
+        </tr></thead><tbody><tr class="month-2024"><td><strong>1</strong></td><td>31/12/2024</td><td>Tuesday</td><td>December 2024</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>2</strong></td><td>01/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>3</strong></td><td>02/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>4</strong></td><td>03/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>5</strong></td><td>04/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>6</strong></td><td>05/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>7</strong></td><td>06/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>8</strong></td><td>07/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>9</strong></td><td>08/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>10</strong></td><td>09/01/2025</td><td>Thursday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>11</strong></td><td>10/01/2025</td><td>Friday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>12</strong></td><td>11/01/2025</td><td>Saturday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>13</strong></td><td>12/01/2025</td><td>Sunday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>14</strong></td><td>13/01/2025</td><td>Monday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>15</strong></td><td>14/01/2025</td><td>Tuesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="month-2025"><td><strong>16</strong></td><td>15/01/2025</td><td>Wednesday</td><td>January 2025</td><td><strong>100,00 €</strong></td><td>100,00 €</td></tr><tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td><strong>16 jours × 100,00 €</strong></td><td><strong>1 600,00 €</strong></td></tr></tbody></table></div><div class="footer">
+        <p><strong>CARMF IJ Calculator - Réforme 2025</strong></p>
+        <p>Système de calcul des indemnités journalières avec application automatique de la réforme</p>
+    </div></div></body></html>

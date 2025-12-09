@@ -44,6 +44,14 @@ php run_all_tests.php                       # Recommended: runs all unit tests w
 
 # Integration tests (mock scenarios)
 php test/test_mocks.php                    # 20+ real-world scenarios
+
+# 2025 Reform tests
+php test_reforme_2025.php                  # 2025 PASS formula calculations
+php test_date_effet_2025.php               # Date d'effet logic validation
+php test_taux_2025_db.php                  # Historical arrêts using 2025 DB rates
+php test_arret_2024_continue_2025.php      # Arrêts starting in 2024 continuing to 2025
+php test_daily_reform_2024_2025.php        # Daily calculations with HTML report (visual)
+php test_daily_rates_by_calendar_year.php  # ⭐ Rates by calendar year (2024 vs 2025 days)
 ```
 
 ### Debug Specific Scenarios
@@ -242,8 +250,19 @@ curl -X POST http://localhost:8000/api/calculations \
 **Détection automatique** : Si `date_effet >= 2025-01-01` → Formule PASS, sinon → Taux historiques
 
 **⚠️ RÈGLE CRITIQUE** : C'est la **DATE D'EFFET** de l'arrêt qui détermine le système, PAS la date de paiement !
-- Arrêt débutant le 15/12/2024 (continue en 2025) → Taux historiques 2024
+- Arrêt débutant le 15/12/2024 (continue en 2025) → Taux 2025 DB (PAS formule PASS, PAS taux 2024)
 - Nouvel arrêt débutant le 10/01/2025 → Formule PASS
+
+**⚠️ RÈGLE SPÉCIALE TAUX PAR ANNÉE CALENDRIER** :
+- Pour les arrêts avec `date_effet < 2025-01-01` qui continuent en 2025
+- Le système applique **des taux différents selon l'année du jour** :
+  - **Jours en 2024** → Taux 2024 DB (`ij_taux` pour 2024)
+  - **Jours en 2025** → Taux 2025 DB (`ij_taux` pour 2025)
+- PAS la formule PASS (réservée aux arrêts date_effet >= 2025)
+- Exemple : Arrêt du 20/12/2024 au 10/01/2025
+  - 12 jours en décembre 2024 → 80€ × 12 = 960€
+  - 10 jours en janvier 2025 → 100€ × 10 = 1,000€
+  - Total : 1,960€
 
 **Exemple** (PASS 2024 = 46 368 €) :
 - Classe A, Taux 1 : 63.52 €/jour
@@ -629,6 +648,9 @@ fetch('/api/calculations', {
 - `SLIM_MIGRATION_PLAN.md` - Migration strategy and mapping
 - `SWAGGER_API_DOCUMENTATION.md` - OpenAPI/Swagger documentation guide (dynamic generation with PHP 8 attributes)
 - `REFORME_2025_TAUX.md` - **Réforme 2025** : Nouveau calcul des taux basé sur PASS
+- `REGLE_DATE_EFFET_2025.md` - **Date d'effet critique** : Règles de sélection du système de calcul (2025 vs historique)
+- `CALENDAR_YEAR_RATES_RULE.md` - **⭐ Taux par année calendrier** : Jours en 2024 vs jours en 2025 (règle finale)
+- `DAILY_REFORM_REPORT_README.md` - **Rapport visuel HTML** : Guide pour générer et utiliser le rapport journalier interactif
 - `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
 - `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)

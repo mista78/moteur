@@ -148,8 +148,11 @@ class RateService implements RateServiceInterface {
 		?string $date = null,
 		?int $age = null,
 		?bool $usePeriode2 = null,
-		?float $revenu = null
+		?float $revenu = null,
+		?string $calculationDate = null
 	): float {
+
+		dump($date,$calculationDate);
 
 		$effectiveDate = $date ?? "$year-01-01";
 		$dateEffetTimestamp = strtotime($effectiveDate);
@@ -161,19 +164,21 @@ class RateService implements RateServiceInterface {
 		}
 
 		// Pour les arrêts avec date_effet < 2025 :
-		// Si on est en 2025 ou après, utiliser les taux 2025 de la base de données
-		// Sinon, utiliser les taux historiques de l'année appropriée
-		$currentYear = (int)date('Y');
-		$dateEffetYear = (int)date('Y', $dateEffetTimestamp);
+		// Utiliser le taux basé sur l'année du JOUR calculé (pas l'année courante)
+		// Si calculationDate fourni, utiliser son année
+		// Sinon, utiliser l'année de date_effet
+		$dayYear = $calculationDate
+			? (int)date('Y', strtotime($calculationDate))
+			: (int)date('Y', $dateEffetTimestamp);
 
-		if ($currentYear >= 2025 && $dateEffetYear < 2025) {
-			// Arrêt ancien (date_effet < 2025) mais on est en 2025+
-			// → Utiliser les taux 2025 de la DB (pas la formule PASS)
+		if ($dayYear >= 2025) {
+			// Jour en 2025 ou après → Utiliser les taux 2025 de la DB
 			$rateData = $this->getRateForYear(2025);
 		} else {
-			// Arrêt ancien et on est encore avant 2025
-			// → Utiliser les taux de l'année appropriée
-			if ($date) {
+			// Jour en 2024 ou avant → Utiliser les taux de l'année du jour
+			if ($calculationDate) {
+				$rateData = $this->getRateForDate($calculationDate);
+			} elseif ($date) {
 				$rateData = $this->getRateForDate($date);
 			} else {
 				$rateData = $this->getRateForYear($year);
