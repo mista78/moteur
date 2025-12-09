@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\MockController;
 use App\IJCalculator;
 use App\Repositories\RateRepository;
 use App\Repositories\PassRepository;
@@ -16,7 +17,7 @@ use Psr\Log\LoggerInterface;
 
 return function (ContainerBuilder $containerBuilder) {
     $containerBuilder->addDefinitions([
-        // Eloquent Database (Multi-Database Support)
+            // Eloquent Database (Multi-Database Support)
         Capsule::class => function (ContainerInterface $c) {
             $config = require __DIR__ . '/database.php';
 
@@ -35,7 +36,7 @@ return function (ContainerBuilder $containerBuilder) {
 
             return $capsule;
         },
-        // Logger
+            // Logger
         LoggerInterface::class => function (ContainerInterface $c) {
             $settings = $c->get('settings')['settings'];
             $loggerSettings = $settings['logger'];
@@ -47,18 +48,18 @@ return function (ContainerBuilder $containerBuilder) {
             return $logger;
         },
 
-        // Rate Repository
+            // Rate Repository
         RateRepository::class => function (ContainerInterface $c) {
             $settings = $c->get('settings')['settings'];
             return new RateRepository($settings['paths']['rates_csv']);
         },
 
-        // PASS Repository
+            // PASS Repository
         PassRepository::class => function (ContainerInterface $c) {
             return new PassRepository();
         },
 
-        // Taux Determination Service (with PASS values from database)
+            // Taux Determination Service (with PASS values from database)
         TauxDeterminationService::class => function (ContainerInterface $c) {
             $passRepo = $c->get(PassRepository::class);
             $service = new TauxDeterminationService();
@@ -70,16 +71,18 @@ return function (ContainerBuilder $containerBuilder) {
             return $service;
         },
 
-        // IJ Calculator
+            // IJ Calculator
         IJCalculator::class => function (ContainerInterface $c) {
             $rateRepo = $c->get(RateRepository::class);
-            return new IJCalculator($rateRepo->loadRates());
+            $passRepo = $c->get(PassRepository::class);
+            return new IJCalculator($rateRepo->loadRates(), null, null, null, null, $passRepo);
         },
 
-        // MockController needs settings
-        \App\Controllers\MockController::class => function (ContainerInterface $c) {
+
+            // MockController needs settings
+        MockController::class => function (ContainerInterface $c) {
             $settings = $c->get('settings')['settings'];
-            return new \App\Controllers\MockController($settings, $c->get(LoggerInterface::class));
+            return new MockController($settings, $c->get(LoggerInterface::class));
         },
 
         // Settings

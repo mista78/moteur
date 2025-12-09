@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Repositories\PassRepository;
 use App\Services\AmountCalculationInterface;
 use App\Services\AmountCalculationService;
 use App\Services\DateCalculationInterface;
@@ -92,7 +93,8 @@ class IJCalculator
 		?RateServiceInterface $rateService = null,
 		?DateCalculationInterface $dateService = null,
 		?TauxDeterminationInterface $tauxService = null,
-		?AmountCalculationInterface $amountService = null
+		?AmountCalculationInterface $amountService = null,
+		?PassRepository $passRepository = null
 	) {
 		// Rétrocompatibilité : conserver le chargement interne des taux
 		$this->loadRates($csvPath);
@@ -110,7 +112,13 @@ class IJCalculator
 		);
 
 		// Synchroniser la valeur du PASS
-		$this->tauxService->setPassValue($this->passValue);
+		if ($passRepository !== null) {
+			$passValues = $passRepository->loadPassValuesByYear();
+			$this->tauxService->setPassValue($this->passValue);
+			$this->tauxService->setPassValuesByYear($passValues);
+		} else {
+			$this->tauxService->setPassValue($this->passValue);
+		}
 	}
 
 	/**

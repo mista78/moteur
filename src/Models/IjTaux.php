@@ -53,8 +53,8 @@ class IjTaux extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date_start' => 'date',
-        'date_end' => 'date',
+        'date_start' => 'date:Y-m-d',
+        'date_end' => 'date:Y-m-d',
         'taux_a1' => 'float',
         'taux_a2' => 'float',
         'taux_a3' => 'float',

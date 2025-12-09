@@ -219,7 +219,7 @@ class AmountCalculationServiceTest extends TestCase
     public function testHandleForcedRateOverride(): void
     {
         // Use mock21 data as base
-        $mockData = json_decode(file_get_contents(__DIR__ . '/../mock21.json'), true);
+        $mockData = json_decode(file_get_contents(__DIR__ . '/../data/mocks/mock21.json'), true);
 
         $data = [
             'arrets' => $mockData,

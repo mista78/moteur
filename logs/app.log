@@ -1,3 +1,5 @@
 [2025-11-27T12:05:58.461787+01:00] ij-calculator.INFO: Calculation completed {"nb_jours":10,"montant":750.6} {"uid":"e8b4661"}
 [2025-11-27T13:47:47.948441+01:00] ij-calculator.INFO: Calculation completed {"nb_jours":10,"montant":750.6} {"uid":"3b2079d"}
 [2025-12-04T09:15:15.013609+01:00] ij-calculator.INFO: Method injection demo: rates endpoint called [] {"uid":"a0e4dc8"}
+[2025-12-04T14:27:06.767609+01:00] ij-calculator.ERROR: Calculation error {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'adherents_number' in 'WHERE' (Connection: mysql, SQL: select * from `ij_sinistre` where (`adherents_number` = 191566V and `num_dossier` = 127419))"} {"uid":"530cd4a"}
+[2025-12-04T14:28:33.641014+01:00] ij-calculator.ERROR: Calculation error {"error":"SQLSTATE[42S22]: Column not found: 1054 Unknown column 'num_dossier' in 'WHERE' (Connection: mysql, SQL: select * from `ij_sinistre` where (`adherent_number` = 191566V and `num_dossier` = 127419))"} {"uid":"ba5728f"}
