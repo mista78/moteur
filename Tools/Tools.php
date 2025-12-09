@@ -80,6 +80,7 @@ class Tools {
 		'date_declaration' => 'declaration-date-line',
 		'DT_excused' => 'dt-line',
 		'date_deb_droit' => 'ouverture-date-line',
+		'date-effet' => 'ouverture-date-line',
 		'code_pathologie' => 'code-patho-line',
 		'date_deb_dr_force' => 'date-deb-dr-force',
 		'date_prolongation' => 'date-prolongation',

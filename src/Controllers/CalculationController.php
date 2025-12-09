@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Helpers\ResponseFormatter;
 use App\IJCalculator;
 use App\Services\DateNormalizer;
+use App\Tools\Tools;
 use Exception;
 use OpenApi\Attributes as OA;
 use Psr\Http\Message\ResponseInterface;
@@ -24,12 +25,24 @@ use Psr\Log\LoggerInterface;
     contact: new OA\Contact(name: "Support API CARMF IJ")
 )]
 #[OA\Server(
-    url: "http://localhost:8000",
+    url: "/",
+    description: "Serveur current"
+)]
+#[OA\Server(
+    url: "http://moteur-ij.local/",
     description: "Serveur de développement local"
 )]
 #[OA\Server(
-    url: "/",
-    description: "Serveur de production"
+    url: "http://moteur-ij.test.local/",
+    description: "Serveur de développement test"
+)]
+#[OA\Server(
+    url: "http://moteur-ij.recette.local/",
+    description: "Serveur de développement recette"
+)]
+#[OA\Server(
+    url: "http://moteur-ij.prod.local/",
+    description: "Serveur de développement prod"
 )]
 #[OA\Tag(
     name: "calculations",
@@ -224,7 +237,7 @@ class CalculationController
             $birthDate = $input['birth_date'] ?? null;
             $previousCumulDays = $input['previous_cumul_days'] ?? 0;
 
-            $result = $this->calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
+            $result = Tools::formatForOutput($this->calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays));
 
             return ResponseFormatter::success($response, $result);
 
