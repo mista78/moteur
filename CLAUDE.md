@@ -224,6 +224,34 @@ curl -X POST http://localhost:8000/api/calculations \
 
 ## Critical Business Rules
 
+### Réforme 2025 - Nouveau Calcul des Taux (⭐ NOUVEAU)
+
+**À partir du 1er janvier 2025**, le calcul des taux change automatiquement :
+
+**Formule** : `Taux = (Multiplicateur_Classe × PASS) / 730`
+
+- **Classe A** : 1 × PASS / 730
+- **Classe B** : 2 × PASS / 730
+- **Classe C** : 3 × PASS / 730
+
+**Réductions de taux** :
+- Taux 1-3 : 100%, 66.67%, 33.33% (base - 0, -1/3, -2/3)
+- Taux 4-6 : 50%, 33.33%, 16.67% (50% de base avec réductions)
+- Taux 7-9 : 75%, 50%, 25% (75% de base avec réductions)
+
+**Détection automatique** : Si `date_effet >= 2025-01-01` → Formule PASS, sinon → Taux historiques
+
+**⚠️ RÈGLE CRITIQUE** : C'est la **DATE D'EFFET** de l'arrêt qui détermine le système, PAS la date de paiement !
+- Arrêt débutant le 15/12/2024 (continue en 2025) → Taux historiques 2024
+- Nouvel arrêt débutant le 10/01/2025 → Formule PASS
+
+**Exemple** (PASS 2024 = 46 368 €) :
+- Classe A, Taux 1 : 63.52 €/jour
+- Classe B, Taux 1 : 127.04 €/jour
+- Classe C, Taux 1 : 190.55 €/jour
+
+**Documentation complète** : Voir `REFORME_2025_TAUX.md`
+
 ### Rechute Detection - DateService::isRechute()
 
 **IMPORTANT**: A stoppage is only a rechute if ALL criteria are met:
@@ -374,6 +402,32 @@ DB_ANALYTICS_HOST=localhost
 DB_ANALYTICS_NAME=carmf_analytics
 DB_ANALYTICS_USER=root
 DB_ANALYTICS_PASSWORD=
+```
+
+### CORS (Cross-Origin Resource Sharing)
+
+L'API est configurée pour accepter **toutes les requêtes** depuis **n'importe quel domaine**.
+
+**Configuration** (`src/Middlewares/CorsMiddleware.php`):
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD
+Access-Control-Allow-Headers: *
+Access-Control-Expose-Headers: *
+Access-Control-Max-Age: 86400 (24 heures)
+```
+
+**Caractéristiques**:
+- ✅ Accepte toutes les origines (*)
+- ✅ Accepte toutes les méthodes HTTP
+- ✅ Accepte tous les headers personnalisés
+- ✅ Expose tous les headers en réponse
+- ✅ Gère automatiquement les requêtes preflight OPTIONS
+- ✅ Cache les résultats preflight pendant 24h
+
+**Test CORS**:
+```bash
+php test_cors.php
 ```
 
 ### Dependency Injection
@@ -562,6 +616,7 @@ fetch('/api/calculations', {
 
 - **ORM**: Laravel Eloquent 11 for database operations
 - **API Documentation**: OpenAPI 3.0 (Swagger) with zircote/swagger-php 5.x using PHP 8 attributes
+- **CORS**: Configuration complète permettant l'accès depuis tous les domaines
 - **PSR Standards**: PSR-7 (HTTP messages), PSR-11 (Container), PSR-15 (Middleware)
 - **Autoloading**: PSR-4 autoloading via Composer (`App\` → `src/`)
 - **No require_once**: All classes loaded via Composer autoloader
@@ -573,6 +628,7 @@ fetch('/api/calculations', {
 **Core Docs**:
 - `SLIM_MIGRATION_PLAN.md` - Migration strategy and mapping
 - `SWAGGER_API_DOCUMENTATION.md` - OpenAPI/Swagger documentation guide (dynamic generation with PHP 8 attributes)
+- `REFORME_2025_TAUX.md` - **Réforme 2025** : Nouveau calcul des taux basé sur PASS
 - `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
 - `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)

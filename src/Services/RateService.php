@@ -154,22 +154,9 @@ class RateService implements RateServiceInterface {
 		$effectiveDate = $date ?? "$year-01-01";
 		$isAfter2025Reform = strtotime($effectiveDate) >= strtotime('2025-01-01');
 
-		if ($isAfter2025Reform && strtoupper($classe) === 'B' && $revenu !== null && $revenu > 0) {
-			$baseRate = $revenu / 730;
-
-			if (in_array(strtoupper($statut), ['CCPL', 'RSPM'])) {
-				$optionValue = (float)str_replace(',', '.', (string)$option);
-
-				if ($optionValue > 1) {
-					$optionValue = $optionValue / 100;
-				}
-
-				if ($optionValue > 0 && $optionValue <= 1) {
-					$baseRate *= $optionValue;
-				}
-			}
-
-			return round($baseRate, 2);
+		// Réforme 2025 : Calcul basé sur PASS pour toutes les classes
+		if ($isAfter2025Reform) {
+			return $this->calculate2025Rate($statut, $classe, $option, $taux);
 		}
 
 		// Obtenir les données de taux
@@ -204,6 +191,90 @@ class RateService implements RateServiceInterface {
 		}
 
 		return $baseRate;
+	}
+
+	/**
+	 * Calcul des taux selon la réforme 2025
+	 * Basé sur la valeur du PASS (Plafond Annuel de la Sécurité Sociale)
+	 *
+	 * Formule de base par classe:
+	 * - Classe A: 1 * PASS / 730
+	 * - Classe B: 2 * PASS / 730
+	 * - Classe C: 3 * PASS / 730
+	 *
+	 * Puis application des réductions de taux:
+	 * - Taux 1: 100% (base)
+	 * - Taux 2: base - 1/3 = 66.67%
+	 * - Taux 3: base - 2/3 = 33.33%
+	 * - Taux 4: 50% de base
+	 * - Taux 5: taux 4 - 1/3
+	 * - Taux 6: taux 4 - 2/3
+	 * - Taux 7: 75% de base
+	 * - Taux 8: taux 7 - 1/3
+	 * - Taux 9: taux 7 - 2/3
+	 *
+	 * @param string $statut Statut professionnel (M, RSPM, CCPL)
+	 * @param string $classe Classe de cotisation (A, B, C)
+	 * @param string|int|float $option Pourcentage d'option (pour CCPL/RSPM)
+	 * @param int $taux Numéro de taux (1-9)
+	 * @return float Taux journalier calculé
+	 */
+	private function calculate2025Rate(
+		string $statut,
+		string $classe,
+		string|int|float $option,
+		int $taux
+	): float {
+		// Valeur du PASS (peut être surchargée via setPassValue)
+		$passValue = $this->passValue ?? 46368; // PASS 2024 par défaut
+
+		// Multiplicateur de classe: A=1, B=2, C=3
+		$classeMultiplier = match(strtoupper($classe)) {
+			'A' => 1,
+			'B' => 2,
+			'C' => 3,
+			default => 2 // Par défaut classe B
+		};
+
+		// Calcul du taux de base: (multiplicateur * PASS) / 730
+		$baseRate = ($classeMultiplier * $passValue) / 730;
+
+		// Application des réductions selon le numéro de taux
+		$rate = match($taux) {
+			// Taux 1-3: Taux plein avec réductions par tiers
+			1 => $baseRate,                    // 100%
+			2 => $baseRate * (2/3),            // 66.67% (- 1/3)
+			3 => $baseRate * (1/3),            // 33.33% (- 2/3)
+
+			// Taux 4-6: 50% du taux de base avec réductions par tiers
+			4 => $baseRate * 0.5,              // 50%
+			5 => $baseRate * 0.5 * (2/3),      // 33.33% de base
+			6 => $baseRate * 0.5 * (1/3),      // 16.67% de base
+
+			// Taux 7-9: 75% du taux de base avec réductions par tiers
+			7 => $baseRate * 0.75,             // 75%
+			8 => $baseRate * 0.75 * (2/3),     // 50% de base
+			9 => $baseRate * 0.75 * (1/3),     // 25% de base
+
+			default => $baseRate
+		};
+
+		// Application du pourcentage d'option pour CCPL et RSPM
+		if (in_array(strtoupper($statut), ['CCPL', 'RSPM'])) {
+			$optionValue = (float)str_replace(',', '.', (string)$option);
+
+			// Convertir en décimal si nécessaire (100 -> 1.0)
+			if ($optionValue > 1) {
+				$optionValue = $optionValue / 100;
+			}
+
+			// Appliquer l'option si valide (entre 0 et 1)
+			if ($optionValue > 0 && $optionValue <= 1) {
+				$rate *= $optionValue;
+			}
+		}
+
+		return round($rate, 2);
 	}
 
 	/**
