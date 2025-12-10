@@ -45,7 +45,7 @@ class HomeController
                 );
             }
 
-            dd($calculator->calculateAmount($postArray)["payment_details"]);
+            dd($calculator->calculateAmount($postArray));
 
             
 

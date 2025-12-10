@@ -45,11 +45,7 @@ class MoteurijController
                     true
                 );
             }
-            dd(IjSinistre::with(["recapIndems","arrets"])
-                ->where(["adherent_number" => "191566V", "numero_dossier" => 127419])
-                ->get()
-                ->toArray()
-            );
+            // dd($postArray);
 
             if (empty($postArray)) {
                 $response->getBody()->write(json_encode([

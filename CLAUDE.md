@@ -46,12 +46,13 @@ php run_all_tests.php                       # Recommended: runs all unit tests w
 php test/test_mocks.php                    # 20+ real-world scenarios
 
 # 2025 Reform tests
-php test_reforme_2025.php                  # 2025 PASS formula calculations
-php test_date_effet_2025.php               # Date d'effet logic validation
-php test_taux_2025_db.php                  # Historical arrêts using 2025 DB rates
-php test_arret_2024_continue_2025.php      # Arrêts starting in 2024 continuing to 2025
-php test_daily_reform_2024_2025.php        # Daily calculations with HTML report (visual)
-php test_daily_rates_by_calendar_year.php  # ⭐ Rates by calendar year (2024 vs 2025 days)
+php test_reforme_2025.php                     # 2025 PASS formula calculations
+php test_date_effet_2025.php                  # Date d'effet logic validation
+php test_taux_2025_db.php                     # Historical arrêts using 2025 DB rates
+php test_arret_2024_continue_2025.php         # Arrêts starting in 2024 continuing to 2025
+php test_daily_reform_2024_2025.php           # Daily calculations with HTML report (visual)
+php test_daily_rates_by_calendar_year.php     # ⭐ Rates by calendar year (2024 vs 2025 days)
+php test_reforme_2025_multiple_arrets.php     # ⭐ Comprehensive multi-arrêt scenarios (2024/2025/mixed/rechutes)
 ```
 
 ### Debug Specific Scenarios
