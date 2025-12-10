@@ -28,6 +28,7 @@ return function (App $app) {
     $app->group('/api', function (RouteCollectorProxy $group) {
 
         // Calculation endpoints
+        $group->get('/test', [HomeController::class, 'index']);
         $group->get('/dateeffect', [MoteurijController::class, 'dateEffect']);
         $group->post('/calculations', [CalculationController::class, 'calculate']);
         $group->post('/calculations/date-effet', [CalculationController::class, 'dateEffet']);

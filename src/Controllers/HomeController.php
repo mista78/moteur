@@ -40,10 +40,14 @@ class HomeController
             $params = $request->getQueryParams();
             if (isset($params['mode']) && $params['mode'] == 'test') {
                 $postArray = json_decode(
-                    file_get_contents(__DIR__ . '/../../public/mock1.json'),
+                    file_get_contents(__DIR__ . '/../../public/mock_step.json'),
                     true
                 );
             }
+
+            dd($calculator->calculateAmount($postArray)["payment_details"]);
+
+            
 
             if (empty($postArray)) {
                 $response->getBody()->write(json_encode([
