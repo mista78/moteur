@@ -7,6 +7,9 @@ use App\IJCalculator;
 use App\Repositories\RateRepository;
 use App\Repositories\PassRepository;
 use App\Services\TauxDeterminationService;
+use App\Services\DateService;
+use App\Services\SinistreService;
+use App\Services\SinistreServiceInterface;
 use DI\ContainerBuilder;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Monolog\Handler\StreamHandler;
@@ -69,6 +72,16 @@ return function (ContainerBuilder $containerBuilder) {
             $service->setPassValuesByYear($passValues);
 
             return $service;
+        },
+
+        // Date Service
+        DateService::class => function (ContainerInterface $c) {
+            return new DateService();
+        },
+
+        // Sinistre Service (with DateService injection)
+        SinistreServiceInterface::class => function (ContainerInterface $c) {
+            return new SinistreService($c->get(DateService::class));
         },
 
             // IJ Calculator
