@@ -92,11 +92,11 @@ class SinistreController
     )]
     public function getSinistreWithDateEffet(
         ServerRequestInterface $request,
-        ResponseInterface $response,
-        array $args
+        ResponseInterface $response
     ): ResponseInterface {
         try {
-            $sinistreId = (int) $args['id'];
+            // Get route parameter from request attributes
+            $sinistreId = (int) $request->getAttribute('id');
 
             // Use the service to get sinistre with calculated date-effet
             $data = $this->sinistreService->getSinistreWithDateEffet($sinistreId);
@@ -104,7 +104,7 @@ class SinistreController
             return ResponseFormatter::success($response, $data);
         } catch (Exception $e) {
             $this->logger->error('Error getting sinistre with date-effet', [
-                'sinistre_id' => $args['id'] ?? null,
+                'sinistre_id' => $request->getAttribute('id'),
                 'error' => $e->getMessage()
             ]);
 
@@ -154,12 +154,12 @@ class SinistreController
     )]
     public function getSinistreForAdherent(
         ServerRequestInterface $request,
-        ResponseInterface $response,
-        array $args
+        ResponseInterface $response
     ): ResponseInterface {
         try {
-            $adherentNumber = (string) $args['adherent_number'];
-            $sinistreId = (int) $args['id'];
+            // Get route parameters from request attributes
+            $adherentNumber = (string) $request->getAttribute('adherent_number');
+            $sinistreId = (int) $request->getAttribute('id');
 
             $data = $this->sinistreService->getSinistreWithDateEffetForAdherent(
                 $adherentNumber,
@@ -169,8 +169,8 @@ class SinistreController
             return ResponseFormatter::success($response, $data);
         } catch (Exception $e) {
             $this->logger->error('Error getting sinistre for adherent', [
-                'adherent_number' => $args['adherent_number'] ?? null,
-                'sinistre_id' => $args['id'] ?? null,
+                'adherent_number' => $request->getAttribute('adherent_number'),
+                'sinistre_id' => $request->getAttribute('id'),
                 'error' => $e->getMessage()
             ]);
 
@@ -216,18 +216,18 @@ class SinistreController
     )]
     public function getAllSinistresForAdherent(
         ServerRequestInterface $request,
-        ResponseInterface $response,
-        array $args
+        ResponseInterface $response
     ): ResponseInterface {
         try {
-            $adherentNumber = (string) $args['adherent_number'];
+            // Get route parameter from request attributes
+            $adherentNumber = (string) $request->getAttribute('adherent_number');
 
             $data = $this->sinistreService->getAllSinistresWithDateEffet($adherentNumber);
 
             return ResponseFormatter::success($response, $data);
         } catch (Exception $e) {
             $this->logger->error('Error getting all sinistres for adherent', [
-                'adherent_number' => $args['adherent_number'] ?? null,
+                'adherent_number' => $request->getAttribute('adherent_number'),
                 'error' => $e->getMessage()
             ]);
 
