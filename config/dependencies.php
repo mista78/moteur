@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\MockController;
+use App\Controllers\SinistreController;
 use App\IJCalculator;
 use App\Repositories\RateRepository;
 use App\Repositories\PassRepository;
@@ -82,6 +83,14 @@ return function (ContainerBuilder $containerBuilder) {
         // Sinistre Service (with DateService injection)
         SinistreServiceInterface::class => function (ContainerInterface $c) {
             return new SinistreService($c->get(DateService::class));
+        },
+
+        // Sinistre Controller (with SinistreService injection)
+        SinistreController::class => function (ContainerInterface $c) {
+            return new SinistreController(
+                $c->get(SinistreServiceInterface::class),
+                $c->get(LoggerInterface::class)
+            );
         },
 
             // IJ Calculator
