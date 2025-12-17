@@ -7,3 +7,4 @@
 [2025-12-09T10:49:02.487018+01:00] ij-calculator.INFO: Calculation completed {"nb_jours":10,"montant":1125.9} {"uid":"2a176b2"}
 [2025-12-09T10:58:46.807586+01:00] ij-calculator.INFO: Calculation completed {"nb_jours":10,"montant":1125.9} {"uid":"d377426"}
 [2025-12-10T11:22:30.071542+01:00] ij-calculator.ERROR: Calculation error {"error":"SQLSTATE[HY000] [1049] Unknown database 'moteurij' (Connection: mysql, SQL: select * from `ij_sinistre` where (`adherent_number` = 191566V and `numero_dossier` = 127419))"} {"uid":"af08dd3"}
+[2025-12-17T10:46:44.460814+01:00] ij-calculator.INFO: Calculation completed {"nb_jours":10,"montant":1125.9} {"uid":"0ed1f0a"}

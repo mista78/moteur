@@ -30,7 +30,7 @@ class HomeController
     public function index(Request $request, Response $response, IJCalculator $calculator)
     {
         // dd(AdherentInfos::limit(1)->get()->toArray());
-        // dd(IjSinistre::with(['recapIndems','recaps', 'arrets'])->where("id", "23405")->get()->toArray());
+        dd(IjSinistre::with(['recapIndems','recaps', 'arrets'])->where("id", "23405")->get()->toArray());
 
         try {
             // Get JSON payload

@@ -22,7 +22,7 @@ return function (App $app) {
     $app->get('/api/docs/yaml', [SwaggerController::class, 'yaml']);
 
     // Root route - redirect to frontend
-    // $app->get('/', [HomeController::class, 'index']);
+    $app->get('/', [SwaggerController::class, 'ui']);
 
     // API routes group
     $app->group('/api', function (RouteCollectorProxy $group) {
