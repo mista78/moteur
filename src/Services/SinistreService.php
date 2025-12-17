@@ -96,7 +96,7 @@ class SinistreService implements SinistreServiceInterface
      * Private helper method that delegates to DateService
      *
      * @param IjSinistre $sinistre The sinistre model
-     * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array}
+     * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array, other_recap_indems: array}
      */
     private function calculateDateEffetForSinistre(IjSinistre $sinistre): array
     {
@@ -113,15 +113,21 @@ class SinistreService implements SinistreServiceInterface
             ? []
             : $this->dateService->calculateDateEffet($arrets, $birthDate);
 
-        // Convert recap indems to array
-        $recapIndems = $sinistre->recapIndems->map(function ($recap) {
-            return $recap->toArray();
-        })->toArray();
+        // Get recap indems for OTHER sinistres (exclude current sinistre)
+        $adherentNumber = $sinistre->adherent_number;
+        $otherRecapIndems = \App\Models\RecapIdem::where('adherent_number', $adherentNumber)
+            ->where('num_sinistre', '!=', $sinistre->id)
+            ->orderBy('indemnisation_from_line', 'desc')
+            ->get()
+            ->map(function ($recap) {
+                return $recap->toArray();
+            })
+            ->toArray();
 
         return [
             'sinistre' => $sinistre,
             'arrets_with_date_effet' => $arretsWithDateEffet,
-            'recap_indems' => $recapIndems,
+            'recap_indems' => $otherRecapIndems, // RecapIndems WITHOUT current sinistre
         ];
     }
 }
