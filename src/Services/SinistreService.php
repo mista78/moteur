@@ -115,7 +115,7 @@ class SinistreService implements SinistreServiceInterface
 
         // Get recap indems for OTHER sinistres (exclude current sinistre)
         $adherentNumber = $sinistre->adherent_number;
-        $otherRecapIndems = \App\Models\RecapIdem::where('adherent_number', $adherentNumber)
+        $otherRecapIndems = \App\Models\RecapIdem::byAdherent($adherentNumber)
             ->where('num_sinistre', '!=', $sinistre->id)
             ->orderBy('indemnisation_from_line', 'desc')
             ->get()
