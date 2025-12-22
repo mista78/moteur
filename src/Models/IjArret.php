@@ -120,6 +120,22 @@ class IjArret extends Model
     }
 
     /**
+     * Get the recap records for this arret
+     */
+    public function ijRecap()
+    {
+        return $this->hasMany(IjRecap::class, 'id_arret', 'id');
+    }
+
+    /**
+     * Get the recap records for this arret (alias)
+     */
+    public function ij_recap()
+    {
+        return $this->ijRecap();
+    }
+
+    /**
      * Scope to get only active arrets
      */
     public function scopeActive($query)

@@ -27,14 +27,19 @@ class IjRecap extends Model
      */
     protected $fillable = [
         'num_sinistre',
+        'id_arret',
         'adherent_number',
         'montant_total',
         'nbe_jours',
         'date_debut',
         'date_fin',
+        'date_start',
+        'date_end',
         'statut',
         'classe',
         'option',
+        'num_taux',
+        'personne_age',
     ];
 
     /**
@@ -47,6 +52,11 @@ class IjRecap extends Model
         'nbe_jours' => 'integer',
         'date_debut' => 'date:Y-m-d',
         'date_fin' => 'date:Y-m-d',
+        'date_start' => 'date:Y-m-d',
+        'date_end' => 'date:Y-m-d',
+        'num_taux' => 'integer',
+        'personne_age' => 'integer',
+        'id_arret' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -57,6 +67,14 @@ class IjRecap extends Model
     public function sinistre()
     {
         return $this->belongsTo(IjSinistre::class, 'num_sinistre');
+    }
+
+    /**
+     * Get the arret associated with this recap
+     */
+    public function arret()
+    {
+        return $this->belongsTo(IjArret::class, 'id_arret', 'id');
     }
 
     /**

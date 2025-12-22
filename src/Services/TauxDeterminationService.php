@@ -96,6 +96,15 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 		return 1;
 	}
 
+	public function pssParAnnee(): array
+    {
+        // TODO: Implement actual PSS values by year
+        // PSS is the French Social Security ceiling
+        // Historical values should be stored in database or config
+        
+        return $this->passValuesByYear;
+    }
+
 	public function determineClasse(
 		?float $revenuNMoins2 = null,
 		?string $dateOuvertureDroits = null,

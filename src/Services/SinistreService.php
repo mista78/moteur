@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\IjSinistre;
+use App\Models\RecapIdem;
+use App\Tools\Tools;
 use RuntimeException;
 
 /**
@@ -51,14 +53,14 @@ class SinistreService implements SinistreServiceInterface
      * Get sinistre with calculated date effet for specific adherent
      *
      * @param string $adherentNumber The adherent number
-     * @param int $sinistreId The sinistre ID
+     * @param int $numero_dossier The sinistre numero_dossier
      * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array}
      * @throws \RuntimeException If sinistre not found or doesn't belong to adherent
      */
-    public function getSinistreWithDateEffetForAdherent(string $adherentNumber, int $sinistreId): array
+    public function getSinistreWithDateEffetForAdherent(string $adherentNumber, int $numero_dossier): array
     {
         $sinistre = IjSinistre::with(['arrets', 'adherent', 'recapIndems'])
-            ->where('id', $sinistreId)
+            ->where('numero_dossier', $numero_dossier)
             ->where('adherent_number', $adherentNumber)
             ->first();
 
@@ -101,9 +103,7 @@ class SinistreService implements SinistreServiceInterface
     private function calculateDateEffetForSinistre(IjSinistre $sinistre): array
     {
         // Convert Eloquent collection to array format expected by DateService
-        $arrets = $sinistre->arrets->map(function ($arret) {
-            return $arret->toArray();
-        })->toArray();
+        $arrets = $sinistre->toArray()["arrets"];
 
         // Get birth date from adherent relationship
         $birthDate = $sinistre->adherent?->birth_date ?? null;
@@ -115,18 +115,14 @@ class SinistreService implements SinistreServiceInterface
 
         // Get recap indems for OTHER sinistres (exclude current sinistre)
         $adherentNumber = $sinistre->adherent_number;
-        $otherRecapIndems = \App\Models\RecapIdem::byAdherent($adherentNumber)
+        $otherRecapIndems = RecapIdem::byAdherent($adherentNumber)
             ->where('num_sinistre', '!=', $sinistre->id)
             ->orderBy('indemnisation_from_line', 'desc')
             ->get()
-            ->map(function ($recap) {
-                return $recap->toArray();
-            })
             ->toArray();
-
         return [
-            'sinistre' => $sinistre,
-            'arrets_with_date_effet' => $arretsWithDateEffet,
+            // 'sinistre' => $sinistre,
+            'arrets_with_date_effet' => Tools::formatForOutput($arretsWithDateEffet),
             'recap_indems' => $otherRecapIndems, // RecapIndems WITHOUT current sinistre
         ];
     }

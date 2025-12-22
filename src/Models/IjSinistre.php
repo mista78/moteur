@@ -39,6 +39,8 @@ class IjSinistre extends Model
         'date_debut',
         'date_fin',
         'statut',
+        'NOGROUPEINIT',
+        'CODEMALADIE',
     ];
 
     /**
@@ -119,5 +121,26 @@ class IjSinistre extends Model
     public function scopeDateRange($query, $from, $to)
     {
         return $query->whereBetween('date_debut', [$from, $to]);
+    }
+
+    /**
+     * Get only active arrets
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getArretsActifs()
+    {
+        return $this->arrets()->where('actif', 1)->get();
+    }
+
+    /**
+     * Access adherent via dynamic property (for compatibility)
+     */
+    public function getAdherentAttribute()
+    {
+        if (!$this->relationLoaded('adherent')) {
+            $this->load('adherent');
+        }
+        return $this->getRelation('adherent');
     }
 }

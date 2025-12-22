@@ -44,7 +44,7 @@ return function (App $app) {
 
         // Sinistre endpoints (with date-effet calculation)
         $group->get('/sinistres/{id}/date-effet', [SinistreController::class, 'getSinistreWithDateEffet']);
-        $group->get('/adherents/{adherent_number}/sinistres/{id}/date-effet', [SinistreController::class, 'getSinistreForAdherent']);
+        $group->get('/adherents/{adherent_number}/{numero_dossier}', [SinistreController::class, 'getSinistreForAdherent']);
         $group->get('/adherents/{adherent_number}/sinistres/date-effet', [SinistreController::class, 'getAllSinistresForAdherent']);
 
         // Demo endpoints - Method Injection examples

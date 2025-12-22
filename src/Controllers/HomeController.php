@@ -13,6 +13,7 @@ use App\IJCalculator;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
+use App\Models\ZDFCAIJNG;
 
 /**
  * Mock Controller
@@ -30,7 +31,7 @@ class HomeController
     public function index(Request $request, Response $response, IJCalculator $calculator)
     {
         // dd(AdherentInfos::limit(1)->get()->toArray());
-        dd(IjSinistre::with(['recapIndems','recaps', 'arrets'])->where("id", "23405")->get()->toArray());
+        // dd(IjSinistre::with(['recapIndems', 'recaps'])->where("id", "23405")->get()->toArray());
 
         try {
             // Get JSON payload
@@ -44,6 +45,11 @@ class HomeController
                     true
                 );
             }
+
+
+
+            // 1. Insert sinistre (automatically creates CAR)
+            ZDFCAIJNG::insertSinistre(8038);
 
             dd($calculator->calculateAmount($postArray));
 

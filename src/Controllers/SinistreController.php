@@ -159,7 +159,7 @@ class SinistreController
         try {
             // Get route parameters from request attributes
             $adherentNumber = (string) $request->getAttribute('adherent_number');
-            $sinistreId = (int) $request->getAttribute('id');
+            $sinistreId = (int) $request->getAttribute('numero_dossier');
 
             $data = $this->sinistreService->getSinistreWithDateEffetForAdherent(
                 $adherentNumber,
