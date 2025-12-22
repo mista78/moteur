@@ -16,8 +16,8 @@ use Psr\Log\LoggerInterface;
 use App\Models\ZDFCAIJNG;
 
 /**
- * Mock Controller
- * Handles mock data endpoints for testing
+ * Contrôleur Home
+ * Gère les endpoints de test et débogage
  */
 class HomeController
 {
@@ -34,10 +34,10 @@ class HomeController
         // dd(IjSinistre::with(['recapIndems', 'recaps'])->where("id", "23405")->get()->toArray());
 
         try {
-            // Get JSON payload
+            // Récupérer le payload JSON
             $postArray = $request->getParsedBody();
 
-            // Test mode - load from file
+            // Mode test - charger depuis un fichier
             $params = $request->getQueryParams();
             if (isset($params['mode']) && $params['mode'] == 'test') {
                 $postArray = json_decode(
@@ -48,7 +48,7 @@ class HomeController
 
 
 
-            // 1. Insert sinistre (automatically creates CAR)
+            // 1. Insérer le sinistre (crée automatiquement le CAR)
             ZDFCAIJNG::insertSinistre(8038);
 
             dd($calculator->calculateAmount($postArray));

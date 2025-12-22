@@ -7,9 +7,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Adherent Infos Model
+ * Modèle Adherent Infos
  *
- * Represents member information (adherent details)
+ * Représente les informations d'adhérent (détails de l'adhérent)
  */
 class AdherentInfos extends Model
 {

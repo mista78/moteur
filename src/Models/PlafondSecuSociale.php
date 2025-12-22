@@ -7,10 +7,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Plafond Sécurité Sociale Model
+ * Modèle Plafond Sécurité Sociale
  *
- * Represents PASS (Plafond Annuel de la Sécurité Sociale) values by year
- * Used for determining contribution classes (A/B/C) based on revenue
+ * Représente les valeurs PASS (Plafond Annuel de la Sécurité Sociale) par année
+ * Utilisé pour déterminer les classes de cotisation (A/B/C) basées sur le revenu
  */
 class PlafondSecuSociale extends Model
 {
@@ -70,9 +70,9 @@ class PlafondSecuSociale extends Model
     ];
 
     /**
-     * Get all PASS values indexed by year
+     * Obtenir toutes les valeurs PASS indexées par année
      *
-     * Returns array like: [2024 => 46368, 2023 => 43992, ...]
+     * Retourne un tableau comme : [2024 => 46368, 2023 => 43992, ...]
      *
      * @return array<int, int>
      */
@@ -82,10 +82,10 @@ class PlafondSecuSociale extends Model
 
         $passByYear = [];
         foreach ($records as $record) {
-            // Extract year from date_deb_effet
+            // Extraire l'année depuis date_deb_effet
             $year = (int) $record->date_deb_effet->format('Y');
 
-            // Use the MT_PASS value for this year
+            // Utiliser la valeur MT_PASS pour cette année
             if (!isset($passByYear[$year])) {
                 $passByYear[$year] = $record->MT_PASS;
             }

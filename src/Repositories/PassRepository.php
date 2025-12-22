@@ -7,14 +7,14 @@ namespace App\Repositories;
 use App\Models\PlafondSecuSociale;
 
 /**
- * Repository for loading and managing PASS (Plafond Annuel Sécurité Sociale) data
+ * Repository pour charger et gérer les données PASS (Plafond Annuel Sécurité Sociale)
  */
 class PassRepository
 {
     /**
-     * Load PASS values from database, indexed by year
+     * Charger les valeurs PASS depuis la base de données, indexées par année
      *
-     * Returns array like: [2024 => 46368, 2023 => 43992, ...]
+     * Retourne un tableau comme : [2024 => 46368, 2023 => 43992, ...]
      *
      * @return array<int, int>
      */
@@ -23,13 +23,13 @@ class PassRepository
         try {
             return PlafondSecuSociale::getPassValuesByYear();
         } catch (\Exception $e) {
-            // If database fails, return empty array or default values
+            // Si la base de données échoue, retourner un tableau vide ou des valeurs par défaut
             return $this->getDefaultPassValues();
         }
     }
 
     /**
-     * Get PASS value for a specific year
+     * Obtenir la valeur PASS pour une année spécifique
      *
      * @param int $year
      * @return int|null
@@ -39,16 +39,16 @@ class PassRepository
         try {
             return PlafondSecuSociale::getPassForYear($year);
         } catch (\Exception $e) {
-            // Fallback to default
+            // Repli sur les valeurs par défaut
             $defaults = $this->getDefaultPassValues();
             return $defaults[$year] ?? null;
         }
     }
 
     /**
-     * Get PASS value for a specific date
+     * Obtenir la valeur PASS pour une date spécifique
      *
-     * @param string $date Date in Y-m-d format
+     * @param string $date Date au format Y-m-d
      * @return int|null
      */
     public function getPassForDate(string $date): ?int
@@ -56,28 +56,28 @@ class PassRepository
         try {
             return PlafondSecuSociale::getPassForDate($date);
         } catch (\Exception $e) {
-            // Extract year and use fallback
+            // Extraire l'année et utiliser le repli
             $year = (int) date('Y', strtotime($date));
             return $this->getPassForYear($year);
         }
     }
 
     /**
-     * Get latest PASS value
+     * Obtenir la dernière valeur PASS
      *
      * @return int
      */
     public function getLatestPass(): int
     {
         try {
-            return PlafondSecuSociale::getLatestPass() ?? 46368; // Default 2024 value
+            return PlafondSecuSociale::getLatestPass() ?? 46368; // Valeur par défaut 2024
         } catch (\Exception $e) {
-            return 46368; // Default fallback
+            return 46368; // Repli par défaut
         }
     }
 
     /**
-     * Default PASS values (fallback if database unavailable)
+     * Valeurs PASS par défaut (repli si la base de données est indisponible)
      *
      * @return array<int, int>
      */

@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * ZDFCARNG Model
+ * Modèle ZDFCARNG
  *
- * Represents career/contribution records for export
+ * Représente les enregistrements de carrière/cotisation pour l'export
  *
  * @property int $id
  * @property string|null $TYPEDF
@@ -45,21 +45,21 @@ use Illuminate\Support\Carbon;
 class ZDFCARNG extends Model
 {
     /**
-     * The table associated with the model.
+     * La table associée au modèle
      *
      * @var string
      */
     protected $table = 'ZDFCAR_NG';
 
     /**
-     * The primary key associated with the table.
+     * La clé primaire associée à la table
      *
      * @var string
      */
     protected $primaryKey = 'id';
 
     /**
-     * The attributes that are mass assignable.
+     * Les attributs assignables en masse
      *
      * @var array<string>
      */
@@ -96,7 +96,7 @@ class ZDFCARNG extends Model
     public $timestamps = false;
 
     /**
-     * The attributes that should be cast.
+     * Les attributs qui doivent être castés
      *
      * @var array<string, string>
      */
@@ -108,7 +108,7 @@ class ZDFCARNG extends Model
     ];
 
     /**
-     * Default attribute values.
+     * Valeurs d'attributs par défaut
      *
      * @var array
      */
@@ -117,11 +117,11 @@ class ZDFCARNG extends Model
     ];
 
     /**
-     * Relationships
+     * Relations
      */
-    
+
     /**
-     * Get the arret associated with this record.
+     * Obtenir l'arrêt associé à cet enregistrement
      */
     public function arret()
     {
@@ -129,7 +129,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Get the sinistre associated with this record.
+     * Obtenir le sinistre associé à cet enregistrement
      */
     public function sinistre()
     {
@@ -137,7 +137,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Get the export associated with this record.
+     * Obtenir l'export associé à cet enregistrement
      */
     public function export()
     {
@@ -145,11 +145,11 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Helper Methods
+     * Méthodes Helper
      */
 
     /**
-     * Set adherent number.
+     * Définir le numéro d'adhérent
      */
     public function setAdherentNumber(string $adherent_number): void
     {
@@ -158,7 +158,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Set adherent information.
+     * Définir les informations de l'adhérent
      */
     public function setAdherentInfos($adherent): void
     {
@@ -168,7 +168,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Set default values for the entity.
+     * Définir les valeurs par défaut pour l'entité
      */
     public function setDefaultValues(): void
     {
@@ -187,15 +187,15 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Initialize line with common values.
+     * Initialiser la ligne avec les valeurs communes
      */
     public function initLine($sinistre): void
     {
         $this->setAdherentInfos($sinistre->adherent);
         $this->setDefaultValues();
         $this->num_sinistre = $sinistre->id;
-        
-        // Get first arret's pathology code
+
+        // Obtenir le code pathologie du premier arrêt
         $arrets = $sinistre->arrets;
         if ($arrets && $arrets->count() > 0) {
             $this->CODEMALADIE = $arrets->first()->code_pathologie;
@@ -203,7 +203,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Set values from ZDFCAIJNG line.
+     * Définir les valeurs depuis la ligne ZDFCAIJNG
      */
     public function setValuesFromZDFCAIJ($line): void
     {
@@ -228,7 +228,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Set line from recap data.
+     * Définir la ligne depuis les données recap
      */
     public function setLine($sinistre, $recap, $arret, string $class, string $noRegime): void
     {
@@ -249,7 +249,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Update line with recap data.
+     * Mettre à jour la ligne avec les données recap
      */
     public function updateLine($recap, $arret): void
     {
@@ -266,7 +266,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Import from ZDFCAIJNG Line D.
+     * Importer depuis la ligne D de ZDFCAIJNG
      */
     public function importFromLineD($lineD, string $regime, Carbon $dateffet, Carbon $datefin): void
     {
@@ -293,7 +293,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Update from ZDFCAIJNG Line D.
+     * Mettre à jour depuis la ligne D de ZDFCAIJNG
      */
     public function updateFromLineD(Carbon $dateffet, Carbon $datefin): void
     {
@@ -314,11 +314,11 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Business Logic Methods (from Table class)
+     * Méthodes de Logique Métier (depuis la classe Table)
      */
 
     /**
-     * Insert recap record.
+     * Insérer l'enregistrement recap
      */
     public static function insertRecap($sinistre, $recap, $arret, string $class, string $noRegime): void
     {
@@ -338,7 +338,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Refresh all ZDFCAR records.
+     * Rafraîchir tous les enregistrements ZDFCAR
      */
     public static function refreshAll(): void
     {
@@ -360,7 +360,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Rebuild CAR from Line I.
+     * Reconstruire le CAR depuis la ligne I
      */
     public static function rebuildCarFromLineI($lineI, ?int $export_id = null): void
     {
@@ -380,7 +380,7 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Insert from Line A.
+     * Insérer depuis la ligne A
      */
     private static function insertFromLineA($lineA): void
     {
@@ -410,13 +410,13 @@ class ZDFCARNG extends Model
                     } else {
                         $zdfcar->updateFromLineD($current->copy(), $dateFin->copy());
                     }
-                    
+
                     $zdfcar->save();
-                    $current->addMonth()->startOfMonth(); // Move to next month
+                    $current->addMonth()->startOfMonth(); // Passer au mois suivant
                 }
             }
 
-            // End of arret -> Modify codefin
+            // Fin de l'arrêt -> Modifier codefin
             if (isset($zdfcar)) {
                 $zdfcar->CODEFIN = 'FD';
                 $zdfcar->save();
@@ -425,11 +425,11 @@ class ZDFCARNG extends Model
     }
 
     /**
-     * Rebuild CAR from sinistre.
+     * Reconstruire le CAR depuis le sinistre
      */
     public static function rebuildCarFromSinistre(int $num_sinistre, $export): void
     {
-        // Deactivate previous versions of sinistre
+        // Désactiver les versions précédentes du sinistre
         $oldLines = self::where('num_sinistre', $num_sinistre)
             ->where(function($query) use ($export) {
                 $query->where('export_id', '!=', $export->id)

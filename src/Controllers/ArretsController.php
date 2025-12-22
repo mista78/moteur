@@ -15,8 +15,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
 /**
- * Mock Controller
- * Handles mock data endpoints for testing
+ * Contrôleur Arrêts
+ * Gère les endpoints liés aux arrêts de travail
  */
 class ArretsController
 {
@@ -25,10 +25,10 @@ class ArretsController
     {
 
         try {
-            // Get JSON payload
+            // Récupérer le payload JSON
             // $postArray = $request->getParsedBody();
 
-            // Test mode - load from file
+            // Mode test - charger depuis un fichier
             $params = $request->getQueryParams();
             if (isset($params['mode']) && $params['mode'] == 'test') {
                 $postArray = json_decode(

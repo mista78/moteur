@@ -10,19 +10,19 @@ use App\Tools\Tools;
 use RuntimeException;
 
 /**
- * Sinistre Service
+ * Service Sinistre
  *
- * Handles business logic related to sinistres (claims)
- * Delegates date-effet calculations to DateService (separation of concerns)
+ * Gère la logique métier liée aux sinistres
+ * Délègue les calculs de date-effet au DateService (séparation des préoccupations)
  */
 class SinistreService implements SinistreServiceInterface
 {
     private DateCalculationInterface $dateService;
 
     /**
-     * Constructor with dependency injection
+     * Constructeur avec injection de dépendances
      *
-     * @param DateCalculationInterface $dateService Date calculation service
+     * @param DateCalculationInterface $dateService Service de calcul de dates
      */
     public function __construct(DateCalculationInterface $dateService)
     {
@@ -30,32 +30,32 @@ class SinistreService implements SinistreServiceInterface
     }
 
     /**
-     * Get sinistre with calculated date effet for all arrets
+     * Obtenir le sinistre avec date effet calculée pour tous les arrêts
      *
-     * @param int $sinistreId The sinistre ID
+     * @param int $sinistreId L'ID du sinistre
      * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array}
-     * @throws \RuntimeException If sinistre not found
+     * @throws \RuntimeException Si le sinistre n'est pas trouvé
      */
     public function getSinistreWithDateEffet(int $sinistreId): array
     {
-        // Eager load relationships to avoid N+1 queries
-        // Include recapIndems (ordered by indemnisation_from_line desc)
+        // Chargement eager des relations pour éviter les requêtes N+1
+        // Inclure recapIndems (ordonnés par indemnisation_from_line desc)
         $sinistre = IjSinistre::with(['arrets', 'adherent', 'recapIndems'])->find($sinistreId);
 
         if (!$sinistre) {
-            throw new RuntimeException("Sinistre not found with ID: {$sinistreId}");
+            throw new RuntimeException("Sinistre non trouvé avec ID: {$sinistreId}");
         }
 
         return $this->calculateDateEffetForSinistre($sinistre);
     }
 
     /**
-     * Get sinistre with calculated date effet for specific adherent
+     * Obtenir le sinistre avec date effet calculée pour un adhérent spécifique
      *
-     * @param string $adherentNumber The adherent number
-     * @param int $numero_dossier The sinistre numero_dossier
+     * @param string $adherentNumber Le numéro d'adhérent
+     * @param int $numero_dossier Le numero_dossier du sinistre
      * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array}
-     * @throws \RuntimeException If sinistre not found or doesn't belong to adherent
+     * @throws \RuntimeException Si le sinistre n'est pas trouvé ou n'appartient pas à l'adhérent
      */
     public function getSinistreWithDateEffetForAdherent(string $adherentNumber, int $numero_dossier): array
     {
@@ -65,17 +65,17 @@ class SinistreService implements SinistreServiceInterface
             ->first();
 
         if (!$sinistre) {
-            throw new RuntimeException("Sinistre not found or doesn't belong to adherent {$adherentNumber}");
+            throw new RuntimeException("Sinistre non trouvé ou n'appartient pas à l'adhérent {$adherentNumber}");
         }
 
         return $this->calculateDateEffetForSinistre($sinistre);
     }
 
     /**
-     * Get all sinistres for an adherent with calculated date effet
+     * Obtenir tous les sinistres pour un adhérent avec date effet calculée
      *
-     * @param string $adherentNumber The adherent number
-     * @return array Array of sinistres with date effet calculated
+     * @param string $adherentNumber Le numéro d'adhérent
+     * @return array Tableau de sinistres avec date effet calculée
      */
     public function getAllSinistresWithDateEffet(string $adherentNumber): array
     {
@@ -93,27 +93,27 @@ class SinistreService implements SinistreServiceInterface
     }
 
     /**
-     * Calculate date effet for a sinistre's arrets
+     * Calculer la date effet pour les arrêts d'un sinistre
      *
-     * Private helper method that delegates to DateService
+     * Méthode helper privée qui délègue au DateService
      *
-     * @param IjSinistre $sinistre The sinistre model
+     * @param IjSinistre $sinistre Le modèle sinistre
      * @return array{sinistre: IjSinistre, arrets_with_date_effet: array, recap_indems: array, other_recap_indems: array}
      */
     private function calculateDateEffetForSinistre(IjSinistre $sinistre): array
     {
-        // Convert Eloquent collection to array format expected by DateService
+        // Convertir la collection Eloquent au format tableau attendu par DateService
         $arrets = $sinistre->toArray()["arrets"];
 
-        // Get birth date from adherent relationship
+        // Obtenir la date de naissance depuis la relation adherent
         $birthDate = $sinistre->adherent?->birth_date ?? null;
 
-        // Delegate calculation to DateService (business logic stays in service layer)
+        // Déléguer le calcul au DateService (la logique métier reste dans la couche service)
         $arretsWithDateEffet = empty($arrets)
             ? []
             : $this->dateService->calculateDateEffet($arrets, $birthDate);
 
-        // Get recap indems for OTHER sinistres (exclude current sinistre)
+        // Obtenir les recap indems pour les AUTRES sinistres (exclure le sinistre actuel)
         $adherentNumber = $sinistre->adherent_number;
         $otherRecapIndems = RecapIdem::byAdherent($adherentNumber)
             ->where('num_sinistre', '!=', $sinistre->id)
@@ -123,7 +123,7 @@ class SinistreService implements SinistreServiceInterface
         return [
             // 'sinistre' => $sinistre,
             'arrets_with_date_effet' => Tools::formatForOutput($arretsWithDateEffet),
-            'recap_indems' => $otherRecapIndems, // RecapIndems WITHOUT current sinistre
+            'recap_indems' => $otherRecapIndems, // RecapIndems SANS le sinistre actuel
         ];
     }
 }

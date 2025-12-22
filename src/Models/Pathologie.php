@@ -7,9 +7,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Pathologie Model
+ * Modèle Pathologie
  *
- * Represents a pathology/medical condition code
+ * Représente un code de pathologie/condition médicale
  */
 class Pathologie extends Model
 {

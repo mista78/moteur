@@ -7,58 +7,58 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Service for managing arret collections
- * Handles loading, formatting, and validating arret data from various sources
+ * Service pour gérer les collections d'arrêts
+ * Gère le chargement, le formatage et la validation des données d'arrêt depuis diverses sources
  */
 class ArretService {
 
 	/**
-	 * Load arrets from a JSON file
+	 * Charger les arrêts depuis un fichier JSON
 	 *
-	 * @param string $filePath Path to JSON file
-	 * @throws \RuntimeException If file not found or invalid JSON
-	 * @return array<int, array<string, mixed>> Array of arrets
+	 * @param string $filePath Chemin vers le fichier JSON
+	 * @throws \RuntimeException Si le fichier n'est pas trouvé ou JSON invalide
+	 * @return array<int, array<string, mixed>> Tableau d'arrêts
 	 */
 	public function loadFromJson(string $filePath): array {
 		if (!file_exists($filePath)) {
-			throw new RuntimeException("Arrets file not found: {$filePath}");
+			throw new RuntimeException("Fichier d'arrêts non trouvé: {$filePath}");
 		}
 
 		$content = file_get_contents($filePath);
 		if ($content === false) {
-			throw new RuntimeException('Failed to read arrets file');
+			throw new RuntimeException('Échec de lecture du fichier d\'arrêts');
 		}
 
 		$arrets = json_decode($content, true);
 
 		if (json_last_error() !== JSON_ERROR_NONE) {
-			throw new RuntimeException('Invalid JSON in arrets file: ' . json_last_error_msg());
+			throw new RuntimeException('JSON invalide dans le fichier d\'arrêts: ' . json_last_error_msg());
 		}
 
 		if (!is_array($arrets)) {
-			throw new RuntimeException('Arrets file must contain an array');
+			throw new RuntimeException('Le fichier d\'arrêts doit contenir un tableau');
 		}
 
 		return $this->normalizeArrets($arrets);
 	}
 
 	/**
-	 * Load arrets from CakePHP entities or database result
+	 * Charger les arrêts depuis les entités CakePHP ou résultat de base de données
 	 *
-	 * @param mixed $entities CakePHP entities collection or array of entities
-	 * @return array<int, array<string, mixed>> Array of arrets in standard format
+	 * @param mixed $entities Collection d'entités CakePHP ou tableau d'entités
+	 * @return array<int, array<string, mixed>> Tableau d'arrêts au format standard
 	 */
 	public function loadFromEntities($entities): array {
 		$arrets = [];
 
 		foreach ($entities as $entity) {
-			// Convert entity to array (works for CakePHP entities and stdClass)
+			// Convertir l'entité en tableau (fonctionne pour les entités CakePHP et stdClass)
 			if (is_object($entity)) {
 				if (method_exists($entity, 'toArray')) {
-					// CakePHP entity
+					// Entité CakePHP
 					$arret = $entity->toArray();
 				} else {
-					// stdClass or other object
+					// stdClass ou autre objet
 					$arret = (array)$entity;
 				}
 			} else {
@@ -72,10 +72,10 @@ class ArretService {
 	}
 
 	/**
-	 * Normalize arrets data to ensure consistent field names and formats
+	 * Normaliser les données d'arrêts pour garantir des noms de champs et formats cohérents
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @return array<int, array<string, mixed>> Normalized arrets
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @return array<int, array<string, mixed>> Arrêts normalisés
 	 */
 	public function normalizeArrets(array $arrets): array {
 		$normalized = [];
@@ -88,13 +88,13 @@ class ArretService {
 	}
 
 	/**
-	 * Normalize a single arret
+	 * Normaliser un seul arrêt
 	 *
-	 * @param array<string, mixed> $arret Arret data
-	 * @return array<string, mixed> Normalized arret
+	 * @param array<string, mixed> $arret Données d'arrêt
+	 * @return array<string, mixed> Arrêt normalisé
 	 */
 	public function normalizeArret(array $arret): array {
-		// Map common field variations to standard names
+		// Mapper les variations de champs communes vers les noms standard
 		$fieldMappings = [
 			'arret_from' => 'arret-from-line',
 			'arret_to' => 'arret-to-line',
@@ -108,14 +108,14 @@ class ArretService {
 
 		$normalized = $arret;
 
-		// Apply field mappings
+		// Appliquer les mappages de champs
 		foreach ($fieldMappings as $from => $to) {
 			if (isset($arret[$from]) && !isset($arret[$to])) {
 				$normalized[$to] = $arret[$from];
 			}
 		}
 
-		// Normalize dates (handle DateTime objects)
+		// Normaliser les dates (gérer les objets DateTime)
 		$dateFields = [
 			'arret-from-line',
 			'arret-to-line',
@@ -133,12 +133,12 @@ class ArretService {
 			}
 		}
 
-		// Ensure required fields exist
+		// S'assurer que les champs requis existent
 		if (!isset($normalized['arret-from-line']) || !isset($normalized['arret-to-line'])) {
-			throw new RuntimeException('Arret missing required fields: arret-from-line and arret-to-line');
+			throw new RuntimeException('Arrêt manquant les champs requis: arret-from-line et arret-to-line');
 		}
 
-		// Set defaults for optional fields
+		// Définir les valeurs par défaut pour les champs optionnels
 		$normalized['dt-line'] = $normalized['dt-line'] ?? 0;
 		$normalized['rechute-line'] = $normalized['rechute-line'] ?? 0;
 		$normalized['ouverture-date-line'] = $normalized['ouverture-date-line'] ?? '';
@@ -147,10 +147,10 @@ class ArretService {
 	}
 
 	/**
-	 * Normalize a date value
+	 * Normaliser une valeur de date
 	 *
-	 * @param mixed $date Date value (string, DateTime, etc.)
-	 * @return string|null Normalized date string (Y-m-d format) or null
+	 * @param mixed $date Valeur de date (chaîne, DateTime, etc.)
+	 * @return string|null Chaîne de date normalisée (format Y-m-d) ou null
 	 */
 	private function normalizeDate($date): ?string {
 		if ($date === null || $date === '' || $date === '0000-00-00') {
@@ -162,7 +162,7 @@ class ArretService {
 		}
 
 		if (is_string($date)) {
-			// Try to parse various date formats
+			// Essayer d'analyser divers formats de date
 			try {
 				$dt = new DateTime($date);
 
@@ -176,53 +176,53 @@ class ArretService {
 	}
 
 	/**
-	 * Validate arret data
+	 * Valider les données d'arrêt
 	 *
-	 * @param array<string, mixed> $arret Arret data
-	 * @throws \InvalidArgumentException If invalid
-	 * @return bool True if valid
+	 * @param array<string, mixed> $arret Données d'arrêt
+	 * @throws \InvalidArgumentException Si invalide
+	 * @return bool Vrai si valide
 	 */
 	public function validateArret(array $arret): bool {
 		$required = ['arret-from-line', 'arret-to-line'];
 
 		foreach ($required as $field) {
 			if (!isset($arret[$field]) || empty($arret[$field])) {
-				throw new InvalidArgumentException("Missing required field: {$field}");
+				throw new InvalidArgumentException("Champ requis manquant: {$field}");
 			}
 		}
 
-		// Validate date format
+		// Valider le format de date
 		try {
 			$fromDate = new DateTime($arret['arret-from-line']);
 			$toDate = new DateTime($arret['arret-to-line']);
 
 			if ($fromDate > $toDate) {
-				throw new InvalidArgumentException('arret-from-line must be before or equal to arret-to-line');
+				throw new InvalidArgumentException('arret-from-line doit être avant ou égal à arret-to-line');
 			}
 		} catch (\Exception $e) {
-			throw new InvalidArgumentException('Invalid date format: ' . $e->getMessage());
+			throw new InvalidArgumentException('Format de date invalide: ' . $e->getMessage());
 		}
 
 		return true;
 	}
 
 	/**
-	 * Validate an array of arrets
+	 * Valider un tableau d'arrêts
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @throws \InvalidArgumentException If any invalid
-	 * @return bool True if all valid
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @throws \InvalidArgumentException Si un est invalide
+	 * @return bool Vrai si tous sont valides
 	 */
 	public function validateArrets(array $arrets): bool {
 		if (empty($arrets)) {
-			throw new InvalidArgumentException('Arrets array cannot be empty');
+			throw new InvalidArgumentException('Le tableau d\'arrêts ne peut pas être vide');
 		}
 
 		foreach ($arrets as $index => $arret) {
 			try {
 				$this->validateArret($arret);
 			} catch (\InvalidArgumentException $e) {
-				throw new InvalidArgumentException("Invalid arret at index {$index}: " . $e->getMessage());
+				throw new InvalidArgumentException("Arrêt invalide à l'index {$index}: " . $e->getMessage());
 			}
 		}
 
@@ -230,11 +230,11 @@ class ArretService {
 	}
 
 	/**
-	 * Convert arrets to JSON string
+	 * Convertir les arrêts en chaîne JSON
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @param bool $prettyPrint Whether to format JSON with indentation
-	 * @return string JSON string
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @param bool $prettyPrint Si formater le JSON avec indentation
+	 * @return string Chaîne JSON
 	 */
 	public function toJson(array $arrets, bool $prettyPrint = false): string {
 		$options = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
@@ -244,20 +244,20 @@ class ArretService {
 
 		$json = json_encode($arrets, $options);
 		if ($json === false) {
-			throw new \RuntimeException('Failed to encode arrets to JSON: ' . json_last_error_msg());
+			throw new \RuntimeException('Échec d\'encodage des arrêts en JSON: ' . json_last_error_msg());
 		}
 
 		return $json;
 	}
 
 	/**
-	 * Save arrets to JSON file
+	 * Sauvegarder les arrêts dans un fichier JSON
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @param string $filePath Path to save file
-	 * @param bool $prettyPrint Whether to format JSON with indentation
-	 * @throws \RuntimeException If unable to write file
-	 * @return bool True on success
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @param string $filePath Chemin pour sauvegarder le fichier
+	 * @param bool $prettyPrint Si formater le JSON avec indentation
+	 * @throws \RuntimeException Si impossible d'écrire le fichier
+	 * @return bool Vrai en cas de succès
 	 */
 	public function saveToJson(array $arrets, string $filePath, bool $prettyPrint = true): bool {
 		$json = $this->toJson($arrets, $prettyPrint);
@@ -265,19 +265,19 @@ class ArretService {
 		$result = file_put_contents($filePath, $json);
 
 		if ($result === false) {
-			throw new RuntimeException("Unable to write arrets to file: {$filePath}");
+			throw new RuntimeException("Impossible d'écrire les arrêts dans le fichier: {$filePath}");
 		}
 
 		return true;
 	}
 
 	/**
-	 * Filter arrets by date range
+	 * Filtrer les arrêts par plage de dates
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @param string|null $startDate Start date (Y-m-d)
-	 * @param string|null $endDate End date (Y-m-d)
-	 * @return array<int, array<string, mixed>> Filtered arrets
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @param string|null $startDate Date de début (Y-m-d)
+	 * @param string|null $endDate Date de fin (Y-m-d)
+	 * @return array<int, array<string, mixed>> Arrêts filtrés
 	 */
 	public function filterByDateRange(array $arrets, ?string $startDate = null, ?string $endDate = null): array {
 		return array_filter($arrets, function ($arret) use ($startDate, $endDate) {
@@ -297,11 +297,11 @@ class ArretService {
 	}
 
 	/**
-	 * Sort arrets by start date
+	 * Trier les arrêts par date de début
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @param bool $ascending True for ascending (oldest first), false for descending
-	 * @return array<int, array<string, mixed>> Sorted arrets
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @param bool $ascending Vrai pour croissant (plus ancien en premier), faux pour décroissant
+	 * @return array<int, array<string, mixed>> Arrêts triés
 	 */
 	public function sortByDate(array $arrets, bool $ascending = true): array {
 		usort($arrets, function ($a, $b) use ($ascending) {
@@ -314,10 +314,10 @@ class ArretService {
 	}
 
 	/**
-	 * Get arrets grouped by num_sinistre
+	 * Obtenir les arrêts groupés par num_sinistre
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @return array<int|string, array<int, array<string, mixed>>> Arrets grouped by num_sinistre
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @return array<int|string, array<int, array<string, mixed>>> Arrêts groupés par num_sinistre
 	 */
 	public function groupBySinistre(array $arrets): array {
 		$grouped = [];
@@ -336,10 +336,10 @@ class ArretService {
 	}
 
 	/**
-	 * Count total days across all arrets
+	 * Compter le total de jours sur tous les arrêts
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets
-	 * @return int Total days
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts
+	 * @return int Total de jours
 	 */
 	public function countTotalDays(array $arrets): int {
 		$totalDays = 0;
@@ -358,11 +358,11 @@ class ArretService {
 	}
 
 	/**
-	 * Format arrets to standard output format (matching arrets.json structure)
-	 * Maps enhanced fields back to original field names
+	 * Formater les arrêts au format de sortie standard (correspondant à la structure arrets.json)
+	 * Mappe les champs enrichis vers les noms de champs originaux
 	 *
-	 * @param array<int, array<string, mixed>> $arrets Array of arrets with enhanced fields
-	 * @return array<int, array<string, mixed>> Formatted arrets
+	 * @param array<int, array<string, mixed>> $arrets Tableau d'arrêts avec champs enrichis
+	 * @return array<int, array<string, mixed>> Arrêts formatés
 	 */
 	public function formatForOutput(array $arrets): array {
 		$formatted = [];
@@ -370,23 +370,23 @@ class ArretService {
 		foreach ($arrets as $arret) {
 			$output = $arret;
 
-			// Map is_rechute to rechute-line (0 or 1)
+			// Mapper is_rechute vers rechute-line (0 ou 1)
 			if (isset($arret['is_rechute'])) {
 				$output['rechute-line'] = $arret['is_rechute'] ? 1 : 0;
-				// Keep is_rechute for backward compatibility
+				// Garder is_rechute pour compatibilité ascendante
 			} else {
-				// Ensure all arrets have rechute-line
+				// S'assurer que tous les arrêts ont rechute-line
 				$output['rechute-line'] = 0;
 				$output['is_rechute'] = false;
 			}
 
-			// Map decompte_days to decompte-line
+			// Mapper decompte_days vers decompte-line
 			if (isset($arret['decompte_days'])) {
 				$output['decompte-line'] = $arret['decompte_days'];
-				// Keep decompte_days for backward compatibility
+				// Garder decompte_days pour compatibilité ascendante
 			}
 
-			// Ensure ouverture-date-line is set from date-effet
+			// S'assurer que ouverture-date-line est défini depuis date-effet
 			if (isset($arret['date-effet'])) {
 				$output['ouverture-date-line'] = $arret['date-effet'];
 			}
@@ -398,10 +398,10 @@ class ArretService {
 	}
 
 	/**
-	 * Format a single arret to standard output format
+	 * Formater un seul arrêt au format de sortie standard
 	 *
-	 * @param array<string, mixed> $arret Arret with enhanced fields
-	 * @return array<string, mixed> Formatted arret
+	 * @param array<string, mixed> $arret Arrêt avec champs enrichis
+	 * @return array<string, mixed> Arrêt formaté
 	 */
 	public function formatArretForOutput(array $arret): array {
 		return $this->formatForOutput([$arret])[0];

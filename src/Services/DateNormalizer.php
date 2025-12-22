@@ -8,19 +8,19 @@ use InvalidArgumentException;
 use ReflectionClass;
 
 /**
- * Date Normalizer Utility
+ * Utilitaire de Normalisation de Dates
  *
- * Handles date normalization from multiple sources:
- * - Database ORM entities (DateTime objects)
- * - JSON API strings (various formats)
- * - Mock JSON files (ISO strings)
+ * Gère la normalisation des dates depuis plusieurs sources:
+ * - Entités ORM de base de données (objets DateTime)
+ * - Chaînes API JSON (divers formats)
+ * - Fichiers JSON mock (chaînes ISO)
  *
- * Ensures all dates are consistently formatted as 'Y-m-d' strings for IJCalculator
+ * Garantit que toutes les dates sont formatées de manière cohérente en chaînes 'Y-m-d' pour IJCalculator
  */
 class DateNormalizer {
 
 	/**
-	 * List of date fields that should be normalized
+	 * Liste des champs de date qui doivent être normalisés
 	 * @var array<int, string>
 	 */
 	private const DATE_FIELDS = [
@@ -51,32 +51,32 @@ class DateNormalizer {
 	];
 
 	/**
-	 * Normalize all dates in input data
-	 * Recursively processes arrays and converts DateTime objects to strings
+	 * Normaliser toutes les dates dans les données d'entrée
+	 * Traite récursivement les tableaux et convertit les objets DateTime en chaînes
 	 *
-	 * @param mixed $data Input data (array, DateTime, string, or other)
-	 * @return mixed Normalized data with all dates as 'Y-m-d' strings
+	 * @param mixed $data Données d'entrée (tableau, DateTime, chaîne, ou autre)
+	 * @return mixed Données normalisées avec toutes les dates en chaînes 'Y-m-d'
 	 */
 	public static function normalize($data) {
-		// Handle null
+		// Gérer null
 		if ($data === null) {
 			return null;
 		}
 
-		// Handle DateTime objects
+		// Gérer les objets DateTime
 		if ($data instanceof DateTimeInterface) {
 			return $data->format('Y-m-d');
 		}
 
-		// Handle arrays (recursively)
+		// Gérer les tableaux (récursivement)
 		if (is_array($data)) {
 			$normalized = [];
 			foreach ($data as $key => $value) {
-				// Check if this is a known date field
+				// Vérifier si c'est un champ de date connu
 				if (in_array($key, static::DATE_FIELDS)) {
 					$normalized[$key] = static::normalizeDate($value);
 				} else {
-					// Recursively normalize nested arrays
+					// Normaliser récursivement les tableaux imbriqués
 					$normalized[$key] = static::normalize($value);
 				}
 			}
@@ -84,52 +84,52 @@ class DateNormalizer {
 			return $normalized;
 		}
 
-		// Handle objects (ORM entities)
+		// Gérer les objets (entités ORM)
 		if (is_object($data)) {
-			// Convert object to array and normalize
+			// Convertir l'objet en tableau et normaliser
 			$array = static::objectToArray($data);
 
 			return static::normalize($array);
 		}
 
-		// Return primitive values as-is
+		// Retourner les valeurs primitives telles quelles
 		return $data;
 	}
 
 	/**
-	 * Normalize a single date value
-	 * Handles various input formats and converts to 'Y-m-d' string
+	 * Normaliser une valeur de date unique
+	 * Gère divers formats d'entrée et convertit en chaîne 'Y-m-d'
 	 *
-	 * @param mixed $value Date value (DateTime, string, or null)
-	 * @return string|null Normalized date string or null
+	 * @param mixed $value Valeur de date (DateTime, chaîne, ou null)
+	 * @return string|null Chaîne de date normalisée ou null
 	 */
 	private static function normalizeDate($value): ?string {
-		// Handle null or empty string
+		// Gérer null ou chaîne vide
 		if ($value === null || $value === '' || $value === '0000-00-00') {
 			return null;
 		}
 
-		// Handle DateTime objects
+		// Gérer les objets DateTime
 		if ($value instanceof DateTimeInterface) {
 			return $value->format('Y-m-d');
 		}
 
-		// Handle string dates
+		// Gérer les dates en chaîne
 		if (is_string($value)) {
 
-			// Already in correct format (Y-m-d)
+			// Déjà au bon format (Y-m-d)
 			if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
-				// Validate the date is actually valid
+				// Valider que la date est réellement valide
 				$parts = explode('-', $value);
 				if (checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
 					return $value;
 				}
 			}
 
-			// Try common date formats
+			// Essayer les formats de date courants
 			$formats = [
 				'Y-m-d', // 2024-01-15 (ISO)
-				'd/m/Y', // 15/01/2024 (European)
+				'd/m/Y', // 15/01/2024 (Européen)
 				'm/d/Y', // 01/15/2024 (US)
 				'Y/m/d', // 2024/01/15
 				'd-m-Y', // 15-01-2024
@@ -141,22 +141,22 @@ class DateNormalizer {
 			foreach ($formats as $format) {
 				$date = DateTime::createFromFormat($format, $value);
 				if ($date !== false) {
-					// Additional validation to ensure the parsed date matches the input
-					// (prevents dates like 2024-13-45 from being accepted)
+					// Validation additionnelle pour s'assurer que la date analysée correspond à l'entrée
+					// (empêche les dates comme 2024-13-45 d'être acceptées)
 					if ($date->format($format) === $value) {
 						return $date->format('Y-m-d');
 					}
 				}
 			}
 
-			// Last resort: try to parse with DateTime constructor
+			// Dernier recours: essayer d'analyser avec le constructeur DateTime
 			try {
 				$date = new DateTime($value);
 
 				return $date->format('Y-m-d');
 			} catch (\Exception $e) {
-				// Invalid date, return null
-				error_log("DateNormalizer: Failed to parse date '{$value}': " . $e->getMessage());
+				// Date invalide, retourner null
+				error_log("DateNormalizer: Échec de l'analyse de la date '{$value}': " . $e->getMessage());
 
 				return null;
 			}
@@ -168,16 +168,16 @@ class DateNormalizer {
 	}
 
 	/**
-	 * Convert an object to an associative array
-	 * Handles ORM entities with getters
+	 * Convertir un objet en tableau associatif
+	 * Gère les entités ORM avec getters
 	 *
-	 * @param object $object Object to convert
-	 * @return array<string, mixed> Associative array representation
+	 * @param object $object Objet à convertir
+	 * @return array<string, mixed> Représentation en tableau associatif
 	 */
 	private static function objectToArray($object): array {
 		$array = [];
 
-		// Try get_object_vars first (for public properties)
+		// Essayer get_object_vars d'abord (pour les propriétés publiques)
 		$vars = get_object_vars($object);
 		if (!empty($vars)) {
 			foreach ($vars as $key => $value) {
@@ -185,7 +185,7 @@ class DateNormalizer {
 			}
 		}
 
-		// Try common ORM methods (toArray, getArrayCopy, etc.)
+		// Essayer les méthodes ORM courantes (toArray, getArrayCopy, etc.)
 		if (method_exists($object, 'toArray')) {
 			return $object->toArray();
 		}
@@ -194,7 +194,7 @@ class DateNormalizer {
 			return $object->getArrayCopy();
 		}
 
-		// Try to use reflection to access private/protected properties
+		// Essayer d'utiliser la réflexion pour accéder aux propriétés privées/protégées
 		try {
 			$reflection = new ReflectionClass($object);
 			$properties = $reflection->getProperties();
@@ -206,19 +206,19 @@ class DateNormalizer {
 				$array[$key] = $value;
 			}
 		} catch (\Exception $e) {
-			error_log('DateNormalizer: Failed to convert object to array: ' . $e->getMessage());
+			error_log('DateNormalizer: Échec de conversion de l\'objet en tableau: ' . $e->getMessage());
 		}
 
 		return $array;
 	}
 
 	/**
-	 * Validate and normalize a date string to Y-m-d format
+	 * Valider et normaliser une chaîne de date au format Y-m-d
 	 *
-	 * @param string|null $date Date string to validate
-	 * @param bool $allowNull Whether null values are allowed
-	 * @throws \InvalidArgumentException If date is invalid and null not allowed
-	 * @return string|null Normalized date or null
+	 * @param string|null $date Chaîne de date à valider
+	 * @param bool $allowNull Si les valeurs null sont autorisées
+	 * @throws \InvalidArgumentException Si la date est invalide et null non autorisé
+	 * @return string|null Date normalisée ou null
 	 */
 	public static function validateDate(?string $date, bool $allowNull = true): ?string {
 		if ($date === null || $date === '' || $date === '0000-00-00') {
@@ -226,37 +226,37 @@ class DateNormalizer {
 				return null;
 			}
 
-			throw new InvalidArgumentException('Date cannot be null');
+			throw new InvalidArgumentException('La date ne peut pas être null');
 		}
 
 		$normalized = static::normalizeDate($date);
 		if ($normalized === null && !$allowNull) {
-			throw new InvalidArgumentException("Invalid date format: {$date}");
+			throw new InvalidArgumentException("Format de date invalide: {$date}");
 		}
 
 		return $normalized;
 	}
 
 	/**
-	 * Normalize dates in arrets array specifically
-	 * Handles both single arret and array of arrets
+	 * Normaliser les dates dans le tableau arrets spécifiquement
+	 * Gère à la fois un seul arrêt et un tableau d'arrêts
 	 *
-	 * @param array<int|string, mixed>|null $arrets Arrets data
-	 * @return array<int|string, mixed>|null Normalized arrets
+	 * @param array<int|string, mixed>|null $arrets Données des arrêts
+	 * @return array<int|string, mixed>|null Arrêts normalisés
 	 */
 	public static function normalizeArrets(?array $arrets): ?array {
 		if ($arrets === null) {
 			return null;
 		}
 
-		// Check if this is a single arret or array of arrets
-		// Single arret will have 'arret-from-line' key
+		// Vérifier si c'est un seul arrêt ou un tableau d'arrêts
+		// Un seul arrêt aura la clé 'arret-from-line'
 		if (isset($arrets['arret-from-line'])) {
-			// Single arret
+			// Seul arrêt
 			return static::normalize($arrets);
 		}
 
-		// Array of arrets
+		// Tableau d'arrêts
 		$normalized = [];
 		foreach ($arrets as $index => $arret) {
 			$normalized[$index] = static::normalize($arret);

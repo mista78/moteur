@@ -10,18 +10,18 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Swagger/OpenAPI Documentation Controller
- * Dynamically generates API documentation from controller annotations
+ * Contrôleur de Documentation Swagger/OpenAPI
+ * Génère dynamiquement la documentation API depuis les annotations des contrôleurs
  */
 class SwaggerController
 {
     /**
      * GET /api/docs
-     * Returns OpenAPI JSON specification
+     * Retourne la spécification OpenAPI en JSON
      */
     public function json(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // Scan controllers directory for OpenAPI annotations
+        // Scanner le répertoire des contrôleurs pour les annotations OpenAPI
         $openapi = Generator::scan([__DIR__]);
 
         $response->getBody()->write($openapi->toJson());
@@ -32,11 +32,11 @@ class SwaggerController
 
     /**
      * GET /api/docs/yaml
-     * Returns OpenAPI YAML specification
+     * Retourne la spécification OpenAPI en YAML
      */
     public function yaml(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // Scan controllers directory for OpenAPI annotations
+        // Scanner le répertoire des contrôleurs pour les annotations OpenAPI
         $openapi = Generator::scan([__DIR__]);
 
         $response->getBody()->write($openapi->toYaml());
@@ -47,7 +47,7 @@ class SwaggerController
 
     /**
      * GET /api-docs
-     * Swagger UI interface
+     * Interface Swagger UI
      */
     public function ui(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {

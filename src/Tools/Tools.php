@@ -5,7 +5,7 @@ namespace App\Tools;
 class Tools
 {
     /**
-     * Field correspondence mapping between JSON fields and database fields
+     * Mapping de correspondance des champs entre les champs JSON et les champs de base de données
      */
     public static array $correspondance = [
         'debutArret' => 'arret-from-line',
@@ -27,11 +27,11 @@ class Tools
     ];
 
     /**
-     * Rename array keys based on correspondence mapping
+     * Renommer les clés du tableau basé sur le mapping de correspondance
      *
-     * @param array $array The array to transform
-     * @param array $mapping The key mapping
-     * @return array The transformed array
+     * @param array $array Le tableau à transformer
+     * @param array $mapping Le mapping de clés
+     * @return array Le tableau transformé
      */
     public static function renommerCles(array $array, array $mapping): array
     {
@@ -39,7 +39,7 @@ class Tools
 
         foreach ($array as $key => $value) {
             $newKey = $mapping[$key] ?? $key;
-            // If value is an array, recursively rename keys
+            // Si la valeur est un tableau, renommer récursivement les clés
             if (is_array($value)) {
                 $result[$newKey] = self::renommerCles($value, $mapping);
             } else {
@@ -51,11 +51,11 @@ class Tools
     }
 
     /**
-     * Log messages
+     * Enregistrer des messages
      *
-     * @param array $context Context information
-     * @param string $message Message to log
-     * @param string $level Log level (info, error, warning, debug)
+     * @param array $context Information de contexte
+     * @param string $message Message à enregistrer
+     * @param string $level Niveau de log (info, error, warning, debug)
      */
     public static function messageLog(array $context, string $message = '', string $level = 'info'): void
     {
@@ -85,23 +85,23 @@ class Tools
         foreach ($arrets as $arret) {
             $output = $arret;
 
-            // Map is_rechute to rechute-line (0 or 1)
+            // Mapper is_rechute vers rechute-line (0 ou 1)
             if (isset($arret['is_rechute'])) {
                 $output['rechute-line'] = $arret['is_rechute'] ? 1 : 0;
-                // Keep is_rechute for backward compatibility
+                // Garder is_rechute pour compatibilité ascendante
             } else {
-                // Ensure all arrets have rechute-line
+                // S'assurer que tous les arrêts ont rechute-line
                 $output['rechute-line'] = 0;
                 $output['is_rechute'] = false;
             }
 
-            // Map decompte_days to decompte-line
+            // Mapper decompte_days vers decompte-line
             if (isset($arret['decompte_days'])) {
                 $output['decompte-line'] = $arret['decompte_days'];
-                // Keep decompte_days for backward compatibility
+                // Garder decompte_days pour compatibilité ascendante
             }
 
-            // Ensure ouverture-date-line is set from date-effet
+            // S'assurer que ouverture-date-line est défini depuis date-effet
             if (isset($arret['date-effet'])) {
                 $output['ouverture-date-line'] = $arret['date-effet'];
             }

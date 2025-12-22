@@ -6,8 +6,8 @@ use App\Models\IjArret;
 
 /**
  * DetailsArretsService
- * 
- * Service for determining arret classification based on income and PSS
+ *
+ * Service pour déterminer la classification des arrêts basée sur le revenu et le PSS
  */
 class DetailsArretsService
 {
@@ -43,7 +43,7 @@ class DetailsArretsService
         $tauxClass = new TauxDeterminationService(47000);
         $tauxClass->setPassValuesByYear($pssParAnnee);
 
-        // Convert revenue from cents to euros (divide by 100)
+        // Convertir le revenu de centimes en euros (diviser par 100)
         $revenue = isset($revenuAdhParAnnee[$year]) 
             ? $revenuAdhParAnnee[$year] / 100 
             : 0;

@@ -5,36 +5,36 @@ namespace App\Services;
 use DateTime;
 
 /**
- * Service to generate ij_detail_jour records from calculation results
- * Maps daily_breakdown to ij_detail_jour table format with j1-j31 columns
+ * Service pour générer les enregistrements ij_detail_jour depuis les résultats de calcul
+ * Mappe daily_breakdown au format de table ij_detail_jour avec les colonnes j1-j31
  */
 class DetailJourService {
 
 	/**
-	 * Generate ij_detail_jour records from calculation results
+	 * Générer les enregistrements ij_detail_jour depuis les résultats de calcul
 	 *
-	 * @param array<string, mixed> $calculationResult Result from IJCalculator::calculateAmount()
-	 * @param array<string, mixed> $inputData Original input data (for adherent_number, num_sinistre, etc.)
-	 * @return array<int, array<string, mixed>> Array of records ready for ij_detail_jour insertion
+	 * @param array<string, mixed> $calculationResult Résultat de IJCalculator::calculateAmount()
+	 * @param array<string, mixed> $inputData Données d'entrée originales (pour adherent_number, num_sinistre, etc.)
+	 * @return array<int, array<string, mixed>> Tableau d'enregistrements prêts pour insertion ij_detail_jour
 	 */
 	public function generateDetailJourRecords(array $calculationResult, array $inputData): array {
 		$records = [];
 
-		// Extract common data
+		// Extraire les données communes
 		$adherentNumber = $inputData['adherent_number'] ?? null;
 		$numSinistre = $inputData['num_sinistre'] ?? null;
 
-		// Process each payment detail (each arret)
+		// Traiter chaque détail de paiement (chaque arrêt)
 		if (isset($calculationResult['payment_details']) && is_array($calculationResult['payment_details'])) {
 			foreach ($calculationResult['payment_details'] as $detail) {
 
-				// Process daily breakdown if available
+				// Traiter le détail journalier si disponible
 				if (isset($detail['daily_breakdown']) && is_array($detail['daily_breakdown'])) {
 
-					// Group daily amounts by year and month
+					// Grouper les montants journaliers par année et mois
 					$monthlyData = $this->groupByYearMonth($detail['daily_breakdown']);
 
-					// Create a record for each month
+					// Créer un enregistrement pour chaque mois
 					foreach ($monthlyData as $yearMonth => $days) {
 						[$year, $month] = explode('-', $yearMonth);
 
@@ -45,7 +45,7 @@ class DetailJourService {
 							'num_sinistre' => $numSinistre,
 						];
 
-						// Add daily amounts (j1 to j31)
+						// Ajouter les montants journaliers (j1 à j31)
 						for ($day = 1; $day <= 31; $day++) {
 							$record["j$day"] = isset($days[$day])
 								? $this->convertToIntCents($days[$day])
@@ -62,10 +62,10 @@ class DetailJourService {
 	}
 
 	/**
-	 * Group daily breakdown by year and month
+	 * Grouper le détail journalier par année et mois
 	 *
-	 * @param array<int, array<string, mixed>> $dailyBreakdown Array of daily entries with date and amount
-	 * @return array<string, array<int, float>> Grouped by 'YYYY-MM' with day number as key
+	 * @param array<int, array<string, mixed>> $dailyBreakdown Tableau d'entrées journalières avec date et montant
+	 * @return array<string, array<int, float>> Groupé par 'YYYY-MM' avec numéro de jour comme clé
 	 */
 	private function groupByYearMonth(array $dailyBreakdown): array {
 		$grouped = [];
@@ -75,7 +75,7 @@ class DetailJourService {
 				continue;
 			}
 
-			// Parse date
+			// Analyser la date
 			$date = $entry['date'];
 			$dateObj = DateTime::createFromFormat('Y-m-d', $date);
 
@@ -93,7 +93,7 @@ class DetailJourService {
 				$grouped[$yearMonth] = [];
 			}
 
-			// Store amount for this day
+			// Stocker le montant pour ce jour
 			$grouped[$yearMonth][$day] = $entry['amount'];
 		}
 
@@ -101,11 +101,11 @@ class DetailJourService {
 	}
 
 	/**
-	 * Convert decimal amount to integer cents
-	 * E.g., 75.06 -> 7506
+	 * Convertir un montant décimal en centimes entiers
+	 * Ex: 75.06 -> 7506
 	 *
-	 * @param float $amount Amount in euros
-	 * @return int Amount in cents
+	 * @param float $amount Montant en euros
+	 * @return int Montant en centimes
 	 */
 	private function convertToIntCents(float $amount): int {
 		return (int)round($amount * 100);

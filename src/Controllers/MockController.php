@@ -12,8 +12,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Mock Controller
- * Handles mock data endpoints for testing
+ * Contrôleur Mock
+ * Gère les endpoints de données de test
  */
 class MockController
 {
@@ -32,7 +32,7 @@ class MockController
 
     /**
      * GET /api/mocks
-     * List all available mock files
+     * Lister tous les fichiers mock disponibles
      */
     #[OA\Get(
         path: "/api/mocks",
@@ -62,12 +62,12 @@ class MockController
         try {
             $mockFiles = glob($this->mocksPath . '/mock*.json');
 
-            // Check if glob succeeded
+            // Vérifier si glob a réussi
             if ($mockFiles === false) {
                 return ResponseFormatter::error($response, 'Failed to read mock files');
             }
 
-            // Extract just the filenames
+            // Extraire seulement les noms de fichiers
             $mockFiles = array_map('basename', $mockFiles);
             sort($mockFiles);
 
@@ -81,7 +81,7 @@ class MockController
 
     /**
      * GET /api/mocks/{file}
-     * Load a specific mock file
+     * Charger un fichier mock spécifique
      * @param array<string, mixed> $args
      */
     #[OA\Get(
@@ -125,12 +125,12 @@ class MockController
         try {
             $mockFile = $args['file'] ?? 'mock';
 
-            // Add .json extension if not present
+            // Ajouter l'extension .json si absente
             if (!str_ends_with($mockFile, '.json')) {
                 $mockFile .= '.json';
             }
 
-            // Validate filename to prevent directory traversal
+            // Valider le nom de fichier pour éviter la traversée de répertoires
             $mockFile = basename($mockFile);
             if (!preg_match('/^mock[0-9]*\.json$/', $mockFile)) {
                 return ResponseFormatter::error($response, 'Invalid mock file name', 400);
@@ -153,7 +153,7 @@ class MockController
                 return ResponseFormatter::error($response, 'Invalid JSON in mock file');
             }
 
-            // Load test configuration if available
+            // Charger la configuration de test si disponible
             $testConfig = $this->loadTestConfig($mockFile);
 
             return ResponseFormatter::success($response, [
@@ -168,8 +168,8 @@ class MockController
     }
 
     /**
-     * Load test configuration for a mock file
-     * This extracts expected values from test_mocks.php if available
+     * Charger la configuration de test pour un fichier mock
+     * Cela extrait les valeurs attendues depuis test_mocks.php si disponible
      *
      * @param string $mockFile
      * @return array<string, mixed>|null
@@ -179,7 +179,7 @@ class MockController
         $testMocksFile = dirname($this->mocksPath) . '/tests/Integration/test_mocks.php';
 
         if (!file_exists($testMocksFile)) {
-            // Try old location
+            // Essayer l'ancien emplacement
             $testMocksFile = dirname($this->mocksPath) . '/Tests/test_mocks.php';
         }
 
@@ -193,7 +193,7 @@ class MockController
             return null;
         }
 
-        // Find the configuration for this mock file
+        // Trouver la configuration pour ce fichier mock
         $mockKey = preg_quote($mockFile, '/');
         $startPos = strpos($testMocksContent, "'$mockFile'");
 
@@ -201,7 +201,7 @@ class MockController
             return null;
         }
 
-        // Find the matching closing bracket
+        // Trouver le crochet de fermeture correspondant
         $bracketCount = 0;
         $inArray = false;
         $configStart = strpos($testMocksContent, '[', $startPos);
@@ -228,10 +228,10 @@ class MockController
 
         $configStr = substr($testMocksContent, $configStart + 1, $configEnd - $configStart - 1);
 
-        // Extract configuration values
+        // Extraire les valeurs de configuration
         $config = [];
 
-        // Extract simple values using regex
+        // Extraire les valeurs simples en utilisant regex
         $patterns = [
             'statut' => "/'statut'\s*=>\s*'([^']*)'/",
             'classe' => "/'classe'\s*=>\s*'([^']*)'/",
@@ -252,7 +252,7 @@ class MockController
             }
         }
 
-        // Handle date fields that might be null
+        // Gérer les champs de date qui peuvent être null
         $dateFields = ['birth_date', 'attestation_date', 'affiliation_date'];
         foreach ($dateFields as $field) {
             if (preg_match("/'$field'\s*=>\s*null/", $configStr)) {

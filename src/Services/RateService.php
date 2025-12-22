@@ -17,16 +17,16 @@ class RateService implements RateServiceInterface {
 	private ?float $passValue = null;
 
 	/**
-	 * Constructor - supports both legacy CSV path (string) and new array format
+	 * Constructeur - supporte à la fois le chemin CSV hérité (string) et le nouveau format tableau
 	 *
-	 * @param array<int, array<string, mixed>>|string $csvPathOrRates CSV file path (string) or rates array
+	 * @param array<int, array<string, mixed>>|string $csvPathOrRates Chemin du fichier CSV (string) ou tableau de taux
 	 */
 	public function __construct(array|string $csvPathOrRates = []) {
 		if (is_string($csvPathOrRates)) {
-			// Legacy support: load from CSV file path
+			// Support hérité: charger depuis le chemin du fichier CSV
 			$this->loadRatesFromCsv($csvPathOrRates);
 		} elseif (is_array($csvPathOrRates)) {
-			// New format: directly use rates array
+			// Nouveau format: utiliser directement le tableau de taux
 			$this->loadRates($csvPathOrRates);
 		}
 	}
@@ -39,7 +39,7 @@ class RateService implements RateServiceInterface {
 	}
 
 	/**
-	 * Load rates from array (new format)
+	 * Charger les taux depuis un tableau (nouveau format)
 	 * @param array<int, array<string, mixed>> $rates
 	 * @return void
 	 */
@@ -48,7 +48,7 @@ class RateService implements RateServiceInterface {
 	}
 
 	/**
-	 * Load rates from CSV file path (legacy format)
+	 * Charger les taux depuis le chemin du fichier CSV (format hérité)
 	 * @return void
 	 */
 	private function loadRatesFromCsv(string $csvPath): void {
@@ -74,7 +74,7 @@ class RateService implements RateServiceInterface {
 			foreach ($headers as $index => $header) {
 				$value = $row[$index] ?? '';
 
-				// Convert date strings to DateTime objects
+				// Convertir les chaînes de dates en objets DateTime
 				if ($header === 'date_start' || $header === 'date_end') {
 					$rate[$header] = new DateTime($value);
 				} else {
@@ -93,7 +93,7 @@ class RateService implements RateServiceInterface {
 	 */
 	public function getRateForYear(int $year): ?array {
 		foreach ($this->rates as $rate) {
-			// Handle both DateTime objects and string dates
+			// Gérer à la fois les objets DateTime et les dates en chaîne
 			if ($rate['date_start'] instanceof \DateTime) {
 				$startYear = (int)$rate['date_start']->format('Y');
 				$endYear = (int)$rate['date_end']->format('Y');
@@ -116,10 +116,10 @@ class RateService implements RateServiceInterface {
 	public function getRateForDate(string $date): ?array {
 		$dateTimestamp = strtotime($date);
 		foreach (DateNormalizer::normalize($this->rates) as $rate) {
-			// Handle both DateTime objects and string dates
+			// Gérer à la fois les objets DateTime et les dates en chaîne
 			$dateStart = $rate['date_start'];
 			$dateEnd = $rate['date_end'];
-			// Convert DateTime to string if needed
+			// Convertir DateTime en chaîne si nécessaire
 			if ($dateStart instanceof \DateTimeInterface) {
 				$dateStart = $dateStart->format('Y-m-d');
 			}

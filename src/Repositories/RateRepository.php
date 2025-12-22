@@ -8,15 +8,15 @@ use App\Models\IjTaux;
 use RuntimeException;
 
 /**
- * Repository for loading and managing rate data
- * Now uses database (ij_taux table) instead of CSV
+ * Repository pour charger et gérer les données de taux
+ * Utilise maintenant la base de données (table ij_taux) au lieu du CSV
  */
 class RateRepository
 {
     private string $csvPath;
 
     /**
-     * @param string $csvPath Legacy CSV path (kept for backward compatibility)
+     * @param string $csvPath Chemin CSV hérité (conservé pour rétrocompatibilité)
      */
     public function __construct(string $csvPath)
     {
@@ -24,10 +24,10 @@ class RateRepository
     }
 
     /**
-     * Load rates from database (primary method)
-     * Returns rates in the same format as CSV for compatibility
+     * Charger les taux depuis la base de données (méthode principale)
+     * Retourne les taux dans le même format que le CSV pour compatibilité
      *
-     * @return array<int, array<string, mixed>> Array of rate records
+     * @return array<int, array<string, mixed>> Tableau d'enregistrements de taux
      */
     public function loadRates(): array
     {
@@ -53,16 +53,16 @@ class RateRepository
 
             return $ratesArray;
         } catch (\Exception $e) {
-            // Fallback to CSV if database fails
+            // Repli sur le CSV si la base de données échoue
             return $this->loadRatesFromCsv();
         }
     }
 
     /**
-     * Load rates from CSV file (fallback/legacy method)
+     * Charger les taux depuis le fichier CSV (méthode de repli/héritée)
      *
-     * @return array<int, array<string, string>> Array of rate records
-     * @throws RuntimeException If CSV file cannot be read
+     * @return array<int, array<string, string>> Tableau d'enregistrements de taux
+     * @throws RuntimeException Si le fichier CSV ne peut être lu
      */
     private function loadRatesFromCsv(): array
     {

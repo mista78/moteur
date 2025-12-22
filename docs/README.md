@@ -22,6 +22,12 @@
 - **[ArretService](./ArretService.md)** - Gestion des collections d'arrêts de travail
 - **[DateNormalizer](./DateNormalizer.md)** - Normalisation des formats de dates
 
+### Services Métier
+
+- **[SinistreService](./SinistreService.md)** - Gestion des sinistres avec calcul date-effet
+- **[DetailsArretsService](./DetailsArretsService.md)** - Détermination automatique classe d'arrêt
+- **[DetailsAdherentsService](./DetailsAdherentsService.md)** - Récupération revenus adhérents par année
+
 ## 🎯 Vue d'Ensemble du Système
 
 ### Architecture SOLID
@@ -37,7 +43,10 @@ IJCalculator (Orchestrateur)
          ├── RecapService (Base de données - recap)
          ├── DetailJourService (Base de données - détail)
          ├── ArretService (Gestion arrêts)
-         └── DateNormalizer (Normalisation)
+         ├── DateNormalizer (Normalisation)
+         ├── SinistreService (Gestion sinistres)
+         ├── DetailsArretsService (Détermination classe)
+         └── DetailsAdherentsService (Revenus adhérents)
 ```
 
 ### Flux de Calcul
@@ -397,7 +406,10 @@ php debug_mock20.php  # Période 2
 │   ├── RecapService.md
 │   ├── DetailJourService.md
 │   ├── ArretService.md
-│   └── DateNormalizer.md
+│   ├── DateNormalizer.md
+│   ├── SinistreService.md
+│   ├── DetailsArretsService.md
+│   └── DetailsAdherentsService.md
 ├── IJCalculator.php          # Classe principale
 ├── Services/                 # Services SOLID
 │   ├── RateService.php
@@ -407,7 +419,10 @@ php debug_mock20.php  # Période 2
 │   ├── RecapService.php
 │   ├── DetailJourService.php
 │   ├── ArretService.php
-│   └── DateNormalizer.php
+│   ├── DateNormalizer.php
+│   ├── SinistreService.php
+│   ├── DetailsArretsService.php
+│   └── DetailsAdherentsService.php
 ├── Tests/                    # Tests unitaires
 ├── api.php                   # API REST
 └── taux.csv                  # Données taux

@@ -10,28 +10,28 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * CORS Middleware
- * Handles Cross-Origin Resource Sharing headers
+ * Middleware CORS
+ * Gère les en-têtes Cross-Origin Resource Sharing
  */
 class CorsMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        // Handle preflight OPTIONS request
+        // Gérer la requête preflight OPTIONS
         if ($request->getMethod() === 'OPTIONS') {
             $response = new \Slim\Psr7\Response();
             return $this->addCorsHeaders($response);
         }
 
-        // Process the request
+        // Traiter la requête
         $response = $handler->handle($request);
 
-        // Add CORS headers to the response
+        // Ajouter les en-têtes CORS à la réponse
         return $this->addCorsHeaders($response);
     }
 
     /**
-     * Add CORS headers to response
+     * Ajouter les en-têtes CORS à la réponse
      *
      * Configuration complète pour accepter toutes les requêtes cross-origin
      *

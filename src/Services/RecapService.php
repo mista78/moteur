@@ -5,8 +5,8 @@ namespace App\Services;
 use DateTime;
 
 /**
- * Service to generate ij_recap records from calculation results
- * Maps calculator output to ij_recap table format
+ * Service pour générer les enregistrements ij_recap depuis les résultats de calcul
+ * Mappe la sortie du calculateur au format de la table ij_recap
  */
 class RecapService {
 
@@ -14,9 +14,9 @@ class RecapService {
 	private $calculator;
 
 	/**
-	 * Set the calculator instance for class determination
+	 * Définir l'instance du calculateur pour la détermination de classe
 	 *
-	 * @param mixed $calculator IJCalculator instance
+	 * @param mixed $calculator Instance IJCalculator
 	 * @return void
 	 */
 	public function setCalculator($calculator): void {
@@ -24,63 +24,63 @@ class RecapService {
 	}
 
 	/**
-	 * Generate ij_recap records from calculation results
+	 * Générer les enregistrements ij_recap depuis les résultats de calcul
 	 *
-	 * @param array<string, mixed> $calculationResult Result from IJCalculator::calculateAmount()
-	 * @param array<string, mixed> $inputData Original input data (for adherent_number, num_sinistre, etc.)
-	 * @return array<int, array<string, mixed>> Array of records ready for ij_recap insertion
+	 * @param array<string, mixed> $calculationResult Résultat de IJCalculator::calculateAmount()
+	 * @param array<string, mixed> $inputData Données d'entrée originales (pour adherent_number, num_sinistre, etc.)
+	 * @return array<int, array<string, mixed>> Tableau d'enregistrements prêts pour insertion ij_recap
 	 */
 	public function generateRecapRecords(array $calculationResult, array $inputData): array {
 		$records = [];
 
-		// Extract common data from input
+		// Extraire les données communes depuis l'entrée
 		$adherentNumber = $inputData['adherent_number'] ?? null;
 		$numSinistre = $inputData['num_sinistre'] ?? null;
 		$age = $calculationResult['age'] ?? null;
 		$nbTrimestres = $calculationResult['nb_trimestres'] ?? $inputData['nb_trimestres'] ?? null;
 
-		// Process each payment detail (each arret)
+		// Traiter chaque détail de paiement (chaque arrêt)
 		if (isset($calculationResult['payment_details']) && is_array($calculationResult['payment_details'])) {
 			foreach ($calculationResult['payment_details'] as $k => $detail) {
 				$idArret = $inputData['arrets'][$k]['id'] ?? $detail['arret_index'] ?? null;
 
-				// Process each rate breakdown period
+				// Traiter chaque période de détail de taux
 				if (isset($detail['rate_breakdown']) && is_array($detail['rate_breakdown'])) {
 					foreach ($detail['rate_breakdown'] as $rateBreakdown) {
-						// Get class from rate_breakdown (determined per-year in AmountCalculationService)
+						// Obtenir la classe depuis rate_breakdown (déterminée par année dans AmountCalculationService)
 						$breakdownClasse = $rateBreakdown['classe'] ?? 'A';
 
-						// Get revenue for this specific rate_breakdown
+						// Obtenir le revenu pour ce rate_breakdown spécifique
 						$revenuRef = null;
 						if (isset($rateBreakdown['revenu_medecin'])) {
 							$revenuRef = (int)$rateBreakdown['revenu_medecin'];
 						}
 
-						// Split rate_breakdown by month
+						// Diviser rate_breakdown par mois
 						$monthlyBreakdowns = $this->splitByMonth($rateBreakdown);
 
 						foreach ($monthlyBreakdowns as $monthly) {
 							$record = [
-								// Primary identification
+								// Identification primaire
 								'adherent_number' => $adherentNumber,
 								'num_sinistre' => $numSinistre,
 								'id_arret' => $idArret,
 
-								// Period information
+								// Information de période
 								'exercice' => $monthly['year'],
-								'periode' => $monthly['month'], // Month (01-12), not period (1-3)
+								'periode' => $monthly['month'], // Mois (01-12), pas période (1-3)
 								'date_start' => $monthly['start'],
 								'date_end' => $monthly['end'],
 
-								// Rate and amount information
+								// Information de taux et montant
 								'num_taux' => $rateBreakdown['taux'] ?? null,
 								'MT_journalier' => $this->convertToIntCents($rateBreakdown['rate'] ?? 0),
 
-								// Financial information - Use class from rate_breakdown
+								// Information financière - Utiliser la classe depuis rate_breakdown
 								'MT_revenu_ref' => $revenuRef,
 								'classe' => $breakdownClasse,
 
-								// Personal information
+								// Information personnelle
 								'personne_age' => $rateBreakdown['age'] ?? $age,
 								'nb_trimestre' => $rateBreakdown['nb_trimestres'] ?? $nbTrimestres,
 							];
@@ -96,10 +96,10 @@ class RecapService {
 	}
 
 	/**
-	 * Split a rate_breakdown entry by month
+	 * Diviser une entrée rate_breakdown par mois
 	 *
-	 * @param array<string, mixed> $rateBreakdown Rate breakdown entry with start/end dates
-	 * @return array<int, array<string, mixed>> Array of monthly breakdowns
+	 * @param array<string, mixed> $rateBreakdown Entrée de détail de taux avec dates début/fin
+	 * @return array<int, array<string, mixed>> Tableau de détails mensuels
 	 */
 	private function splitByMonth(array $rateBreakdown): array {
 		if (!isset($rateBreakdown['start']) || !isset($rateBreakdown['end'])) {
@@ -116,11 +116,11 @@ class RecapService {
 			$year = $currentDate->format('Y');
 			$month = $currentDate->format('m');
 
-			// Calculate month boundaries
+			// Calculer les limites du mois
 			$monthStart = max($startDate, new DateTime($year . '-' . $month . '-01'));
-			$monthEnd = min($endDate, new DateTime($currentDate->format('Y-m-t'))); // Last day of month
+			$monthEnd = min($endDate, new DateTime($currentDate->format('Y-m-t'))); // Dernier jour du mois
 
-			// Calculate days in this month
+			// Calculer les jours dans ce mois
 			$days = $monthStart->diff($monthEnd)->days + 1;
 
 			$monthlyBreakdowns[] = [
@@ -131,7 +131,7 @@ class RecapService {
 				'days' => $days,
 			];
 
-			// Move to next month
+			// Passer au mois suivant
 			$currentDate->modify('first day of next month');
 		}
 
@@ -139,11 +139,11 @@ class RecapService {
 	}
 
 	/**
-	 * Convert decimal amount to integer cents
-	 * E.g., 75.06 -> 7506
+	 * Convertir un montant décimal en centimes entiers
+	 * Ex: 75.06 -> 7506
 	 *
-	 * @param float $amount Amount in euros
-	 * @return int Amount in cents
+	 * @param float $amount Montant en euros
+	 * @return int Montant en centimes
 	 */
 	private function convertToIntCents(float $amount): int {
 		return (int)round($amount * 100);

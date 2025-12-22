@@ -75,14 +75,14 @@ use App\Services\DetailsArretsService;
 class ZDFCAIJNG extends Model
 {
     /**
-     * The table associated with the model.
+     * La table associée au modèle.
      *
      * @var string
      */
     protected $table = 'ZDFCAIJ_NG';
 
     /**
-     * The primary key associated with the table.
+     * La clé primaire associée à la table.
      *
      * @var string
      */
@@ -91,14 +91,14 @@ class ZDFCAIJNG extends Model
     public $timestamps = false;
 
     /**
-     * Default date format.
+     * Format de date par défaut.
      *
      * @var string
      */
     private const DEFAULT_DATE = '01.01.9999';
 
     /**
-     * The attributes that are mass assignable.
+     * Les attributs assignables en masse.
      *
      * @var array<string>
      */
@@ -165,7 +165,7 @@ class ZDFCAIJNG extends Model
     ];
 
     /**
-     * The attributes that should be cast.
+     * Les attributs qui doivent être castés.
      *
      * @var array<string, string>
      */
@@ -178,11 +178,11 @@ class ZDFCAIJNG extends Model
     ];
 
     /**
-     * Relationships
+     * Relations
      */
-    
+
     /**
-     * Get the sinistre associated with this record.
+     * Obtenir le sinistre associé à cet enregistrement.
      */
     public function sinistre()
     {
@@ -190,7 +190,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get the arret associated with this record.
+     * Obtenir l'arrêt associé à cet enregistrement.
      */
     public function arret()
     {
@@ -198,7 +198,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get the export associated with this record.
+     * Obtenir l'export associé à cet enregistrement.
      */
     public function export()
     {
@@ -206,11 +206,11 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Helper Methods
+     * Méthodes Helper
      */
 
     /**
-     * Get adherent number.
+     * Obtenir le numéro adhérent.
      */
     public function getAdherentNumber(): string
     {
@@ -218,7 +218,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set adherent number.
+     * Définir le numéro adhérent.
      */
     public function setAdherentNumber(string $adherent_number): void
     {
@@ -227,7 +227,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set adherent information.
+     * Définir les informations adhérent.
      */
     public function setAdherentInfos($adherent): void
     {
@@ -240,7 +240,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set default values for the entity.
+     * Définir les valeurs par défaut pour l'entité.
      */
     public function setDefaultValues(): void
     {
@@ -250,32 +250,32 @@ class ZDFCAIJNG extends Model
         $this->NOCATEGAPR = '01';
         $this->NOGROUPESECO = '000';
         $this->DATEREPTHERA1 = self::DEFAULT_DATE;
-        $this->MOTIFREPTHERA1 = '     '; // 5 spaces
+        $this->MOTIFREPTHERA1 = '     '; // 5 espaces
         $this->DATEREPTHERA2 = self::DEFAULT_DATE;
-        $this->MOTIFREPTHERA2 = '     '; // 5 spaces
+        $this->MOTIFREPTHERA2 = '     '; // 5 espaces
         $this->DATEALERTE1 = self::DEFAULT_DATE;
-        $this->MOTIFALERTE1 = '  '; // 2 spaces
+        $this->MOTIFALERTE1 = '  '; // 2 espaces
         $this->DATEALERTE2 = self::DEFAULT_DATE;
-        $this->MOTIFALERTE2 = '  '; // 2 spaces
+        $this->MOTIFALERTE2 = '  '; // 2 espaces
         $this->DATEALERTE3 = self::DEFAULT_DATE;
-        $this->MOTIFALERTE3 = '  '; // 2 spaces
+        $this->MOTIFALERTE3 = '  '; // 2 espaces
         $this->DATEALERTE4 = self::DEFAULT_DATE;
-        $this->MOTIFALERTE4 = '  '; // 2 spaces
+        $this->MOTIFALERTE4 = '  '; // 2 espaces
         $this->DATELIMITEPAIE = self::DEFAULT_DATE;
         $this->DATESUSPAIE = self::DEFAULT_DATE;
-        $this->MOTIFSUSPAIE = '  '; // 2 spaces
+        $this->MOTIFSUSPAIE = '  '; // 2 espaces
         $this->INFREVENUS = '000000000';
         $this->SERREVENUS = '000000000';
         $this->AGEFFET = '00000';
         $this->TOTJOURIJ = '0000';
 
-        // Date of creation or modification
+        // Date de création ou modification
         $this->DATEMAJ = date('d.m.Y');
         $this->INITMAJ = 'TL';
     }
 
     /**
-     * Initialize line with common values.
+     * Initialiser la ligne avec les valeurs communes.
      */
     private function initLine($sinistre, $noSinistre): void
     {
@@ -287,7 +287,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set Line I (Sinistre).
+     * Définir la Ligne I (Sinistre).
      */
     public function setLineI($sinistre, $noSinistre): void
     {
@@ -319,7 +319,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set Line A (Arret).
+     * Définir la Ligne A (Arret).
      */
     public function setLineA($sinistre, $arret, int $noarret, $noSinistre, string $class): void
     {
@@ -395,7 +395,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Set Line D (Detail).
+     * Définir la Ligne D (Detail).
      */
     public function setLineD($sinistre, $arret, int $noarret, $date_effet, $date_fin_droit, string $motif_fin_droit, $taux, $noSinistre, string $class, string $noRegime): void
     {
@@ -453,7 +453,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Report line from existing data.
+     * Reporter la ligne depuis les données existantes.
      */
     public function reportLine($row, int $sinistre_id, ?int $arret_id): void
     {
@@ -516,17 +516,17 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Private helper methods
+     * Méthodes helper privées
      */
 
     /**
-     * Set age with proper formatting.
+     * Définir l'âge avec le formatage approprié.
      */
     private function setAge(int $age): string
     {
         $age = str_pad((string)$age, 3, '0', STR_PAD_LEFT) . '00';
-        
-        // Control erroneous MF data
+
+        // Contrôler les données MF erronées
         if ($age > 13000) {
             $age = '00000';
         }
@@ -535,7 +535,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Format date for output.
+     * Formater la date pour la sortie.
      */
     private function formatDate($date): string
     {
@@ -547,7 +547,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Convert date format from MF to NG.
+     * Convertir le format de date de MF à NG.
      */
     private function dateFormatFromMFtoNG($date): string
     {
@@ -555,11 +555,11 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Business Logic Methods (from Table class)
+     * Méthodes de Logique Métier (depuis la classe Table)
      */
 
     /**
-     * Insert a sinistre with all related data.
+     * Insérer un sinistre avec toutes les données associées.
      */
     public static function insertSinistre(int $num_sinistre, $export = null)
     {
@@ -578,36 +578,36 @@ class ZDFCAIJNG extends Model
             ->where('export_id', $currentExport->id)
             ->first();
 
-        // Line not present or already exported
+        // Ligne non présente ou déjà exportée
         if (empty($lineI)) {
-            // Sinistre created by moteur_IJ
+            // Sinistre créé par moteur_IJ
             if (empty($sinistre->NOGROUPEINIT)) {
                 $noSinistre = self::getSinistreCount($sinistre->adherent) + 1;
                 $sinistre->NOGROUPEINIT = $noSinistre;
                 $sinistre->save();
                 $lineI = new self();
             } else {
-                // Sinistre created by MF import or already exported
+                // Sinistre créé par import MF ou déjà exporté
                 $noSinistre = $sinistre->NOGROUPEINIT;
                 $lineI = new self();
             }
         } else {
-            // Update line and reset A/D lines and associated Zdfcar
+            // Mettre à jour la ligne et réinitialiser les lignes A/D et Zdfcar associés
             $noSinistre = $sinistre->NOGROUPEINIT;
             self::resetSinistre($lineI, $currentExport);
         }
 
-        // LINE I = SINISTRE
+        // LIGNE I = SINISTRE
         $lineI->setLineI($sinistre, $noSinistre);
         $lineI->export_id = $currentExport->id;
         $lineI->save();
 
-        // Arret counter
+        // Compteur d'arrêts
         $k = 0;
         $totIJI = 0;
         $lineA = null;
 
-        // LINES A = ARRET
+        // LIGNES A = ARRET
         foreach ($sinistre->arrets as $arret) {
             if ($arret->actif != '1') {
                 continue;
@@ -670,7 +670,7 @@ class ZDFCAIJNG extends Model
                         $year = $recap->date_start->year;
                         $birthday = Carbon::createFromDate($year, $birthdate->month, $birthdate->day);
                     } catch (\Exception $e) {
-                        // Case of February 29 → use February 28 in non-leap year
+                        // Cas du 29 février → utiliser le 28 février dans une année non bissextile
                         $birthday = Carbon::parse($year . '-02-28');
                     }
                     
@@ -690,7 +690,7 @@ class ZDFCAIJNG extends Model
                     continue;
                 }
 
-                // Change of taux or last recap -> insert line
+                // Changement de taux ou dernier recap -> insérer la ligne
                 if ($currentTaux != $recap->num_taux || $currentClass != self::getClass($arret, $recap->classe) || $recap == $last) {
                     $lineD = new self();
                     $lineD->setLineD($sinistre, $arret, $k, $currentDateEffet, $recap->date_end, $motif_fin_droit, $currentTaux, $noSinistre, $currentClass, $noRegime);
@@ -723,7 +723,7 @@ class ZDFCAIJNG extends Model
         $lineI->TOTJOURIJ = str_pad((string)$totIJI, 4, '0', STR_PAD_LEFT);
         $lineI->save();
 
-        // Deactivate previous versions of sinistre to not export them
+        // Désactiver les versions précédentes du sinistre pour ne pas les exporter
         $oldLines = self::where('num_sinistre', $num_sinistre)
             ->where(function($query) use ($currentExport) {
                 $query->where('export_id', '!=', $currentExport->id)
@@ -740,7 +740,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Cancel sinistre export.
+     * Annuler l'export du sinistre.
      */
     public static function cancelSinistreExport(int $num_sinistre): bool
     {
@@ -770,7 +770,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get sinistre count for an adherent.
+     * Obtenir le nombre de sinistres pour un adhérent.
      */
     private static function getSinistreCount($adherent): int
     {
@@ -784,7 +784,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get class for arret.
+     * Obtenir la classe pour l'arrêt.
      */
     private static function getClass($arret, ?string $forceClass = null): string
     {
@@ -808,7 +808,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get regime number.
+     * Obtenir le numéro de régime.
      */
     private static function getNoRegime(string $class, int $taux): string
     {
@@ -825,7 +825,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Reset sinistre data.
+     * Réinitialiser les données du sinistre.
      */
     private static function resetSinistre($lineI, $export): void
     {
@@ -843,7 +843,7 @@ class ZDFCAIJNG extends Model
     }
 
     /**
-     * Get synthesis by export.
+     * Obtenir la synthèse par export.
      */
     public static function getSyntheseByExport(int $export_id)
     {

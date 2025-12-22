@@ -96,14 +96,24 @@ project/
 │   │
 │   ├── Controllers/
 │   │   ├── CalculationController.php  # Calculation endpoints
-│   │   └── MockController.php         # Mock data endpoints
+│   │   ├── MockController.php         # Mock data endpoints
+│   │   ├── SinistreController.php     # Sinistre/claim endpoints
+│   │   ├── SwaggerController.php      # API documentation endpoints
+│   │   └── MoteurijController.php     # Motor IJ endpoints
 │   │
 │   ├── Models/                         # Eloquent ORM Models
 │   │   ├── IjArret.php                 # Work stoppage model
 │   │   ├── IjRecap.php                 # Calculation summary model
 │   │   ├── IjDetailJour.php            # Daily detail model
 │   │   ├── IjSinistre.php              # Claim model
-│   │   └── IjTaux.php                  # Rate model (27-rate system)
+│   │   ├── IjTaux.php                  # Rate model (27-rate system)
+│   │   ├── RecapIdem.php               # Calculation recap
+│   │   ├── AdherentInfos.php           # Member information
+│   │   ├── Pathologie.php              # Pathology data
+│   │   ├── PlafondSecuSociale.php      # PASS values by year
+│   │   ├── AnalyticsLog.php            # Analytics logging
+│   │   ├── Export.php                  # Export functionality
+│   │   └── ZDFCAIJNG.php, ZDFCARNG.php # Legacy database views
 │   │
 │   ├── Services/                       # Business logic (SOLID)
 │   │   ├── RateService.php             # Rate lookups (~220 lines)
@@ -113,6 +123,9 @@ project/
 │   │   ├── RecapService.php            # Database records (ij_recap)
 │   │   ├── DetailJourService.php       # Database records (ij_detail_jour)
 │   │   ├── ArretService.php            # Arret management
+│   │   ├── SinistreService.php         # Sinistre business logic with date-effet
+│   │   ├── DetailsArretsService.php    # Work stoppage details
+│   │   ├── DetailsAdherentsService.php # Member details management
 │   │   └── DateNormalizer.php          # Date normalization
 │   │
 │   ├── Repositories/
@@ -157,6 +170,9 @@ All services follow single responsibility principle and use dependency injection
 **RecapService** - Database records for ij_recap table
 **DetailJourService** - Database records for ij_detail_jour table
 **ArretService** - Loading, validation, normalization of work stoppages
+**SinistreService** - Sinistre business logic, date-effet calculation orchestration
+**DetailsArretsService** - Work stoppage details management
+**DetailsAdherentsService** - Member details and information management
 
 ### Data Flow
 
@@ -205,6 +221,11 @@ POST /api/calculations/arrets-date-effet  # Batch date-effet calculation
 # Mock Data
 GET /api/mocks                            # List all mock files
 GET /api/mocks/{file}                     # Load specific mock (e.g., /api/mocks/mock or /api/mocks/mock.json)
+
+# Sinistres (Claims)
+GET /api/sinistres/{id}/date-effet                          # Get sinistre with date-effet
+GET /api/adherents/{adherent_number}/{numero_dossier}       # Get sinistre for specific adherent
+GET /api/adherents/{adherent_number}/sinistres/date-effet   # Get all sinistres for adherent
 ```
 
 ### Example Request
@@ -652,6 +673,8 @@ fetch('/api/calculations', {
 - `REGLE_DATE_EFFET_2025.md` - **Date d'effet critique** : Règles de sélection du système de calcul (2025 vs historique)
 - `CALENDAR_YEAR_RATES_RULE.md` - **⭐ Taux par année calendrier** : Jours en 2024 vs jours en 2025 (règle finale)
 - `DAILY_REFORM_REPORT_README.md` - **Rapport visuel HTML** : Guide pour générer et utiliser le rapport journalier interactif
+- `SINISTRE_SERVICE_USAGE.md` - Full guide for SinistreService (claims with date-effet)
+- `SINISTRE_SERVICE_QUICK_START.md` - Quick start for sinistre endpoints
 - `MULTI_DATABASE_USAGE.md` - Multi-database configuration and usage
 - `DEPENDENCY_INJECTION_GUIDE.md` - How to use DI with IJCalculator in controllers
 - `METHOD_INJECTION_GUIDE.md` - How to inject dependencies into methods (not just constructors)

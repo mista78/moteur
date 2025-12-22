@@ -13,8 +13,8 @@ use Psr\Log\LoggerInterface;
 use Exception;
 
 /**
- * Sinistre Controller
- * Handles sinistre (claim) related endpoints with date-effet calculations
+ * Contrôleur Sinistre
+ * Gère les endpoints liés aux sinistres avec calculs de date-effet
  */
 class SinistreController
 {
@@ -22,9 +22,9 @@ class SinistreController
     private LoggerInterface $logger;
 
     /**
-     * Constructor with dependency injection
+     * Constructeur avec injection de dépendances
      *
-     * @param SinistreServiceInterface $sinistreService Sinistre service
+     * @param SinistreServiceInterface $sinistreService Service sinistre
      * @param LoggerInterface $logger Logger
      */
     public function __construct(
@@ -37,7 +37,7 @@ class SinistreController
 
     /**
      * GET /api/sinistres/{id}/date-effet
-     * Get sinistre with calculated date-effet for all arrets
+     * Obtenir le sinistre avec date-effet calculée pour tous les arrêts
      */
     #[OA\Get(
         path: "/api/sinistres/{id}/date-effet",
@@ -95,10 +95,10 @@ class SinistreController
         ResponseInterface $response
     ): ResponseInterface {
         try {
-            // Get route parameter from request attributes
+            // Récupérer le paramètre de route depuis les attributs de la requête
             $sinistreId = (int) $request->getAttribute('id');
 
-            // Use the service to get sinistre with calculated date-effet
+            // Utiliser le service pour obtenir le sinistre avec date-effet calculée
             $data = $this->sinistreService->getSinistreWithDateEffet($sinistreId);
 
             return ResponseFormatter::success($response, $data);
@@ -114,7 +114,7 @@ class SinistreController
 
     /**
      * GET /api/adherents/{adherent_number}/sinistres/{id}/date-effet
-     * Get sinistre with date-effet for specific adherent
+     * Obtenir le sinistre avec date-effet pour un adhérent spécifique
      */
     #[OA\Get(
         path: "/api/adherents/{adherent_number}/sinistres/{id}/date-effet",
@@ -157,7 +157,7 @@ class SinistreController
         ResponseInterface $response
     ): ResponseInterface {
         try {
-            // Get route parameters from request attributes
+            // Récupérer les paramètres de route depuis les attributs de la requête
             $adherentNumber = (string) $request->getAttribute('adherent_number');
             $sinistreId = (int) $request->getAttribute('numero_dossier');
 
@@ -180,7 +180,7 @@ class SinistreController
 
     /**
      * GET /api/adherents/{adherent_number}/sinistres/date-effet
-     * Get all sinistres for adherent with date-effet
+     * Obtenir tous les sinistres d'un adhérent avec date-effet
      */
     #[OA\Get(
         path: "/api/adherents/{adherent_number}/sinistres/date-effet",
@@ -219,7 +219,7 @@ class SinistreController
         ResponseInterface $response
     ): ResponseInterface {
         try {
-            // Get route parameter from request attributes
+            // Récupérer le paramètre de route depuis les attributs de la requête
             $adherentNumber = (string) $request->getAttribute('adherent_number');
 
             $data = $this->sinistreService->getAllSinistresWithDateEffet($adherentNumber);

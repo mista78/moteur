@@ -53,55 +53,5 @@ return function (App $app) {
         $group->get('/demo/rate/{year:\d+}', [MethodInjectionDemoController::class, 'getRateByYear']);
         $group->post('/demo/advanced', [MethodInjectionDemoController::class, 'advancedMethodInjection']);
     });
-
-    // Backward compatibility routes (old api.php style)
-    // $app->get('/api.php', function ($request, $response) {
-    //     $endpoint = $request->getQueryParams()['endpoint'] ?? '';
-
-    //     // Map old endpoints to new ones
-    //     $mapping = [
-    //         'list-mocks' => '/api/mocks',
-    //         'load-mock' => '/api/mocks/' . ($request->getQueryParams()['file'] ?? 'mock.json'),
-    //     ];
-
-    //     if (isset($mapping[$endpoint])) {
-    //         return $response
-    //             ->withHeader('Location', $mapping[$endpoint])
-    //             ->withStatus(301);
-    //     }
-
-    //     $response->getBody()->write(json_encode([
-    //         'success' => false,
-    //         'error' => 'Please use new API endpoints. See documentation.'
-    //     ]));
-    //     return $response->withStatus(400);
-    // });
-
-    // $app->post('/api.php', function ($request, $response) {
-    //     $endpoint = $request->getQueryParams()['endpoint'] ?? '';
-
-    //     // Map old endpoints to new ones
-    //     $mapping = [
-    //         'calculate' => '/api/calculations',
-    //         'date-effet' => '/api/calculations/date-effet',
-    //         'end-payment' => '/api/calculations/end-payment',
-    //         'revenu' => '/api/calculations/revenu',
-    //         'determine-classe' => '/api/calculations/classe',
-    //         'calculate-arrets-date-effet' => '/api/calculations/arrets-date-effet',
-    //     ];
-
-    //     if (isset($mapping[$endpoint])) {
-    //         $response->getBody()->write(json_encode([
-    //             'success' => false,
-    //             'error' => 'Please use new API endpoint: ' . $mapping[$endpoint]
-    //         ]));
-    //         return $response->withStatus(301);
-    //     }
-
-    //     $response->getBody()->write(json_encode([
-    //         'success' => false,
-    //         'error' => 'Unknown endpoint. Please use new API endpoints.'
-    //     ]));
-    //     return $response->withStatus(400);
-    // });
+    
 };

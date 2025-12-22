@@ -10,8 +10,8 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * JSON Body Parser Middleware
- * Parses JSON request body and makes it available as parsed body
+ * Middleware de Parsing du Corps JSON
+ * Analyse le corps de requête JSON et le rend disponible comme corps analysé
  */
 class JsonBodyParserMiddleware implements MiddlewareInterface
 {
@@ -19,7 +19,7 @@ class JsonBodyParserMiddleware implements MiddlewareInterface
     {
         $contentType = $request->getHeaderLine('Content-Type');
 
-        // Only parse if content type is JSON
+        // Analyser uniquement si le type de contenu est JSON
         if (strpos($contentType, 'application/json') !== false) {
             $contents = (string) $request->getBody();
 

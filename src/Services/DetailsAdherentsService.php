@@ -6,37 +6,37 @@ use App\Models\AdherentInfos;
 
 /**
  * DetailsAdherentsService
- * 
- * Service for retrieving adherent income information by year
+ *
+ * Service pour récupérer les informations de revenus des adhérents par année
  */
 class DetailsAdherentsService
 {
     /**
-     * Get adherent revenue by year
-     * 
+     * Obtenir le revenu de l'adhérent par année
+     *
      * @param string $adherent_number
-     * @return array Array of revenue by year [year => revenue_in_cents]
+     * @return array Tableau des revenus par année [année => revenu_en_centimes]
      */
     public function revenuAdhParAnnee(string $adherent_number): array
     {
-        // TODO: Implement the actual logic to retrieve adherent revenue by year
-        // This should return an array like: [2020 => 4700000, 2021 => 5000000, 2022 => 5200000]
-        // where values are in cents (e.g., 4700000 = 47000 euros)
+        // TODO: Implémenter la logique réelle pour récupérer le revenu de l'adhérent par année
+        // Cela devrait retourner un tableau comme: [2020 => 4700000, 2021 => 5000000, 2022 => 5200000]
+        // où les valeurs sont en centimes (ex: 4700000 = 47000 euros)
         
         $adherent = AdherentInfos::where('adherent_number', $adherent_number)->first();
         
         if (!$adherent) {
             return [];
         }
-        
-        // Example implementation - replace with actual logic
-        // This might come from a revenue history table or similar
+
+        // Exemple d'implémentation - remplacer par la logique réelle
+        // Cela pourrait provenir d'une table d'historique de revenus ou similaire
         $currentYear = date('Y');
         $revenues = [];
-        
+
         for ($i = 0; $i < 5; $i++) {
             $year = $currentYear - $i;
-            // Get revenue for this year - implement your actual logic here
+            // Obtenir le revenu pour cette année - implémenter votre logique réelle ici
             $revenues[$year] = $this->getRevenuForYear($adherent_number, $year);
         }
         
@@ -44,29 +44,29 @@ class DetailsAdherentsService
     }
     
     /**
-     * Get revenue for a specific year
-     * 
+     * Obtenir le revenu pour une année spécifique
+     *
      * @param string $adherent_number
      * @param int $year
-     * @return int Revenue in cents
+     * @return int Revenu en centimes
      */
     private function getRevenuForYear(string $adherent_number, int $year): int
     {
-        // TODO: Implement actual logic
-        // This might query a revenue history table or use a method on the adherent model
-        
+        // TODO: Implémenter la logique réelle
+        // Cela pourrait interroger une table d'historique de revenus ou utiliser une méthode sur le modèle adherent
+
         $adherent = AdherentInfos::where('adherent_number', $adherent_number)->first();
-        
+
         if (!$adherent) {
             return 0;
         }
-        
-        // If AdherentInfos has a getRevenuByYear method, use it
+
+        // Si AdherentInfos a une méthode getRevenuByYear, l'utiliser
         if (method_exists($adherent, 'getRevenuByYear')) {
-            return $adherent->getRevenuByYear($year) * 100; // Convert to cents
+            return $adherent->getRevenuByYear($year) * 100; // Convertir en centimes
         }
-        
-        // Otherwise return a default value
-        return 4700000; // 47000 euros in cents
+
+        // Sinon retourner une valeur par défaut
+        return 4700000; // 47000 euros en centimes
     }
 }

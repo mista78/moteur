@@ -15,8 +15,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Calculation Controller
- * Handles all IJ calculation endpoints
+ * Contrôleur de Calcul
+ * Gère tous les endpoints de calcul IJ
  */
 #[OA\Info(
     version: "1.0.0",
@@ -65,7 +65,7 @@ class CalculationController
 
     /**
      * POST /api/calculations
-     * Main calculation endpoint
+     * Endpoint principal de calcul
      */
     #[OA\Post(
         path: "/api/calculations",
@@ -132,7 +132,7 @@ class CalculationController
         try {
             $input = $request->getParsedBody();
 
-            // Ensure $input is an array
+            // S'assurer que $input est un tableau
             if (!is_array($input)) {
                 return ResponseFormatter::error($response, 'Invalid request body');
             }
@@ -141,15 +141,15 @@ class CalculationController
                 return ResponseFormatter::error($response, 'Missing or invalid arrets parameter');
             }
 
-            // Normalize all dates
+            // Normaliser toutes les dates
             $input = DateNormalizer::normalize($input);
 
-            // Set PASS value if provided
+            // Définir la valeur PASS si fournie
             if (isset($input['pass_value'])) {
                 $this->calculator->setPassValue($input['pass_value']);
             }
 
-            // Auto-determine class if revenu_n_moins_2 provided but classe is not
+            // Déterminer automatiquement la classe si revenu_n_moins_2 fourni mais pas classe
             if (isset($input['revenu_n_moins_2']) && !isset($input['classe'])) {
                 $revenuNMoins2 = (float) $input['revenu_n_moins_2'];
                 $taxeOffice = isset($input['taxe_office']) ? (bool) $input['taxe_office'] : false;
@@ -172,7 +172,7 @@ class CalculationController
 
     /**
      * POST /api/calculations/date-effet
-     * Calculate date-effet for arrets (90-day rule)
+     * Calculer la date-effet pour les arrêts (règle des 90 jours)
      */
     #[OA\Post(
         path: "/api/calculations/date-effet",
@@ -221,7 +221,7 @@ class CalculationController
         try {
             $input = $request->getParsedBody();
 
-            // Ensure $input is an array
+            // S'assurer que $input est un tableau
             if (!is_array($input)) {
                 return ResponseFormatter::error($response, 'Invalid request body');
             }
@@ -230,7 +230,7 @@ class CalculationController
                 return ResponseFormatter::error($response, 'Missing or invalid arrets parameter');
             }
 
-            // Normalize all dates
+            // Normaliser toutes les dates
             $input = DateNormalizer::normalize($input);
 
             $arrets = $input['arrets'];
@@ -249,14 +249,14 @@ class CalculationController
 
     /**
      * POST /api/calculations/end-payment
-     * Calculate end payment dates by period
+     * Calculer les dates de fin de paiement par période
      */
     public function endPayment(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
             $input = $request->getParsedBody();
 
-            // Ensure $input is an array
+            // S'assurer que $input est un tableau
             if (!is_array($input)) {
                 return ResponseFormatter::error($response, 'Invalid request body');
             }
@@ -265,7 +265,7 @@ class CalculationController
                 return ResponseFormatter::error($response, 'Missing or invalid arrets parameter');
             }
 
-            // Normalize all dates
+            // Normaliser toutes les dates
             $input = DateNormalizer::normalize($input);
 
             $arrets = $input['arrets'];
@@ -277,10 +277,10 @@ class CalculationController
                 return ResponseFormatter::error($response, 'Missing birth_date parameter');
             }
 
-            // First calculate date effet for each arrêt
+            // D'abord calculer la date d'effet pour chaque arrêt
             $arretsWithEffet = $this->calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
 
-            // Then calculate end payment dates
+            // Ensuite calculer les dates de fin de paiement
             $result = $this->calculator->calculateEndPaymentDates(
                 $arretsWithEffet,
                 $previousCumulDays,
@@ -298,14 +298,14 @@ class CalculationController
 
     /**
      * POST /api/calculations/revenu
-     * Calculate revenue from class and PASS
+     * Calculer le revenu depuis la classe et le PASS
      */
     public function revenu(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
             $input = $request->getParsedBody();
 
-            // Ensure $input is an array
+            // S'assurer que $input est un tableau
             if (!is_array($input)) {
                 return ResponseFormatter::error($response, 'Invalid request body');
             }
@@ -317,7 +317,7 @@ class CalculationController
             $classe = $input['classe'];
             $nbPass = $input['nb_pass'] ?? null;
 
-            // Set PASS value if provided
+            // Définir la valeur PASS si fournie
             if (isset($input['pass_value'])) {
                 $this->calculator->setPassValue($input['pass_value']);
             }
@@ -334,7 +334,7 @@ class CalculationController
 
     /**
      * POST /api/calculations/classe
-     * Determine contribution class from revenue
+     * Déterminer la classe de cotisation depuis le revenu
      */
     #[OA\Post(
         path: "/api/calculations/classe",
@@ -379,14 +379,14 @@ class CalculationController
         try {
             $input = $request->getParsedBody();
 
-            // Normalize all dates
+            // Normaliser toutes les dates
             $input = DateNormalizer::normalize($input);
 
             $revenuNMoins2 = isset($input['revenu_n_moins_2']) ? (float) $input['revenu_n_moins_2'] : null;
             $dateOuvertureDroits = $input['date_ouverture_droits'] ?? null;
             $taxeOffice = isset($input['taxe_office']) ? (bool) $input['taxe_office'] : false;
 
-            // Set PASS value if provided
+            // Définir la valeur PASS si fournie
             if (isset($input['pass_value'])) {
                 $this->calculator->setPassValue($input['pass_value']);
             }
@@ -408,14 +408,14 @@ class CalculationController
 
     /**
      * POST /api/calculations/arrets-date-effet
-     * Calculate date-effet for multiple arrets with rechute detection
+     * Calculer la date-effet pour plusieurs arrêts avec détection de rechute
      */
     public function arretsDateEffet(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
             $input = $request->getParsedBody();
 
-            // Ensure $input is an array
+            // S'assurer que $input est un tableau
             if (!is_array($input)) {
                 return ResponseFormatter::error($response, 'Invalid request body');
             }
@@ -424,14 +424,14 @@ class CalculationController
                 return ResponseFormatter::error($response, 'Missing or invalid arrets parameter');
             }
 
-            // Normalize all dates
+            // Normaliser toutes les dates
             $input = DateNormalizer::normalize($input);
 
             $arrets = $input['arrets'];
             $birthDate = $input['birth_date'] ?? null;
             $previousCumulDays = $input['previous_cumul_days'] ?? 0;
 
-            // Calculate date-effet for all arrets
+            // Calculer la date-effet pour tous les arrêts
             $arretsWithDateEffet = $this->calculator->calculateDateEffet($arrets, $birthDate, $previousCumulDays);
 
             return ResponseFormatter::success($response, $arretsWithDateEffet);

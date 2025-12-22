@@ -16,7 +16,7 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 	private array $passValuesByYear = [];
 
 	/**
-	 * Set a single PASS value for all years
+	 * Définir une valeur PASS unique pour toutes les années
 	 * @return void
 	 */
 	public function setPassValue(float $value): void {
@@ -24,8 +24,8 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 	}
 
 	/**
-	 * Set PASS values by year
-	 * @param array<int, float> $passValues Array with year => pass_value mapping
+	 * Définir les valeurs PASS par année
+	 * @param array<int, float> $passValues Tableau avec mapping année => valeur_pass
 	 * @return void
 	 */
 	public function setPassValuesByYear(array $passValues): void {
@@ -33,17 +33,17 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 	}
 
 	/**
-	 * Get PASS value for a specific year
-	 * @param int $year The year for which to get PASS
-	 * @return float The PASS value
+	 * Obtenir la valeur PASS pour une année spécifique
+	 * @param int $year L'année pour laquelle obtenir le PASS
+	 * @return float La valeur PASS
 	 */
 	private function getPassForYear(int $year): float {
-		// Check if per-year PASS values are available
+		// Vérifier si les valeurs PASS par année sont disponibles
 		if (!empty($this->passValuesByYear) && isset($this->passValuesByYear[$year])) {
 			return (float)$this->passValuesByYear[$year];
 		}
 
-		// Fall back to single PASS value or default
+		// Repli sur la valeur PASS unique ou par défaut
 		return $this->passValue ?? 47000;
 	}
 
@@ -98,10 +98,10 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 
 	public function pssParAnnee(): array
     {
-        // TODO: Implement actual PSS values by year
-        // PSS is the French Social Security ceiling
-        // Historical values should be stored in database or config
-        
+        // TODO: Implémenter les valeurs PSS réelles par année
+        // PSS est le Plafond de la Sécurité Sociale française
+        // Les valeurs historiques devraient être stockées en base de données ou en config
+
         return $this->passValuesByYear;
     }
 
@@ -122,7 +122,7 @@ class TauxDeterminationService implements TauxDeterminationInterface {
 		}
 
 		// Récupérer le PASS de l'année appropriée
-		// If year is provided, use it; otherwise use year from dateOuvertureDroits or current year
+		// Si l'année est fournie, l'utiliser; sinon utiliser l'année de dateOuvertureDroits ou l'année courante
 		if ($year !== null) {
 			$pass = $this->getPassForYear($year);
 		} elseif ($dateOuvertureDroits) {

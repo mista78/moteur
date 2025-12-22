@@ -13,25 +13,25 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Demo Controller showing Method Injection
+ * Contrôleur de Démonstration de l'Injection par Méthode
  *
- * This controller demonstrates how to inject dependencies
- * directly into methods instead of using constructor injection
+ * Ce contrôleur démontre comment injecter des dépendances
+ * directement dans les méthodes au lieu d'utiliser l'injection par constructeur
  */
 class MethodInjectionDemoController
 {
     /**
-     * Example 1: Method injection with IJCalculator
+     * Exemple 1 : Injection par méthode avec IJCalculator
      *
      * POST /api/demo/calculate
      *
-     * Dependencies are injected directly into this method
+     * Les dépendances sont injectées directement dans cette méthode
      */
     public function calculateWithMethodInjection(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        IJCalculator $calculator,               // ✅ Injected from container
-        LoggerInterface $logger                 // ✅ Injected from container
+        IJCalculator $calculator,               // ✅ Injecté depuis le conteneur
+        LoggerInterface $logger                 // ✅ Injecté depuis le conteneur
     ): ResponseInterface {
         try {
             $logger->info('Method injection demo: calculate endpoint called');
@@ -42,10 +42,10 @@ class MethodInjectionDemoController
                 return ResponseFormatter::error($response, 'Invalid input');
             }
 
-            // Use the method-injected calculator
+            // Utiliser le calculateur injecté par méthode
             $result = $calculator->calculateAmount($input);
 
-            // Use the method-injected logger
+            // Utiliser le logger injecté par méthode
             $logger->info('Calculation completed via method injection', [
                 'montant' => $result['montant'],
                 'nb_jours' => $result['nb_jours']
@@ -64,29 +64,29 @@ class MethodInjectionDemoController
     }
 
     /**
-     * Example 2: Method injection with RateRepository
+     * Exemple 2 : Injection par méthode avec RateRepository
      *
      * GET /api/demo/rates
      *
-     * Different method, different dependencies
+     * Méthode différente, dépendances différentes
      */
     public function getRatesWithMethodInjection(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        RateRepository $rateRepository,         // ✅ Different dependency
-        LoggerInterface $logger                 // ✅ Also injected
+        RateRepository $rateRepository,         // ✅ Dépendance différente
+        LoggerInterface $logger                 // ✅ Également injecté
     ): ResponseInterface {
         try {
             $logger->info('Method injection demo: rates endpoint called');
 
-            // Use the method-injected repository
+            // Utiliser le repository injecté par méthode
             $rates = $rateRepository->loadRates();
 
             return ResponseFormatter::success($response, [
                 'message' => 'Rates loaded using METHOD INJECTION! 🎯',
                 'injection_type' => 'method',
                 'rate_count' => count($rates),
-                'rates' => array_slice($rates, 0, 3) // First 3 for demo
+                'rates' => array_slice($rates, 0, 3) // Premiers 3 pour la démo
             ]);
 
         } catch (\Exception $e) {
@@ -96,22 +96,22 @@ class MethodInjectionDemoController
     }
 
     /**
-     * Example 3: Method injection with route parameter
+     * Exemple 3 : Injection par méthode avec paramètre de route
      *
      * GET /api/demo/rate/{year}
      *
-     * Combines route parameters with dependency injection
+     * Combine les paramètres de route avec l'injection de dépendances
      */
     public function getRateByYear(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        LoggerInterface $logger,                // ✅ Injected from container
-        int $year                               // ✅ From route parameter
+        LoggerInterface $logger,                // ✅ Injecté depuis le conteneur
+        int $year                               // ✅ Depuis le paramètre de route
     ): ResponseInterface {
         try {
             $logger->info('Method injection demo: rate by year', ['year' => $year]);
 
-            // Use Eloquent model directly
+            // Utiliser le modèle Eloquent directement
             $rate = IjTaux::getRateForYear($year);
 
             if (!$rate) {
@@ -142,18 +142,18 @@ class MethodInjectionDemoController
     }
 
     /**
-     * Example 4: Multiple dependencies in one method
+     * Exemple 4 : Dépendances multiples dans une seule méthode
      *
      * POST /api/demo/advanced
      *
-     * Shows how to inject multiple dependencies in single method
+     * Montre comment injecter plusieurs dépendances dans une seule méthode
      */
     public function advancedMethodInjection(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        IJCalculator $calculator,               // ✅ Injected
-        RateRepository $rateRepository,         // ✅ Injected
-        LoggerInterface $logger                 // ✅ Injected
+        IJCalculator $calculator,               // ✅ Injecté
+        RateRepository $rateRepository,         // ✅ Injecté
+        LoggerInterface $logger                 // ✅ Injecté
     ): ResponseInterface {
         try {
             $logger->info('Method injection demo: advanced endpoint called');
@@ -164,7 +164,7 @@ class MethodInjectionDemoController
                 return ResponseFormatter::error($response, 'Invalid input');
             }
 
-            // Use multiple injected dependencies
+            // Utiliser plusieurs dépendances injectées
             $rates = $rateRepository->loadRates();
             $result = $calculator->calculateAmount($input);
 

@@ -5,8 +5,8 @@ namespace App\Services;
 use DateTime;
 
 /**
- * Date Calculation Service
- * Handles all date-related calculations
+ * Service de Calcul de Dates
+ * Gère tous les calculs liés aux dates
  */
 class DateService implements DateCalculationInterface {
 
@@ -183,7 +183,7 @@ class DateService implements DateCalculationInterface {
 		}, $arrets);
 		foreach ($arrets as $arret) {
 			if (empty($merged)) {
-				// Store original index but don't add merged_arret_indices yet
+				// Stocker l'index original mais ne pas ajouter merged_arret_indices pour l'instant
 				$arret['original_index'] = $originalIndex;
 
 				$merged[] = $arret;
@@ -209,14 +209,14 @@ class DateService implements DateCalculationInterface {
 			if ($nextBusinessDay->format('Y-m-d') >= $currentStart->format('Y-m-d')) {
 				$last['arret-to-line'] = $arret['arret-to-line'];
 				if (!isset($last['merged_arret_indices'])) {
-					// First merge - add both the original and current
+					// Première fusion - ajouter à la fois l'original et le courant
 					$last['merged_arret_indices'] = [$last['original_index']];
 				}
 				$last['merged_arret_indices'][] = $originalIndex;
 			} else {
 				if (!$this->isRechute($last, $arret)) {
 					if (!isset($last['arret_year_indices'])) {
-						// First merge - add both the original and current
+						// Première fusion - ajouter à la fois l'original et le courant
 						$last['arret_year_indices'] = [$last['original_index']];
 					}
 					$last['arret_year_indices'][] = $originalIndex;
@@ -250,7 +250,7 @@ class DateService implements DateCalculationInterface {
 			// Si valid_med_controleur != 1, pas de date d'effet
 			if (isset($currentData['valid_med_controleur']) && $currentData['valid_med_controleur'] != 1) {
 				$currentData['date-effet'] = null;
-				$currentData['decompte_days'] = 0; // Invalid, no decompte applicable
+				$currentData['decompte_days'] = 0; // Invalide, pas de décompte applicable
 				$increment++;
 				if (count($arrets) === $increment) {
 					break;
@@ -269,10 +269,10 @@ class DateService implements DateCalculationInterface {
 			// Si date_deb_droit existe et n'est pas 0000-00-00, l'utiliser comme date-effet
 			if (isset($currentData['ouverture-date-line'], $currentData['source']) && !empty($currentData['ouverture-date-line']) && $currentData['ouverture-date-line'] !== '0000-00-00' && !empty($currentData['source'])) {
 				$currentData['date-effet'] = $currentData['ouverture-date-line'];
-				$currentData['decompte_days'] = 0; // Rights already opened
+				$currentData['decompte_days'] = 0; // Droits déjà ouverts
 				$nbJours = $newNbJours;
 				if ($arretDroits === 0) {
-					$arretDroits++; // Mark that rights have been opened for this arret
+					$arretDroits++; // Marquer que les droits ont été ouverts pour cet arrêt
 				} else {
 					$currentData['is_rechute'] = true;
 				}
@@ -287,10 +287,10 @@ class DateService implements DateCalculationInterface {
 			// Si la date est forcée, ignorer le calcul
 			if (isset($currentData['date_deb_dr_force'])) {
 				$currentData['date-effet'] = $currentData['date_deb_dr_force'];
-				$currentData['decompte_days'] = 0; // Rights forced open
+				$currentData['decompte_days'] = 0; // Droits forcés ouverts
 				$nbJours = $newNbJours;
 				if ($arretDroits === 0) {
-					$arretDroits++; // Mark that rights have been opened for this arret
+					$arretDroits++; // Marquer que les droits ont été ouverts pour cet arrêt
 				} else {
 					$currentData['is_rechute'] = true;
 				}
@@ -339,9 +339,9 @@ class DateService implements DateCalculationInterface {
 						strtotime($dateCotis ?? '1970-01-01'),
 					]));
 					$arretDroits++;
-					$currentData['decompte_days'] = 0; // Rights opened
+					$currentData['decompte_days'] = 0; // Droits ouverts
 				} else {
-					// Remaining days before threshold
+					// Jours restants avant le seuil
 					$currentData['decompte_days'] = 90 - $newNbJours;
 				}
 			} elseif ($increment > 0) {
@@ -350,7 +350,7 @@ class DateService implements DateCalculationInterface {
 				$siRechute = $this->isRechute($previousArret, $currentData);
 
 				if ($arretDroits > 0) {
-					// Check if it's NOT a prolongation (consecutive days)
+					// Vérifier si ce n'est PAS une prolongation (jours consécutifs)
 
 				}
 
@@ -403,31 +403,31 @@ class DateService implements DateCalculationInterface {
 						$dateDT ? strtotime($dateDT) : 0,
 						$dateCotis ? strtotime($dateCotis) : 0,
 					];
-					// Filter out false values and get max
+					// Filtrer les valeurs fausses et obtenir le max
 					$timestamps = array_filter($timestamps, fn($t) => $t !== false);
 					$maxTimestamp = max($timestamps);
 					$dateEffetCalculated = date('Y-m-d', $maxTimestamp);
 
-					// Check if arret reaches date-effet
+					// Vérifier si l'arrêt atteint la date-effet
 					$dateEffetTimestamp = strtotime($dateEffetCalculated);
 					$arretEndTimestamp = strtotime($endDate->format('Y-m-d'));
 
 					if ($arretEndTimestamp >= $dateEffetTimestamp) {
-						// Arret reaches or passes date-effet - valid rechute
+						// L'arrêt atteint ou dépasse la date-effet - rechute valide
 						$dates = $dateEffetCalculated;
-						$currentData['decompte_days'] = 0; // All rechute decompte is 0
+						$currentData['decompte_days'] = 0; // Tout décompte de rechute est 0
 					} else {
-						// Arret ends before date-effet - still a rechute but doesn't reach threshold
-						// Keep is_rechute true, but date-effet empty
-						$dates = ''; // date-effet is empty
-						$currentData['decompte_days'] = 0; // All rechute decompte is 0
-						// Keep is_rechute = true and rechute_of_arret_index
+						// L'arrêt se termine avant la date-effet - toujours une rechute mais n'atteint pas le seuil
+						// Garder is_rechute true, mais date-effet vide
+						$dates = ''; // date-effet est vide
+						$currentData['decompte_days'] = 0; // Tout décompte de rechute est 0
+						// Garder is_rechute = true et rechute_of_arret_index
 					}
 				} else {
 					// Réinitialiser pour nouvelle pathologie (ne pas accumuler avec pathologies précédentes)
-					$currentData['is_rechute'] = false; // Not a rechute, new pathology
+					$currentData['is_rechute'] = false; // Pas une rechute, nouvelle pathologie
 					$arretDroits = 0;
-					$nbJours = 0; // Reset pour nouvelle pathologie
+					$nbJours = 0; // Réinitialiser pour nouvelle pathologie
 					$newNbJours = $arret_diff; // Seulement les jours de cet arrêt
 
 					$lessDate = 90 - $arret_diff;
@@ -458,14 +458,14 @@ class DateService implements DateCalculationInterface {
 							$dateDT ? strtotime($dateDT) : 0,
 							$dateCotis ? strtotime($dateCotis) : 0,
 						];
-						// Filter out false values and get max
+						// Filtrer les valeurs fausses et obtenir le max
 						$timestamps2 = array_filter($timestamps2, fn($t) => $t !== false);
 						$maxTimestamp2 = max($timestamps2);
 						$dates = date('Y-m-d', $maxTimestamp2);
 						$arretDroits++;
-						$currentData['decompte_days'] = 0; // Rights opened
+						$currentData['decompte_days'] = 0; // Droits ouverts
 					} else {
-						// Remaining days before threshold
+						// Jours restants avant le seuil
 						$currentData['decompte_days'] = 90 - $newNbJours;
 					}
 				}
@@ -495,7 +495,7 @@ class DateService implements DateCalculationInterface {
 		$nextDay = clone $lastEnd;
 		$nextDay->modify('+1 day');
 
-		// If NOT consecutive (not next day), check 1-year rule
+		// Si PAS consécutif (pas le jour suivant), vérifier la règle d'1 an
 		if ($nextDay->format('Y-m-d') != $currentStart->format('Y-m-d')) {
 			// Vérifier si < 1 an après la fin du dernier arrêt
 			// Règle: date début <= date fin dernier + 1 an - 1 jour
@@ -568,7 +568,7 @@ class DateService implements DateCalculationInterface {
 					'payment_start' => null,
 					'payment_end' => null,
 					'payable_days' => 0,
-					'reason' => 'Account not up to date (cco_a_jour != 1)',
+					'reason' => 'Compte non à jour (cco_a_jour != 1)',
 				];
 
 				continue;
@@ -590,7 +590,7 @@ class DateService implements DateCalculationInterface {
 					'payment_start' => null,
 					'payment_end' => null,
 					'payable_days' => 0,
-					'reason' => 'Not validated by medical controller (valid_med_controleur != 1)',
+					'reason' => 'Non validé par le médecin contrôleur (valid_med_controleur != 1)',
 				];
 
 				continue;
@@ -612,7 +612,7 @@ class DateService implements DateCalculationInterface {
 					'payment_start' => null,
 					'payment_end' => null,
 					'payable_days' => 0,
-					'reason' => 'DT not excused (dt-line === "0")',
+					'reason' => 'DT non excusée (dt-line === "0")',
 				];
 
 				continue;
@@ -633,7 +633,7 @@ class DateService implements DateCalculationInterface {
 					'payment_start' => null,
 					'payment_end' => null,
 					'payable_days' => 0,
-					'reason' => 'No date effet',
+					'reason' => 'Pas de date effet',
 				];
 
 				continue;
@@ -655,7 +655,7 @@ class DateService implements DateCalculationInterface {
 						'payment_start' => null,
 						'payment_end' => null,
 						'payable_days' => 0,
-						'reason' => "Age limit: date effet >= first day of semester after 75th birthday ($limitDate75)",
+						'reason' => "Limite d'âge: date effet >= 1er jour du semestre après le 75ème anniversaire ($limitDate75)",
 					];
 
 					continue;
@@ -672,7 +672,7 @@ class DateService implements DateCalculationInterface {
 			if (!$arretAttestationDate) {
 				// Sans attestation, calculer jusqu'à la date de fin de l'arrêt ou date actuelle
 				$attestation = min($endDate, $current);
-				$arretAttestationDate = null; // Pour tracking
+				$arretAttestationDate = null; // Pour suivi
 			} else {
 				$attestation = new DateTime($arretAttestationDate);
 
@@ -722,7 +722,7 @@ class DateService implements DateCalculationInterface {
 				'payment_start' => $arretDays > 0 ? $paymentStart->format('Y-m-d') : '',
 				'payment_end' => $arretDays > 0 ? $paymentEnd->format('Y-m-d') : '',
 				'payable_days' => $arretDays,
-				'reason' => $arretDays > 0 ? ($arretAttestationDate ? 'Paid' : 'Paid (no attestation - calculated to end date)') : 'Outside payment period',
+				'reason' => $arretDays > 0 ? ($arretAttestationDate ? 'Payé' : 'Payé (sans attestation - calculé jusqu\'à la date de fin)') : 'Hors période de paiement',
 			];
 		}
 

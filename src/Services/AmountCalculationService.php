@@ -32,7 +32,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 	public function calculateAmount(array $data): array {
 		$arrets = $data['arrets'];
 
-		// Keep original classe for fallback, but class will be determined per rate_breakdown
+		// Garder la classe originale pour repli, mais la classe sera déterminée par rate_breakdown
 		$classe = isset($data['classe']) ? strtoupper($data['classe']) : null;
 		$statut = strtoupper($data['statut']);
 		$option = $data['option'] ?? '0,25';
@@ -284,7 +284,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 	}
 
 	/**
-	 * Calculate amount by age with detailed rate breakdown
+	 * Calculer le montant par âge avec détail des taux
 	 *
 	 * @param array<int, array<string, mixed>> $paymentDetails
 	 * @param array<string, mixed>|null $data
@@ -307,7 +307,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 		?int $historicalReducedRate = null,
 		?array $data = []
 	): array {
-		// Defensive: ensure $data is an array
+		// Défensif: s'assurer que $data est un tableau
 		if ($data === null) {
 			$data = [];
 		}
@@ -332,7 +332,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 			$arretMontant = 0;
 			$rateInfo = [];
 			$joursDansArret = 0; // Compteur pour les périodes 1/2/3 (pour les âges 62-69)
-			$periodNbTrimestres = $nbTrimestres; // Initialize to avoid undefined variable
+			$periodNbTrimestres = $nbTrimestres; // Initialiser pour éviter variable non définie
 
 			// Déterminer si l'arrêt a une durée >= 730 jours (pour la logique de période 2 pour 62-69 ans)
 			$arretDiff = $detail['arret_diff'] ?? 0;
@@ -341,7 +341,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 			foreach ($yearlyBreakdown as $yearData) {
 				// Calculer l'âge au début de ce segment
 				if ($birthDate === null) {
-					throw new \InvalidArgumentException('Birth date is required for age calculation');
+					throw new \InvalidArgumentException('Date de naissance requise pour le calcul de l\'âge');
 				}
 				$segmentAge = $this->dateService->calculateAge($yearData['start'], $birthDate);
 
@@ -355,7 +355,7 @@ class AmountCalculationService implements AmountCalculationInterface {
 					$periodNbTrimestres = $this->dateService->calculateTrimesters($affiliationDate, $firstArretDate);
 				}
 
-				// Determine class for this specific year based on revenue
+				// Déterminer la classe pour cette année spécifique basée sur le revenu
 				$segmentClasse = $this->determineClasseForYear($yearData['year'], $data, $classe);
 
 				if ($segmentAge < 62) {
