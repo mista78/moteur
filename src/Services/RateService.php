@@ -158,7 +158,7 @@ class RateService implements RateServiceInterface {
 
 		// Réforme 2025 : Calcul basé sur PASS UNIQUEMENT pour les nouveaux arrêts (date_effet >= 2025)
 		if ($isDateEffetAfter2025) {
-			return $this->calculate2025Rate($statut, $classe, $option, $taux);
+			return $this->calculate2025Rate($statut, $classe, $option, $taux, $revenu);
 		}
 
 		// Pour les arrêts avec date_effet < 2025 :
@@ -171,7 +171,7 @@ class RateService implements RateServiceInterface {
 
 		if ($dayYear >= 2025) {
 			// Jour en 2025 ou après → Utiliser les taux 2025 de la DB
-			$rateData = $this->getRateForYear(2025);
+			$rateData = $this->getRateForYear($dayYear);
 		} else {
 			// Jour en 2024 ou avant → Utiliser les taux de l'année du jour
 			if ($calculationDate) {
@@ -240,7 +240,8 @@ class RateService implements RateServiceInterface {
 		string $statut,
 		string $classe,
 		string|int|float $option,
-		int $taux
+		int $taux,
+		?float $revenu
 	): float {
 		// Valeur du PASS (peut être surchargée via setPassValue)
 		$passValue = $this->passValue ?? 46368; // PASS 2024 par défaut
@@ -253,8 +254,13 @@ class RateService implements RateServiceInterface {
 			default => 2 // Par défaut classe B
 		};
 
-		// Calcul du taux de base: (multiplicateur * PASS) / 730
-		$baseRate = ($classeMultiplier * $passValue) / 730;
+		// Calcul du taux de base: (multiplicateur * PASS) / 730 pour les classes A et C, et Revenu N-2 pour la classe B :
+		if (strtoupper($classe) === 'B') {
+			$baseRate = $revenu / 730;
+		} else {
+			$baseRate = ($classeMultiplier * $passValue) / 730;
+		}
+
 
 		// Application des réductions selon le numéro de taux
 		$rate = match($taux) {
